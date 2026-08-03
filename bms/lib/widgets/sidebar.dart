@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
 import '../screens/login_screen.dart';
 import '../screens/resident_dashboard_screen.dart';
+import '../screens/admin_documentRequest.dart';
 
 class SidebarNav extends StatefulWidget {
   const SidebarNav({super.key});
@@ -88,7 +89,16 @@ class _SidebarNavState extends State<SidebarNav> {
                   icon: item.icon,
                   label: item.label,
                   selected: selected,
-                  onTap: () => setState(() => _selectedIndex = index),
+                  onTap: () {
+                    setState(() => _selectedIndex = index);
+                    if (item.label == 'Requests') {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const AdminDocumentRequestScreen(),
+                        ),
+                      );
+                    }
+                  },
                 );
               },
             ),
