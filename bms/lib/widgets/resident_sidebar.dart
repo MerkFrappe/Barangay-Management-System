@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../theme/app_colors.dart';
+import '../screens/login_screen.dart';
+import '../screens/dashboard_screen.dart';
 
 class ResidentSidebar extends StatelessWidget {
   const ResidentSidebar({super.key});
@@ -59,30 +61,40 @@ class ResidentSidebar extends StatelessWidget {
                 ],
               ),
 
-              const SizedBox(height: 40),
+              const SizedBox(height: 32),
 
               //---------------------------------
               // NAVIGATION
               //---------------------------------
-              _NavItem(
+              const _NavItem(
                 icon: Icons.dashboard_rounded,
                 title: "My Dashboard",
                 selected: true,
               ),
 
-              _NavItem(
+              const _NavItem(
                 icon: Icons.assignment_outlined,
                 title: "Permit Tracking",
               ),
 
-              _NavItem(
+              const _NavItem(
                 icon: Icons.emergency_outlined,
                 title: "Emergency Alerts",
               ),
 
-              _NavItem(icon: Icons.poll_outlined, title: "Community Polls"),
+              const _NavItem(icon: Icons.poll_outlined, title: "Community Polls"),
 
-              _NavItem(icon: Icons.help_outline, title: "Help Center"),
+              const _NavItem(icon: Icons.help_outline, title: "Help Center"),
+
+              _NavItem(
+                icon: Icons.admin_panel_settings_rounded,
+                title: "Switch to Admin",
+                onTap: () {
+                  Navigator.of(context).pushReplacement(
+                    MaterialPageRoute(builder: (_) => const DashboardScreen()),
+                  );
+                },
+              ),
 
               const Spacer(),
 
@@ -108,13 +120,21 @@ class ResidentSidebar extends StatelessWidget {
                 ),
               ),
 
-              const SizedBox(height: 20),
+              const SizedBox(height: 16),
 
               Divider(color: AppColors.outlineVariant),
 
-              _NavItem(icon: Icons.settings_outlined, title: "Settings"),
+              const _NavItem(icon: Icons.settings_outlined, title: "Settings"),
 
-              _NavItem(icon: Icons.logout, title: "Logout"),
+              _NavItem(
+                icon: Icons.logout,
+                title: "Logout",
+                onTap: () {
+                  Navigator.of(context).pushReplacement(
+                    MaterialPageRoute(builder: (_) => const LoginScreen()),
+                  );
+                },
+              ),
             ],
           ),
         ),
@@ -129,11 +149,13 @@ class _NavItem extends StatelessWidget {
   final IconData icon;
   final String title;
   final bool selected;
+  final VoidCallback? onTap;
 
   const _NavItem({
     required this.icon,
     required this.title,
     this.selected = false,
+    this.onTap,
   });
 
   @override
@@ -147,7 +169,7 @@ class _NavItem extends StatelessWidget {
         child: InkWell(
           borderRadius: BorderRadius.circular(12),
 
-          onTap: () {},
+          onTap: onTap ?? () {},
 
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),

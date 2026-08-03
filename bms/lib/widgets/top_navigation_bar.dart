@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 
 import '../theme/app_colors.dart';
+import '../screens/dashboard_screen.dart';
 
 class TopNavigationBar extends StatelessWidget {
-  const TopNavigationBar({super.key});
+  final VoidCallback? onSwitchPortal;
+  const TopNavigationBar({super.key, this.onSwitchPortal});
 
   @override
   Widget build(BuildContext context) {
@@ -64,7 +66,35 @@ class TopNavigationBar extends StatelessWidget {
             ),
           ),
 
-          const SizedBox(width: 20),
+          const SizedBox(width: 16),
+
+          //---------------------------------------
+          // Switch to Admin Button
+          //---------------------------------------
+          ElevatedButton.icon(
+            onPressed: onSwitchPortal ??
+                () {
+                  Navigator.of(context).pushReplacement(
+                    MaterialPageRoute(builder: (_) => const DashboardScreen()),
+                  );
+                },
+            icon: const Icon(Icons.admin_panel_settings_rounded, size: 18),
+            label: Text(desktop ? 'Switch to Admin View' : 'Admin'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: AppColors.onPrimary,
+              elevation: 2,
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
+              textStyle: AppTextStyles.labelSm.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+
+          const SizedBox(width: 16),
 
           //---------------------------------------
           // Notification Button

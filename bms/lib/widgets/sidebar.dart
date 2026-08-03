@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
+import '../screens/login_screen.dart';
+import '../screens/resident_dashboard_screen.dart';
 
 class SidebarNav extends StatefulWidget {
   const SidebarNav({super.key});
@@ -91,6 +93,18 @@ class _SidebarNavState extends State<SidebarNav> {
               },
             ),
           ),
+          // Switch to Resident View Action Tile
+          _NavTile(
+            icon: Icons.swap_horiz_rounded,
+            label: 'Switch to Resident',
+            onTap: () {
+              Navigator.of(context).pushReplacement(
+                MaterialPageRoute(
+                    builder: (_) => const ResidentDashboardScreen()),
+              );
+            },
+          ),
+          const SizedBox(height: 8),
           // Emergency broadcast button
           ElevatedButton.icon(
             onPressed: () {},
@@ -111,7 +125,15 @@ class _SidebarNavState extends State<SidebarNav> {
           Divider(color: AppColors.outlineVariant, height: 1),
           const SizedBox(height: 8),
           _NavTile(icon: Icons.settings, label: 'Settings', onTap: () {}),
-          _NavTile(icon: Icons.logout, label: 'Logout', onTap: () {}),
+          _NavTile(
+            icon: Icons.logout,
+            label: 'Logout',
+            onTap: () {
+              Navigator.of(context).pushReplacement(
+                MaterialPageRoute(builder: (_) => const LoginScreen()),
+              );
+            },
+          ),
         ],
       ),
     );

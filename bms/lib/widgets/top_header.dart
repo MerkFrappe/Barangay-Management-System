@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
+import '../screens/resident_dashboard_screen.dart';
 
 class TopHeader extends StatelessWidget implements PreferredSizeWidget {
-  const TopHeader({super.key});
+  final VoidCallback? onSwitchPortal;
+  const TopHeader({super.key, this.onSwitchPortal});
 
   @override
   Size get preferredSize => const Size.fromHeight(64);
@@ -20,7 +22,7 @@ class TopHeader extends StatelessWidget implements PreferredSizeWidget {
         children: [
           // Search bar
           Container(
-            width: 360,
+            width: 340,
             padding: const EdgeInsets.symmetric(horizontal: 16),
             decoration: BoxDecoration(
               color: AppColors.surfaceContainer,
@@ -46,6 +48,33 @@ class TopHeader extends StatelessWidget implements PreferredSizeWidget {
             ),
           ),
           const Spacer(),
+
+          // Portal Switch Button
+          ElevatedButton.icon(
+            onPressed: onSwitchPortal ??
+                () {
+                  Navigator.of(context).pushReplacement(
+                    MaterialPageRoute(
+                        builder: (_) => const ResidentDashboardScreen()),
+                  );
+                },
+            icon: const Icon(Icons.swap_horiz_rounded, size: 18),
+            label: const Text('Switch to Resident View'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primaryFixed,
+              foregroundColor: AppColors.primary,
+              elevation: 0,
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
+              textStyle: AppTextStyles.labelSm.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+          const SizedBox(width: 16),
+
           // Notifications
           Stack(
             clipBehavior: Clip.none,
@@ -80,6 +109,7 @@ class TopHeader extends StatelessWidget implements PreferredSizeWidget {
               children: [
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text('Chairman Juan Dela Cruz',
                         style: AppTextStyles.labelMd

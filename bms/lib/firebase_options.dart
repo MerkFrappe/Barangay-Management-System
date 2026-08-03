@@ -57,7 +57,6 @@ class DefaultFirebaseOptions {
     projectId: 'bms-system-2499a',
     storageBucket: 'bms-system-2499a.firebasestorage.app',
   );
-
   static const FirebaseOptions ios = FirebaseOptions(
     apiKey: 'AIzaSyDmAsWgFlog9-m1BVhLy6TM7jWCAf2gBZM',
     appId: '1:140854816943:ios:d1f25bc533ce6d1c45e45a',
