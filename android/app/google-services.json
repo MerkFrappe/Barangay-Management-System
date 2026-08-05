@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "140854816943",
+    "project_id": "bms-system-2499a",
+    "storage_bucket": "bms-system-2499a.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:140854816943:android:59028a4eae00a7a945e45a",
+        "android_client_info": {
+          "package_name": "com.example.bms"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDHt_Em8MPR3v5X3TWRTdVGLWJRBkHMN34"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
