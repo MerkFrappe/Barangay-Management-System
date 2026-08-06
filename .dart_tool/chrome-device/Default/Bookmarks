@@ -1,0 +1,314 @@
+{
+   "checksum": "a7583c579cef0ac542de01f870cbc88c",
+   "roots": {
+      "bookmark_bar": {
+         "children": [ {
+            "date_added": "13389069234176358",
+            "date_last_used": "13396966959631474",
+            "guid": "fc4aede3-d8fc-41ad-8059-1fd45ee974ea",
+            "id": "7",
+            "name": "",
+            "show_icon": false,
+            "source": "sync",
+            "type": "url",
+            "url": "https://docs.google.com/document/u/2/?pli=1&authuser=2&usp=docs_web",
+            "visit_count": 1
+         }, {
+            "date_added": "13381578078138969",
+            "date_last_used": "13426741786654516",
+            "guid": "cf27fe7c-e844-4ef7-95a6-5ca81d63dbd7",
+            "id": "8",
+            "meta_info": {
+               "power_bookmark_meta": ""
+            },
+            "name": "Home",
+            "show_icon": false,
+            "source": "sync",
+            "type": "url",
+            "url": "https://classroom.google.com/u/1/?hl=en",
+            "visit_count": 97
+         }, {
+            "date_added": "13382220652214155",
+            "date_last_used": "13417078854008027",
+            "guid": "68be3c4b-0bad-4661-ab76-afeda6f761bb",
+            "id": "9",
+            "meta_info": {
+               "power_bookmark_meta": ""
+            },
+            "name": "Ñ - Wikipedia",
+            "show_icon": false,
+            "source": "sync",
+            "type": "url",
+            "url": "https://en.wikipedia.org/wiki/%C3%91",
+            "visit_count": 14
+         }, {
+            "date_added": "13385524559768010",
+            "date_last_used": "13403582644263795",
+            "guid": "6c08c676-bb27-4891-bdf6-92214eba7a75",
+            "id": "10",
+            "meta_info": {
+               "power_bookmark_meta": ""
+            },
+            "name": "Book recommendations (mainly hard sci-fi-ish) : r/scifi",
+            "show_icon": false,
+            "source": "sync",
+            "type": "url",
+            "url": "https://www.reddit.com/r/scifi/comments/18xg1h3/book_recommendations_mainly_hard_scifiish/",
+            "visit_count": 12
+         }, {
+            "date_added": "13387076158321978",
+            "date_last_used": "13402284794186782",
+            "guid": "ecb4eb1d-460a-494b-aa01-4fdb286025b1",
+            "id": "11",
+            "meta_info": {
+               "power_bookmark_meta": ""
+            },
+            "name": "Games I can run",
+            "show_icon": false,
+            "source": "sync",
+            "type": "url",
+            "url": "https://www.systemrequirementslab.com/cyri-score/?minpassonly=1&rec-all=1",
+            "visit_count": 16
+         }, {
+            "date_added": "13388764913347607",
+            "date_last_used": "0",
+            "guid": "6c053102-1a50-4430-a619-4e4dfd00f4e3",
+            "id": "12",
+            "name": "Problem of the Day | GeeksforGeeks | A computer science portal for geeks",
+            "show_icon": false,
+            "source": "sync",
+            "type": "url",
+            "url": "https://www.geeksforgeeks.org/problem-of-the-day",
+            "visit_count": 1
+         } ],
+         "date_added": "13429848126433115",
+         "date_last_used": "0",
+         "date_modified": "13389069234176358",
+         "guid": "0bc5d13f-2cba-5d74-951f-3f233fe6c908",
+         "id": "1",
+         "name": "Favorites bar",
+         "source": "unknown",
+         "type": "folder"
+      },
+      "other": {
+         "children": [ {
+            "date_added": "13396050362646911",
+            "date_last_used": "13397060314494743",
+            "guid": "34daad9a-dcba-439b-8c0b-a3d313d07e75",
+            "id": "13",
+            "name": "Python | Using 2D arrays/lists the right way - GeeksforGeeks",
+            "show_icon": false,
+            "source": "sync",
+            "type": "url",
+            "url": "https://www.geeksforgeeks.org/python/python-using-2d-arrays-lists-the-right-way/",
+            "visit_count": 2
+         }, {
+            "date_added": "13396342136092049",
+            "date_last_used": "13415942837015594",
+            "guid": "9f0f02f6-1485-4e29-b1c5-010f1cef3271",
+            "id": "14",
+            "name": "10 Essential Beliefs of Buddhism - Buddhism Info",
+            "show_icon": false,
+            "source": "sync",
+            "type": "url",
+            "url": "https://buddhism.info/10-essential-beliefs-of-buddhism/",
+            "visit_count": 2
+         }, {
+            "children": [ {
+               "children": [ {
+                  "date_added": "13396343210356771",
+                  "date_last_used": "0",
+                  "guid": "b4a1e9b8-0ab4-42e2-8d38-989b85def404",
+                  "id": "17",
+                  "name": "What Is Buddhist Practice? — Study Buddhism",
+                  "show_icon": false,
+                  "source": "sync",
+                  "type": "url",
+                  "url": "https://studybuddhism.com/en/essentials/what-is/what-is-buddhist-practice",
+                  "visit_count": 1
+               }, {
+                  "date_added": "13396343536076566",
+                  "date_last_used": "0",
+                  "guid": "a1706bfa-199f-4d4a-bc60-f0ce9d24eae6",
+                  "id": "18",
+                  "name": "Worship and rituals - Practices in Buddhism - GCSE Religious Studies Revision - AQA - BBC Bitesize",
+                  "show_icon": false,
+                  "source": "sync",
+                  "type": "url",
+                  "url": "https://www.bbc.co.uk/bitesize/guides/zkdbcj6/revision/2",
+                  "visit_count": 1
+               }, {
+                  "date_added": "13396347255472159",
+                  "date_last_used": "13396370968134976",
+                  "guid": "537aba22-5262-46b0-81da-04302953bcef",
+                  "id": "19",
+                  "name": "Embrace Your Dharma - A Journey to Purposeful Living",
+                  "show_icon": false,
+                  "source": "sync",
+                  "type": "url",
+                  "url": "https://e-buddhism.com/embrace-your-dharma-a-journey-to-purposeful-living/",
+                  "visit_count": 2
+               }, {
+                  "date_added": "13396347264111845",
+                  "date_last_used": "13396372789735637",
+                  "guid": "8bdd9e22-a2de-4b5e-9226-9baf348b0f67",
+                  "id": "20",
+                  "name": "Buddhists Take Refuge in the Three Jewels",
+                  "show_icon": false,
+                  "source": "sync",
+                  "type": "url",
+                  "url": "https://www.learnreligions.com/taking-refuge-becoming-a-buddhist-450056",
+                  "visit_count": 2
+               }, {
+                  "date_added": "13396347402815828",
+                  "date_last_used": "13396373025866724",
+                  "guid": "0fb355f3-7052-49f8-a193-16c4fcc1a3d7",
+                  "id": "21",
+                  "name": "The 5 Precepts: Buddhism and Morality | Buddho.org",
+                  "show_icon": false,
+                  "source": "sync",
+                  "type": "url",
+                  "url": "https://buddho.org/buddhism-and-morality-the-five-precepts/",
+                  "visit_count": 2
+               }, {
+                  "date_added": "13396370293232525",
+                  "date_last_used": "13396373872075114",
+                  "guid": "45c715da-0872-4fc0-a5ea-de8d31c7d240",
+                  "id": "22",
+                  "name": "What Is Tantra? — Study Buddhism",
+                  "show_icon": false,
+                  "source": "sync",
+                  "type": "url",
+                  "url": "https://studybuddhism.com/en/tibetan-buddhism/tantra/buddhist-tantra/what-is-tantra",
+                  "visit_count": 2
+               }, {
+                  "date_added": "13396376185369263",
+                  "date_last_used": "0",
+                  "guid": "45fa295f-93f9-4cb7-b65a-a4f0ef9817a1",
+                  "id": "23",
+                  "name": "BBC - Religions - Buddhism: Meditation",
+                  "show_icon": false,
+                  "source": "sync",
+                  "type": "url",
+                  "url": "https://www.bbc.co.uk/religion/religions/buddhism/customs/meditation_1.shtml",
+                  "visit_count": 1
+               }, {
+                  "date_added": "13398344436943516",
+                  "date_last_used": "0",
+                  "guid": "f380825a-9856-42b5-84ee-9793c6f42a9a",
+                  "id": "24",
+                  "name": "Meet - ihk-irux-zwk",
+                  "show_icon": false,
+                  "source": "sync",
+                  "type": "url",
+                  "url": "https://meet.google.com/ihk-irux-zwk?fbclid=IwY2xjawL2zhpleHRuA2FlbQIxMABicmlkETE5QUN6NW5kN0k1UXluSnhsAR5UtvcwA79gRyatBBe3inCWAE6gV_W0WQr6DiQHoUPfUFSsuAnvbKKhfujeEA_aem_dn-Ae2mwcIzcvEukoMBKhg&pli=1&authuser=1",
+                  "visit_count": 1
+               }, {
+                  "date_added": "13403442603031029",
+                  "date_last_used": "0",
+                  "guid": "42fd450c-fa75-4e6a-9843-462cd81df5c2",
+                  "id": "25",
+                  "name": "Chat",
+                  "show_icon": false,
+                  "source": "sync",
+                  "type": "url",
+                  "url": "https://mail.google.com/chat/u/1/#chat/home",
+                  "visit_count": 1
+               }, {
+                  "date_added": "13405120608238747",
+                  "date_last_used": "0",
+                  "guid": "ac45886f-bff2-4039-99d0-3a37e33ed4fb",
+                  "id": "26",
+                  "name": "RS2_PERFORMANCE TASK - Presentation",
+                  "show_icon": false,
+                  "source": "sync",
+                  "type": "url",
+                  "url": "https://www.canva.com/design/DAG182yxThI/R4MbLcybCTv13rpajkyXyA/edit?fbclid=IwY2xjawNeMexleHRuA2FlbQIxMABicmlkETE4c1l3QU82RlhFMEVlTVI0AR4CaHAJPUOrVtSLPZSpooGMjFPZkk9P9CapgYeKiprr1Q5kXXlgiZfodrL51w_aem_jBdHnrEFWrSb8sMWq99uAw",
+                  "visit_count": 1
+               }, {
+                  "date_added": "13409403691879891",
+                  "date_last_used": "0",
+                  "guid": "274512eb-c897-47e0-8fa4-9a493d7a6598",
+                  "id": "27",
+                  "name": "Best Virtual Assistant Companies to Work for Philippines",
+                  "show_icon": false,
+                  "source": "sync",
+                  "type": "url",
+                  "url": "https://remotefilipinoworker.com/best-virtual-assistant-companies-to-work-for/#1_Athena_Executive_Assistants",
+                  "visit_count": 1
+               }, {
+                  "date_added": "13409403787000103",
+                  "date_last_used": "0",
+                  "guid": "2293df96-e1df-4eb6-a775-e58404b67034",
+                  "id": "28",
+                  "name": "Hey guys! I listed down all the VA agencies you could apply for. Some of them accept applicants without VA experience. Good luck! : r/buhaydigital",
+                  "show_icon": false,
+                  "source": "sync",
+                  "type": "url",
+                  "url": "https://www.reddit.com/r/buhaydigital/comments/19439x8/hey_guys_i_listed_down_all_the_va_agencies_you/",
+                  "visit_count": 1
+               }, {
+                  "date_added": "13412440491232474",
+                  "date_last_used": "0",
+                  "guid": "97330811-a065-421f-b17a-55353dd68210",
+                  "id": "29",
+                  "name": "comp3321 NSA Python Training Document : NSA : Free Download, Borrow, and Streaming : Internet Archive",
+                  "show_icon": false,
+                  "source": "sync",
+                  "type": "url",
+                  "url": "https://archive.org/details/comp3321/page/n4/mode/1up?q=device",
+                  "visit_count": 1
+               } ],
+               "date_added": "13396343234836634",
+               "date_last_used": "0",
+               "date_modified": "13412440491232474",
+               "guid": "ff848651-65c7-4914-9242-507fb2569f28",
+               "id": "16",
+               "name": "RS",
+               "source": "unknown",
+               "type": "folder"
+            } ],
+            "date_added": "13396343234836335",
+            "date_last_used": "0",
+            "date_modified": "13396343234836335",
+            "guid": "357c3e70-c139-46c1-be39-e4eeac8f986a",
+            "id": "15",
+            "name": "School",
+            "source": "unknown",
+            "type": "folder"
+         } ],
+         "date_added": "13429848126433115",
+         "date_last_used": "0",
+         "date_modified": "13396342136092049",
+         "guid": "82b081ec-3dd3-529c-8475-ab6c344590dd",
+         "id": "2",
+         "name": "Other favorites",
+         "source": "unknown",
+         "type": "folder"
+      },
+      "synced": {
+         "children": [  ],
+         "date_added": "13429848126433115",
+         "date_last_used": "0",
+         "date_modified": "0",
+         "guid": "4cf2e351-0e85-532b-bb37-df045d8f8d0f",
+         "id": "3",
+         "name": "Mobile favorites",
+         "source": "unknown",
+         "type": "folder"
+      },
+      "workspaces_v2": {
+         "children": [  ],
+         "date_added": "13429848126433115",
+         "date_last_used": "0",
+         "date_modified": "0",
+         "guid": "75aa6670-344f-549d-b742-660f029506ab",
+         "id": "5",
+         "name": "Workspaces",
+         "source": "unknown",
+         "type": "folder"
+      }
+   },
+   "sync_metadata": "CjEKDgiIgQISCMQZlc+fAQAAEgAqGFJ0b3U0Tml0MzhFdGg3MG5GZ0RnMlE9PUgDoAYEEo4BCAUSiQEKHHdSQnJaTCs2UEE5YXZLZ2pOUDdKWERMY2Z2cz0SJDNjOWFlNWMzLTE2ZGItNTRmZC04ZmNkLTNkOTJmZWY5YWI3NhgAIAAoADCbtMDepDM437TA3qQzQN+0wN6kM0ocbm14NjVzUUR2eEk4VGdFZXYrQStudHRvU240PVoAZQAAAADCPgJgABKuAQgdEqkBChwzSExGSFZtVit0NU1BL1lhbnZyQ3ROWWovOHM9EiQ5NzMzMDgxMS1hMDY1LTQyMWYtYjE3YS01NTM1M2RkNjgyMTAYACAAKAAwqsqnmLozOMDUp5i6M0DA1KeYujNKHHowMTlQYW91dkt3RHBTbTBuSkhIcnNjRFI2bz1aICIe/+tHVGxpZ2lBWUtBY2dTY3Z3aVJLUVJvYVhXRTQ9ZdVUbA7CPgJgBRKuAQgbEqkBChxrUnJjVi9peGJ6R2R4TVFWakxNdDcrT1pXZzg9EiQyNzQ1MTJlYi1jODk3LTQ3ZTAtOGZhNC05YTQ5M2Q3YTY1OTgYACAAKAAwoYOg8K4zOLaEoPCuM0C2hKDwrjNKHFA5WWRGVWxQVEVybjZ3TXZiYm9sRnhoODNrUT1aICIe/6xPOEdkaXQyTW1IWUJ5bERyZTJodkROWWxFQWs9Zbr9/Y/CPgJgBRKsAQgREqcBChx1RUhGbWVOWUhpenhkN0dQTGlmNU1DRDhSbTA9EiRiNGExZTliOC0wYWI0LTQyZTItOGQzOC05ODliODVkZWY0MDQYACAAKAAwgIHFnP4yOJvIw5z+MkCbyMOc/jJKHENnZVRaeHRWZE1UWldCRkpRVXRXMldsTDRmYz1aHiIcYU51VkNOOGNBMVJrNG1qd3RNcHQrZ0wyTmdRPWUOWuVuwj4CYAUSrQEIGhKoAQoceTZEUHhVeGw2YysxQ3g4ZGIyaER2dklaRzBVPRIkYWM0NTg4NmYtYmZmMi00MDM5LTk5ZDAtM2EzN2UzM2VkNGZiGAAgACgAMKGm9fWeMzjvrPX1njNA76z19Z4zShxJRmFPZ3dqM2ZLVnZ3QUFUd0laSVc1TUpFanc9Wh8iHf9Ya2x6bDh4U2NxY1FqcWhHa2FoZnBsTk9tckE9Ze5nTQPCPgJgBRKtAQgYEqgBChx5MVN1ZjBKeVhOYUYyUVU1RDc1WkZtSTA3ZEk9EiRmMzgwODI1YS05ODU2LTQyYjUtODRlZS05NzkzYzZmNDJhOWEYACAAKAAw94vdt40zOL+O3beNM0C/jt23jTNKHE1oOFZGRVhqenFENTVzTk02VE9OblFzdnBTbz1aHyId/TJrYmlSKzgybTZBTkovR00rNXI4ME10RUttND1lehKwzsI+AmAFEq0BCBkSqAEKHEtFT0l4RXBsRkZWWWdmY1R5WU9JSGdSMnZUdz0SJDQyZmQ0NTBjLWZhNzUtNGU2YS05ODQzLTQ2MmNkODFkZjVjMhgAIAAoADDc/+PVmDM42IHk1ZgzQNiB5NWYM0ocZ0laNFBZMS9IVDlVQVZKTG0vMG9pVE0wdGxjPVofIh3+MldIOUJlcmZxLzdHTXE1NGR1MmdRK2l2OU1VPWXi+Yaawj4CYAUSrQEIFBKoAQocMlVFTldHcy9YRDU1bjVoODJJYVltdVFQOE5zPRIkOGJkZDllMjItYTJkZS00YjVlLTkyMjYtOWJhZjM0OGIwZjY3GAAgACgAMOWC0ar+MjjW+bqe/jJA1vm6nv4yShxpaEV0a1AzQndDaGdYaFJxazhyUTlzdDBwR1U9Wh8iHdtiTkRuYWtkTE1CQnJwYU92bU1tbUxRRitkcEk9ZfzJXkfCPgJgBRKtAQgWEqgBChw2aUV1NzBjQkRsMSs4SnZkMVpJSmJ6ci84MFk9EiQ0NWM3MTVkYS0wODcyLTRmYzAtYTVlYS1kZThkMzFjN2QyNDAYACAAKAAw1v+Sq/4yOKe8uKn+MkCnvLip/jJKHG9XdFR1VEZDTDMyc1ZIbTBLSVdIdk9VQ1BCUT1aHyId9mMrT3UyM2hqNkhCaFJiUCtuVXhZN0VrMnN0Zz1lDlrlbsI+AmAFEq0BCA4SqAEKHE82TTNJYXlocjEvWTd2Y2JTTXQ5cy9ZUzZLOD0SJDlmMGYwMmY2LTE0ODUtNGUyOS1iMWM1LTAxMGYxY2VmMzI3MRgAIAAoADDX/a2exzM4m/yBnP4yQJv8gZz+MkocOWg2dnNOWkNRUE5PR0xra1ZFdWdoM1ZMc0tZPVofIh2zQURCRWtYNys1enYxRlhEZ0hWcVJsM3YxcklBPWW/g+shwj4CYAUSrQEIFRKoAQocU2Z3eWNzVExrK1h6S3RMdTZqUUdBM1U2RlgwPRIkMGZiMzU1ZjMtNzA1Mi00OWY4LWExOTMtMTZjNGZjYzFhM2Q3GAAgACgAMKex36r+MjiduMOe/jJAnbjDnv4yShxTNWo3UTU5bHZBRXpUdlJKS2JWV3prMmRWRVE9Wh8iHe1WKzlBVXp2N1l6dk9kZURyeFF5dUswcGUvVnc9ZQ7u8+nCPgJgBRKtAQgTEqgBChxuRExOV1FBeVpwa056ai9UV0sxWFdQckpwUjA9EiQ1MzdhYmEyMi01MjYyLTQ2YjAtODFkYS0wNDMwMjk1M2JjZWYYACAAKAAw76adqv4yON61up7+MkDetbqe/jJKHGRPei9JdVdvWkVQelhDdVY2cDVLL0VWRmtRZz1aHyIdtlhJelZqb25acUkyU051dzQrREpoTm96RE9vYz1l1YO95MI+AmAFEqwBCBISpwEKHGlrN1p4N08zdHBENWpQdmtnY2tuY1R4U3NmND0SJGExNzA2YmZhLTE5OWYtNGQ0YS1iYzYwLWYwY2U5ZDI0ZWFlNhgAIAAoADC8s9ec/jI49LfXnP4yQPS315z+MkocWUlKNzRoZWRzZWQ2WGpac3ZMRHl1Qy92cG1ZPVoeIhxsTzJjbDIyMEpwZUlwOHN6VVhTSE54REh1RGM9ZYcobq3CPgJgBRKtAQgJEqgBChxYc0ZjSFdsR216WlZjaW92WTRrcjFrWm9icW89EiQ2OGJlM2M0Yi0wYmFkLTQ2NjEtYWI3Ni1hZmVkYTZmNzYxYmIYACAAKAAw+Kjr9M8zOOPX9pv+MkDj1/ab/jJKHE1DeFJCNlV5RklYb1BtWUxrMEk3dzdVUXdLZz1aHyId3W5ycTYyOXhiQXZBMUN1Z0hTaktiQkpITVpWQT1lEBu12MI+AmAFEq0BCBcSqAEKHEduTnl1WWNXaFFLUTlDLzcvak5keTNPNTVJMD0SJDQ1ZmEyOTVmLTkzZjktNGNiNy1iNjVhLWE0ZjBlZjk4MTdhMRgAIAAoADDtm6Cs/jI4mqCgrP4yQJqgoKz+MkoceEY0RWpnZEhpNU5WMzM3NFRPRCtzLzhaTk5ZPVofIh37RkprdXhlTWg0QktONm5IeUd3cDBPK2o3MmVZPWUAAAAAwj4CYAUSrAEIEBKnAQoccFNONCtSTjFmSnNHWjY5Z1A2QXA0WUxzY0xFPRIkZmY4NDg2NTEtNjVjNy00OTE0LTkyNDItNTA3ZmIyNTY5ZjI4GAAgACgAMP+AxZz+Mjimg8Wc/jJApoPFnP4yShxOR0RzcEVDR0dONmdNU0pLYWhIdzAxZWpWNkk9Wh4iHGFmWTlyYkZuamxDSmNDSW9FUFBWREp6Rnd6az1lAAAAAMI+AmAAEqwBCAcSpwEKHCsyaHdBeGlydjBBSHRONWl2K2syN1FvU1FBOD0SJGZjNGFlZGUzLWQ4ZmMtNDFhZC04MDU5LTFmZDQ1ZWU5NzRlYRgAIAAoADCYwpWExzM4udf2m/4yQLnX9pv+MkocT1h2NUxibDhnVGEyNmFhN2Zma2tOcVVzdnJVPVoeIhw0aVA3WDRZeWtFSE94dXFZQ3VFQS9XcUhyMk09Zdpp3l3CPgJgBRKtAQgPEqgBChxZYW5tcWxZcjdPYjlGVm5RUFJ6eDN6L1lXUms9EiQzNTdjM2U3MC1jMTM5LTQ2YzEtYmUzOS1lNGVlYWM4Zjk4NmEYACAAKAAw/oDFnP4yOIODxZz+MkCDg8Wc/jJKHG1Oa1dvUFM4THFMTFZTeWFKT0lSdjg4VnNEMD1aHyId7HUxMUtsZ2dmMDlDZ3N0TXJ5VG1pVWo1VVlmWT1lAAAAAMI+AmAAEq0BCAoSqAEKHE5YdTkzci8vNTIyRnZydmNMSDJFc0Vmd3BoOD0SJDZjMDhjNjc2LWJiMjctNDg5MS1iZGY2LTkyMjE0ZWJhN2E3NRgAIAAoADCc9ceYmTM4vNj2m/4yQLzY9pv+MkocM0cxQ2ZqQUxpZVp2cXlPN2tFTGFQVlphZFNBPVofIh3uaUtiWFhDRlVXaEFoanU5ZmwvdStqRVhHWVVrPWVQgHAdwj4CYAUSrAEIDRKnAQocM04rS2g1SnhkZlE1QmtCejZpVCtLNDJOWlQ0PRIkMzRkYWFkOWEtZGNiYS00MzliLThjMGItYTNkMzEzZDA3ZTc1GAAgACgAMMzPrZ7HMzi11vab/jJAtdb2m/4yShxnQkpLeENqOVVYUmdQWlo2YTNyREhuVThGOEU9Wh4iHGY1NXJJWG9keW0zd2t1cGR1cnovWk1hU0lSYz1l6i52+sI+AmAFEo4BCAISiQEKHFljU1RvbnZFU1B3cUNzNEwyY3JWaHY2OEw5OD0SJDg4MjkwOTc3LWNlMGUtNTllMi04YWNmLWExZGFkMmQxMTU4MBgAIAAoADDLoPab/jI4l6b2m/4yQJem9pv+Mkocb1BWa2h3QlJiVjY1S0NXUjIrSU9OSFdvT3U4PVoAZQAAAADCPgJgABKtAQgMEqgBChxzSlAvK3RsYTJTbzJJazMySm1iRVI5QWVuNzg9EiQ2YzA1MzEwMi0xYTUwLTQ0MzAtYTYxOS00ZTRkZmQwMGY0ZTMYACAAKAAwjt65xZgzOI7Y9pv+MkCO2Pab/jJKHDNQc3hhcHVwamxuVWVSODNhRGIwSDJEbE93az1aHyId+3JHN1lXL0Q2NjNHWkkrYXRwYTY5Qy83QWU2cz1l6i52+sI+AmAFEq0BCAsSqAEKHEFRSmNPWjRwZENMQ04wN1VCRFI1bEdheklrQT0SJGVjYjRlYjFkLTQ2MGEtNDk0Yi1hYTAxLTRmZGIyODYwMjViMRgAIAAoADDM69itlDM4jtf2m/4yQI7X9pv+MkocWmYweFprMjdOOXE4bEwzV0l5WmRnQncrZ1ZvPVofIh33ZnVab3E0dENyd0VHV2ZLdm9KQ1haenArM0RjPWW4jsZjwj4CYAUSjgEIAxKJAQocbmpnRHU4OGVDcnZYcDg2cEQ3ZkhHY3FGcDg4PRIkNDRiZmQ0MmMtYTExZi01NTYxLTkwMzktZGRkN2U5YWRjMmM5GAAgACgAMNCg9pv+Mjjgpvab/jJA4Kb2m/4yShx5ek5CMDFjbjU0QTdjUlUwdVQrL1BnbVR0VW89WgBlAAAAAMI+AmAAEq0BCAgSqAEKHHp3MUplcGlZa2NVZ3doT3JnSUh0VG5uZktmMD0SJGNmMjdmZTdjLWU4NDQtNGVmNy05NWE2LTVjYTgxZDYzZGJkNxgAIAAoADD/4Nu77zM44dj2m/4yQOHY9pv+MkocRmFRUVNFZWVPNlJjZWRMQVpVQ09YeHFVRUs4PVofIh26K1Nkd1JWZVhMazVaR2k1bGVQWmY0dDM5d3BVPWXO/3Xjwj4CYAUSrgEIHBKpAQoceFFZdnVGVG12UGQ1c2plNUhQUnhPam0xaENnPRIkMjI5M2RmOTYtZTFkZi00ZWI2LWE3NzUtZTU4NDA0YjY3MDM0GAAgACgAMOjopfCuMzje6qXwrjNA3uql8K4zShw2bTE4REtDeVN3WjNPbXNRa04zazJBYlBrZGM9WiAiHv/WbUJUM3RqbFNOSVpCTm4rZGFIZWdYZFJRU2ZRPWVQgHAdwj4CYAUSjgEIARKJAQoceXhKLzZmdmtlY3I3a3A1RVF6QjR0V0xwZGJFPRIkMjdhMTY2YzgtMzViZS01MTc1LWE0OWQtMTBjYTYyNDhkNDQwGAAgACgAMMqg9pv+Mjjqpfab/jJA6qX2m/4yShxhUkNXTGdoRjliNUlucUtJRHZ1Si9qdlFrRmM9WgBlAAAAAMI+AmAAMAA4AA==",
+   "version": 1
+}
