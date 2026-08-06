@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
 import '../screens/login_screen.dart';
 import '../screens/dashboard_screen.dart';
+import '../screens/resident_request_code.dart';
+import '../screens/residence_announcements.dart' as announcements;
 
 class ResidentSidebar extends StatelessWidget {
   const ResidentSidebar({super.key});
@@ -72,17 +74,32 @@ class ResidentSidebar extends StatelessWidget {
                 selected: true,
               ),
 
-              const _NavItem(
+              _NavItem(
                 icon: Icons.assignment_outlined,
-                title: "Permit Tracking",
+                title: "Document Request",
+                onTap: () {
+                  Navigator.of(context).pushReplacement(
+                    MaterialPageRoute(builder: (_) => DocumentRequest()),
+                  );
+                },
               ),
 
-              const _NavItem(
+              _NavItem(
                 icon: Icons.emergency_outlined,
                 title: "Emergency Alerts",
+                onTap: () {
+                  Navigator.of(context).pushReplacement(
+                    MaterialPageRoute(
+                      builder: (_) => const announcements.CivicHorizonApp(),
+                    ),
+                  );
+                },
               ),
 
-              const _NavItem(icon: Icons.poll_outlined, title: "Community Polls"),
+              const _NavItem(
+                icon: Icons.poll_outlined,
+                title: "Community Polls",
+              ),
 
               const _NavItem(icon: Icons.help_outline, title: "Help Center"),
 
