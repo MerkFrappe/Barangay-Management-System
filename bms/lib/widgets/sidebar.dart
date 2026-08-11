@@ -24,7 +24,7 @@ class _SidebarNavState extends State<SidebarNav> {
     _NavItem(Icons.dashboard, 'Dashboard'),
     _NavItem(Icons.group, 'Residents'),
     _NavItem(Icons.pending_actions, 'Requests'),
-    _NavItem(Icons.security, 'Peace & Order'),
+    _NavItem(Icons.announcement, 'Annoucements'),
     _NavItem(Icons.assessment, 'Reports'),
   ];
 
@@ -36,11 +36,13 @@ class _SidebarNavState extends State<SidebarNav> {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: AppColors.surfaceContainerLowest,
-        border: Border(
-          right: BorderSide(color: AppColors.outlineVariant),
-        ),
+        border: Border(right: BorderSide(color: AppColors.outlineVariant)),
         boxShadow: const [
-          BoxShadow(color: Color(0x11000000), blurRadius: 4, offset: Offset(1, 0)),
+          BoxShadow(
+            color: Color(0x11000000),
+            blurRadius: 4,
+            offset: Offset(1, 0),
+          ),
         ],
       ),
       child: Column(
@@ -64,13 +66,19 @@ class _SidebarNavState extends State<SidebarNav> {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Barangay Admin',
-                        style: AppTextStyles.headlineSm.copyWith(
-                            color: AppColors.primary,
-                            fontWeight: FontWeight.bold)),
-                    Text('Official Portal',
-                        style: AppTextStyles.labelSm
-                            .copyWith(color: AppColors.onSurfaceVariant)),
+                    Text(
+                      'Barangay Admin',
+                      style: AppTextStyles.headlineSm.copyWith(
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    Text(
+                      'Official Portal',
+                      style: AppTextStyles.labelSm.copyWith(
+                        color: AppColors.onSurfaceVariant,
+                      ),
+                    ),
                   ],
                 ),
               ],
@@ -110,7 +118,8 @@ class _SidebarNavState extends State<SidebarNav> {
             onTap: () {
               Navigator.of(context).pushReplacement(
                 MaterialPageRoute(
-                    builder: (_) => const ResidentDashboardScreen()),
+                  builder: (_) => const ResidentDashboardScreen(),
+                ),
               );
             },
           ),
@@ -125,10 +134,12 @@ class _SidebarNavState extends State<SidebarNav> {
               foregroundColor: AppColors.onTertiary,
               padding: const EdgeInsets.symmetric(vertical: 14),
               shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12)),
+                borderRadius: BorderRadius.circular(12),
+              ),
               elevation: 3,
-              textStyle:
-                  AppTextStyles.labelMd.copyWith(fontWeight: FontWeight.bold),
+              textStyle: AppTextStyles.labelMd.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ),
           const SizedBox(height: 8),
@@ -175,11 +186,13 @@ class _NavTile extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           child: Row(
             children: [
-              Icon(icon,
-                  size: 22,
-                  color: selected
-                      ? AppColors.primary
-                      : AppColors.onSurfaceVariant),
+              Icon(
+                icon,
+                size: 22,
+                color: selected
+                    ? AppColors.primary
+                    : AppColors.onSurfaceVariant,
+              ),
               const SizedBox(width: 12),
               Text(
                 label,
