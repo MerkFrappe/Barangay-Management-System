@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
+import '../screens/admin_annoucements.dart';
+import '../screens/admin_documentRequest.dart';
+import '../screens/emergency_broadcast_screen.dart';
 
 class QuickActions extends StatelessWidget {
   const QuickActions({super.key});
@@ -17,6 +20,9 @@ class QuickActions extends StatelessWidget {
             iconBg: AppColors.onPrimaryFixedVariant,
             iconColor: Colors.white,
             filled: true,
+            onTap: () {
+              Navigator.push(context, MaterialPageRoute(builder: (_) => const AnnouncementPage()));
+            },
           ),
         ),
         const SizedBox(width: 16),
@@ -29,6 +35,9 @@ class QuickActions extends StatelessWidget {
             iconBg: AppColors.primaryFixed,
             iconColor: AppColors.primary,
             borderColor: AppColors.primaryContainer,
+            onTap: () {
+              Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminDocumentRequestScreen()));
+            },
           ),
         ),
         const SizedBox(width: 16),
@@ -41,6 +50,9 @@ class QuickActions extends StatelessWidget {
             iconBg: AppColors.errorContainer,
             iconColor: AppColors.error,
             borderColor: AppColors.errorContainer,
+            onTap: () {
+              Navigator.push(context, MaterialPageRoute(builder: (_) => const EmergencyBroadcastScreen()));
+            },
           ),
         ),
       ],
@@ -57,6 +69,7 @@ class _ActionButton extends StatelessWidget {
   final Color iconColor;
   final Color? borderColor;
   final bool filled;
+  final VoidCallback onTap;
 
   const _ActionButton({
     required this.icon,
@@ -65,6 +78,7 @@ class _ActionButton extends StatelessWidget {
     required this.fg,
     required this.iconBg,
     required this.iconColor,
+    required this.onTap,
     this.borderColor,
     this.filled = false,
   });
@@ -77,7 +91,7 @@ class _ActionButton extends StatelessWidget {
       elevation: filled ? 3 : 0,
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
-        onTap: () {},
+        onTap: onTap,
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 12),
           decoration: BoxDecoration(

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
+import '../screens/peace_and_order_screen.dart';
+import '../screens/emergency_broadcast_screen.dart';
 
 class CriticalAttention extends StatelessWidget {
   const CriticalAttention({super.key});
@@ -37,6 +39,9 @@ class CriticalAttention extends StatelessWidget {
             body: 'Illegal waste dumping reported at Zone 4 near Creek area.',
             actionText: 'Dispatch Patrol',
             actionColor: AppColors.error,
+            onTap: () {
+              Navigator.push(context, MaterialPageRoute(builder: (_) => const EmergencyBroadcastScreen()));
+            },
           ),
           const SizedBox(height: 16),
           _CriticalItem(
@@ -51,6 +56,9 @@ class CriticalAttention extends StatelessWidget {
                 'Mediation scheduled for 2:00 PM today between Party A and B.',
             actionText: 'View Case File',
             actionColor: AppColors.secondary,
+            onTap: () {
+              Navigator.push(context, MaterialPageRoute(builder: (_) => const PeaceAndOrderScreen()));
+            },
           ),
         ],
       ),
@@ -69,6 +77,7 @@ class _CriticalItem extends StatelessWidget {
   final String body;
   final String actionText;
   final Color actionColor;
+  final VoidCallback onTap;
 
   const _CriticalItem({
     required this.icon,
@@ -81,6 +90,7 @@ class _CriticalItem extends StatelessWidget {
     required this.body,
     required this.actionText,
     required this.actionColor,
+    required this.onTap,
   });
 
   @override
@@ -115,7 +125,7 @@ class _CriticalItem extends StatelessWidget {
                         .copyWith(color: AppColors.onSurfaceVariant)),
                 const SizedBox(height: 8),
                 InkWell(
-                  onTap: () {},
+                  onTap: onTap,
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [

@@ -1,0 +1,10 @@
+{
+   "extDescription": {
+      "description": "확장 프로그램의 설명",
+      "message": "빠르게 Facebook 친구를 대량으로 언프렌드하세요. 비활성 연락처를 삭제하고, 한 번에 여러 친구를 제거하세요. FB 친구 목록을 쉽게 관리하세요."
+   },
+   "extName": {
+      "description": "확장 프로그램의 이름",
+      "message": "FB 친구 제거 - Facebook 대량 삭제 & 언프렌드 도구"
+   }
+}

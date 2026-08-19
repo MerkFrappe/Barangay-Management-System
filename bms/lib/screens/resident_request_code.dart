@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import '../widgets/resident_sidebar.dart';
 
 void main() {
-  runApp(const DocumentRequest());
+  runApp(const MaterialApp(home: DocumentRequest()));
 }
 
 class DocumentRequest extends StatelessWidget {
@@ -9,47 +11,7 @@ class DocumentRequest extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Barangay Connect',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        useMaterial3: true,
-        primaryColor: const Color(0xFF002576),
-        scaffoldBackgroundColor: const Color(0xFFF8F9FF),
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF002576),
-          primary: const Color(0xFF002576),
-          secondary: const Color(0xFF735C00),
-          surface: const Color(0xFFF8F9FF),
-          onSurface: const Color(0xFF0B1C30),
-        ),
-        textTheme: const TextTheme(
-          displayLarge: TextStyle(
-            fontFamily: 'Inter',
-            fontWeight: FontWeight.w700,
-            fontSize: 32,
-            letterSpacing: -0.02,
-          ),
-          headlineMedium: TextStyle(
-            fontFamily: 'Inter',
-            fontWeight: FontWeight.w600,
-            fontSize: 24,
-          ),
-          titleMedium: TextStyle(
-            fontFamily: 'Inter',
-            fontWeight: FontWeight.w600,
-            fontSize: 14,
-            letterSpacing: 0.05,
-          ),
-          bodyLarge: TextStyle(
-            fontFamily: 'Inter',
-            fontSize: 16,
-            color: Color(0xFF444653),
-          ),
-        ),
-      ),
-      home: const DashboardPage(),
-    );
+    return const DashboardPage();
   }
 }
 
@@ -61,26 +23,94 @@ class DashboardPage extends StatefulWidget {
 }
 
 class _DashboardPageState extends State<DashboardPage> {
-  final List<Map<String, Object>> items = [
-    {
-      'title': 'Water Interruption Notice',
-      'date': 'Aug 06, 2026',
-      'status': 'Published',
-      'color': Color(0xFF15803D),
-    },
-    {
-      'title': 'Community Clean-Up Drive',
-      'date': 'Aug 05, 2026',
-      'status': 'Draft',
-      'color': Color(0xFF735C00),
-    },
-    {
-      'title': 'Health Center Schedule',
-      'date': 'Aug 04, 2026',
-      'status': 'Published',
-      'color': Color(0xFF0038A8),
-    },
-  ];
+  final _nameController = TextEditingController();
+  final _dobController = TextEditingController();
+  final _addressController = TextEditingController();
+  final _reasonController = TextEditingController();
+  String _selectedDocumentType = 'Barangay Clearance';
+  bool _isSaving = false;
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _dobController.dispose();
+    _addressController.dispose();
+    _reasonController.dispose();
+    super.dispose();
+  }
+
+  String _getMonthName(int month) {
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    return months[month - 1];
+  }
+
+  String _getInitials(String name) {
+    final clean = name.trim();
+    if (clean.isEmpty) return 'RN';
+    final parts = clean.split(' ');
+    return parts.map((p) => p.isNotEmpty ? p[0] : '').take(2).join().toUpperCase();
+  }
+
+  Future<void> _submitRequest() async {
+    final name = _nameController.text.trim();
+    final dob = _dobController.text.trim();
+    final address = _addressController.text.trim();
+    final reason = _reasonController.text.trim();
+
+    if (name.isEmpty || reason.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please fill out Name and Reason fields.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    setState(() => _isSaving = true);
+
+    try {
+      final now = DateTime.now();
+      final dateStr = '${_getMonthName(now.month)} ${now.day.toString().padLeft(2, '0')}, ${now.year}';
+      
+      await FirebaseFirestore.instance.collection('document_requests').add({
+        'documentType': _selectedDocumentType,
+        'dateSubmitted': dateStr,
+        'residentName': name,
+        'initials': _getInitials(name),
+        'status': 'pending',
+        'purpose': reason,
+        'contactNumber': '',
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Successfully submitted request for $_selectedDocumentType!'),
+            backgroundColor: const Color(0xFF002576),
+          ),
+        );
+        _nameController.clear();
+        _dobController.clear();
+        _addressController.clear();
+        _reasonController.clear();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Submission failed: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isSaving = false);
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -166,70 +196,7 @@ class _DashboardPageState extends State<DashboardPage> {
   }
 
   Widget _buildSidebar() {
-    return Container(
-      width: 260,
-      color: const Color(0xFFEFF4FF),
-      child: Column(
-        children: [
-          const Padding(
-            padding: EdgeInsets.all(24.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Barangay HQ',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF002576),
-                  ),
-                ),
-                Text(
-                  'Official Portal',
-                  style: TextStyle(fontSize: 12, color: Color(0xFF444653)),
-                ),
-              ],
-            ),
-          ),
-          _sidebarItem(Icons.dashboard_outlined, 'Dashboard', 0),
-          _sidebarItem(Icons.groups_outlined, 'Residents', 1),
-          _sidebarItem(Icons.description_outlined, 'Services', 2),
-          _sidebarItem(Icons.campaign, 'Announcements', 3, isActive: true),
-          _sidebarItem(Icons.analytics_outlined, 'Reports', 4),
-          const Spacer(),
-          const Divider(),
-          _sidebarItem(Icons.help_outline, 'Help Center', 5),
-          _sidebarItem(Icons.logout, 'Logout', 6),
-        ],
-      ),
-    );
-  }
-
-  Widget _sidebarItem(
-    IconData icon,
-    String label,
-    int index, {
-    bool isActive = false,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 4.0),
-      child: ListTile(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-        tileColor: isActive ? const Color(0xFF0038A8) : Colors.transparent,
-        leading: Icon(
-          icon,
-          color: isActive ? Colors.white : const Color(0xFF444653),
-        ),
-        title: Text(
-          label,
-          style: TextStyle(
-            color: isActive ? Colors.white : const Color(0xFF444653),
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        onTap: () {},
-      ),
-    );
+    return const SizedBox(width: 256, child: ResidentSidebar());
   }
 
   Widget _buildLeftColumn() {
@@ -268,7 +235,7 @@ class _DashboardPageState extends State<DashboardPage> {
                   ],
                 ),
                 const SizedBox(height: 16),
-                _buildAnnouncementList(),
+                _buildAnnouncementListStream(),
                 const SizedBox(height: 16),
                 Center(
                   child: TextButton(
@@ -287,66 +254,111 @@ class _DashboardPageState extends State<DashboardPage> {
     );
   }
 
-  Widget _buildAnnouncementList() {
-    return Column(
-      children: items.map((item) {
-        return Container(
-          decoration: const BoxDecoration(
-            border: Border(
-              bottom: BorderSide(color: Color(0xFFC4C5D5), width: 0.5),
+  Widget _buildAnnouncementListStream() {
+    final stream = FirebaseFirestore.instance
+        .collection('announcements')
+        .where('status', isEqualTo: 'published')
+        .orderBy('createdAt', descending: true)
+        .snapshots();
+
+    return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+      stream: stream,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Padding(
+            padding: EdgeInsets.symmetric(vertical: 20),
+            child: Center(child: CircularProgressIndicator()),
+          );
+        }
+        if (snapshot.hasError) {
+          return Padding(
+            padding: const EdgeInsets.symmetric(vertical: 20),
+            child: Center(child: Text('Error: ${snapshot.error}')),
+          );
+        }
+
+        final docs = snapshot.data?.docs ?? [];
+        if (docs.isEmpty) {
+          return const Padding(
+            padding: EdgeInsets.symmetric(vertical: 20),
+            child: Center(
+              child: Text(
+                'No announcements published yet.',
+                style: TextStyle(color: Colors.grey),
+              ),
             ),
-          ),
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          child: Row(
-            children: [
-              Expanded(
-                flex: 3,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      item['title'] as String,
-                      style: const TextStyle(
+          );
+        }
+
+        return Column(
+          children: docs.map((doc) {
+            final data = doc.data();
+            final title = data['title'] ?? '';
+            final desc = data['description'] ?? 'No details provided.';
+            final date = data['date'] ?? '';
+            final categoryName = data['category'] ?? 'news';
+            
+            Color catColor = const Color(0xFF0038A8);
+            if (categoryName == 'emergency') catColor = const Color(0xFFDC2626);
+            if (categoryName == 'event') catColor = const Color(0xFF15803D);
+
+            return Container(
+              decoration: const BoxDecoration(
+                border: Border(
+                  bottom: BorderSide(color: Color(0xFFC4C5D5), width: 0.5),
+                ),
+              ),
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              child: Row(
+                children: [
+                  Expanded(
+                    flex: 3,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          title,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF0038A8),
+                          ),
+                        ),
+                        Text(
+                          desc,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(fontSize: 12, color: Colors.grey),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Expanded(
+                    child: Text(
+                      date,
+                      style: const TextStyle(fontSize: 12),
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: catColor.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      categoryName.toUpperCase(),
+                      style: TextStyle(
+                        color: catColor,
+                        fontSize: 10,
                         fontWeight: FontWeight.bold,
-                        color: Color(0xFF0038A8),
                       ),
                     ),
-                    const Text(
-                      'Details regarding this...',
-                      style: TextStyle(fontSize: 12, color: Colors.grey),
-                    ),
-                  ],
-                ),
-              ),
-              Expanded(
-                child: Text(
-                  item['date'] as String,
-                  style: const TextStyle(fontSize: 12),
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: (item['color'] as Color).withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: Text(
-                  item['status'] as String,
-                  style: TextStyle(
-                    color: item['color'] as Color,
-                    fontSize: 10,
-                    fontWeight: FontWeight.bold,
                   ),
-                ),
+                ],
               ),
-              IconButton(
-                onPressed: () {},
-                icon: const Icon(Icons.more_vert, size: 20),
-              ),
-            ],
-          ),
+            );
+          }).toList(),
         );
-      }).toList(),
+      },
     );
   }
 
@@ -365,14 +377,14 @@ class _DashboardPageState extends State<DashboardPage> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  'Personal Information',
+                  'Request Document Form',
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                Icon(Icons.add_circle_outline, color: Colors.white),
+                Icon(Icons.assignment, color: Colors.white),
               ],
             ),
           ),
@@ -381,10 +393,32 @@ class _DashboardPageState extends State<DashboardPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildFieldLabel('Name'),
-                const TextField(
-                  decoration: InputDecoration(
-                    hintText: 'e.g. Annual Sports Fest',
+                _buildFieldLabel('Document Type'),
+                DropdownButtonFormField<String>(
+                  value: _selectedDocumentType,
+                  decoration: const InputDecoration(
+                    border: OutlineInputBorder(),
+                    contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  ),
+                  items: const [
+                    DropdownMenuItem(value: 'Barangay Clearance', child: Text('Barangay Clearance')),
+                    DropdownMenuItem(value: 'Certificate of Residency', child: Text('Certificate of Residency')),
+                    DropdownMenuItem(value: 'Business Permit', child: Text('Business Permit')),
+                    DropdownMenuItem(value: 'Indigency Certificate', child: Text('Indigency Certificate')),
+                    DropdownMenuItem(value: 'Barangay ID', child: Text('Barangay ID')),
+                  ],
+                  onChanged: (val) {
+                    if (val != null) {
+                      setState(() => _selectedDocumentType = val);
+                    }
+                  },
+                ),
+                const SizedBox(height: 16),
+                _buildFieldLabel('Full Name'),
+                TextField(
+                  controller: _nameController,
+                  decoration: const InputDecoration(
+                    hintText: 'e.g. Juan Dela Cruz',
                     border: OutlineInputBorder(),
                   ),
                 ),
@@ -396,8 +430,10 @@ class _DashboardPageState extends State<DashboardPage> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           _buildFieldLabel('Date of Birth'),
-                          const TextField(
-                            decoration: InputDecoration(
+                          TextField(
+                            controller: _dobController,
+                            decoration: const InputDecoration(
+                              hintText: 'MM/DD/YYYY',
                               suffixIcon: Icon(Icons.calendar_today),
                               border: OutlineInputBorder(),
                             ),
@@ -411,24 +447,25 @@ class _DashboardPageState extends State<DashboardPage> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           _buildFieldLabel('Address'),
-                          const TextField(
-                            decoration: InputDecoration(
-                              hintText: 'e.g. Annual Sports Fest',
+                          TextField(
+                            controller: _addressController,
+                            decoration: const InputDecoration(
+                              hintText: 'e.g. Phase 2, Blk 4',
                               border: OutlineInputBorder(),
                             ),
                           ),
-                          const SizedBox(height: 16),
                         ],
                       ),
                     ),
                   ],
                 ),
                 const SizedBox(height: 16),
-                _buildFieldLabel('Reason for Request'),
-                const TextField(
+                _buildFieldLabel('Reason for Request / Purpose'),
+                TextField(
+                  controller: _reasonController,
                   maxLines: 4,
-                  decoration: InputDecoration(
-                    hintText: 'Describe details...',
+                  decoration: const InputDecoration(
+                    hintText: 'Describe why you are requesting this document...',
                     border: OutlineInputBorder(),
                   ),
                 ),
@@ -439,24 +476,41 @@ class _DashboardPageState extends State<DashboardPage> {
                   children: [
                     Expanded(
                       child: OutlinedButton(
-                        onPressed: () {},
+                        onPressed: _isSaving ? null : () {
+                          _nameController.clear();
+                          _dobController.clear();
+                          _addressController.clear();
+                          _reasonController.clear();
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Form cleared!')),
+                          );
+                        },
                         child: const Padding(
                           padding: EdgeInsets.all(12),
-                          child: Text('Save Draft'),
+                          child: Text('Clear Form'),
                         ),
                       ),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
                       child: ElevatedButton(
-                        onPressed: () {},
+                        onPressed: _isSaving ? null : _submitRequest,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFF002576),
                           foregroundColor: Colors.white,
                         ),
-                        child: const Padding(
-                          padding: EdgeInsets.all(12),
-                          child: Text('Publish Now'),
+                        child: Padding(
+                          padding: const EdgeInsets.all(12),
+                          child: _isSaving
+                              ? const SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                    color: Colors.white,
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                              : const Text('Submit Request'),
                         ),
                       ),
                     ),

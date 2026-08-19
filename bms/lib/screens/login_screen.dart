@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
 import 'dashboard_screen.dart';
 import 'resident_dashboard_screen.dart';
+import 'signup_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
@@ -29,48 +30,226 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _handleLogin() async {
+    final email = _emailController.text.trim();
+    final password = _passwordController.text;
+
+    if (email.isEmpty || password.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter email and password.')),
+      );
+      return;
+    }
+
     setState(() => _isSubmitting = true);
 
     try {
-      // 1. Optional Firebase authentication attempt (fails silently if unconfigured/offline)
-      if (_emailController.text.trim().isNotEmpty &&
-          _passwordController.text.isNotEmpty) {
-        try {
-          UserCredential userCredential = await FirebaseAuth.instance
-              .signInWithEmailAndPassword(
-                email: _emailController.text.trim(),
-                password: _passwordController.text,
-              );
+      // 1. Firebase Authentication
+      UserCredential userCredential = await FirebaseAuth.instance
+          .signInWithEmailAndPassword(email: email, password: password);
 
-          final String uid = userCredential.user!.uid;
+      final String uid = userCredential.user!.uid;
 
-          await FirebaseFirestore.instance.collection('users').doc(uid).set({
-            'accountName': _emailController.text.split('@').first,
-            'email': _emailController.text.trim(),
-            'role': _isAdmin ? 'Chairman' : 'Resident',
-            'lastLogin': FieldValue.serverTimestamp(),
-          }, SetOptions(merge: true));
-        } catch (fbError) {
-          debugPrint('Firebase auth optional / bypassed: $fbError');
-        }
+      // 2. Fetch User Document from Firestore
+      final userDoc = await FirebaseFirestore.instance.collection('users').doc(uid).get();
+
+      if (!userDoc.exists) {
+        throw Exception('User profile not found in database.');
       }
+
+      final data = userDoc.data();
+      final String? role = data?['role'];
+
+      if (role == null) {
+        throw Exception('User role not configured.');
+      }
+
+      // Update last login
+      await FirebaseFirestore.instance.collection('users').doc(uid).update({
+        'lastLogin': FieldValue.serverTimestamp(),
+      });
+
+      if (!mounted) return;
+
+      // 3. Navigate based on real user role in Firestore
+      if (role == 'Chairman') {
+        setState(() => _isAdmin = true);
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (_) => const DashboardScreen()),
+        );
+      } else if (role == 'Resident') {
+        setState(() => _isAdmin = false);
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (_) => const ResidentDashboardScreen()),
+        );
+      } else {
+        throw Exception('Unsupported user role: $role');
+      }
+
     } catch (e) {
-      debugPrint('Login exception handled: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Login failed: ${e.toString().replaceAll('Exception:', '')}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isSubmitting = false);
+      }
     }
-
-    if (!mounted) return;
-    setState(() => _isSubmitting = false);
-
-    // 2. Direct Frontend Navigation based on selected role
-    _navigateToSelectedDashboard();
   }
 
-  void _navigateToSelectedDashboard() {
-    Widget targetScreen =
-        _isAdmin ? const DashboardScreen() : const ResidentDashboardScreen();
-    Navigator.of(context).pushReplacement(
-      MaterialPageRoute(builder: (_) => targetScreen),
-    );
+  Future<void> _handleQuickEntry(bool admin) async {
+    _emailController.text = admin ? 'admin@barangay.gov.ph' : 'resident@gmail.com';
+    _passwordController.text = 'Password123';
+    await _handleLogin();
+  }
+
+  Future<void> _seedDatabase() async {
+    setState(() => _isSubmitting = true);
+    try {
+      // 1. Create or get Admin
+      String adminUid = '';
+      try {
+        final cred = await FirebaseAuth.instance.createUserWithEmailAndPassword(
+          email: 'admin@barangay.gov.ph',
+          password: 'Password123',
+        );
+        adminUid = cred.user!.uid;
+      } on FirebaseAuthException catch (e) {
+        if (e.code == 'email-already-in-use') {
+          final cred = await FirebaseAuth.instance.signInWithEmailAndPassword(
+            email: 'admin@barangay.gov.ph',
+            password: 'Password123',
+          );
+          adminUid = cred.user!.uid;
+        } else {
+          rethrow;
+        }
+      }
+      
+      // Update admin users document
+      await FirebaseFirestore.instance.collection('users').doc(adminUid).set({
+        'accountName': 'Juan Dela Cruz (Chairman)',
+        'email': 'admin@barangay.gov.ph',
+        'role': 'Chairman',
+        'lastLogin': FieldValue.serverTimestamp(),
+      });
+
+      // 2. Create or get Resident
+      String residentUid = '';
+      try {
+        final cred = await FirebaseAuth.instance.createUserWithEmailAndPassword(
+          email: 'resident@gmail.com',
+          password: 'Password123',
+        );
+        residentUid = cred.user!.uid;
+      } on FirebaseAuthException catch (e) {
+        if (e.code == 'email-already-in-use') {
+          final cred = await FirebaseAuth.instance.signInWithEmailAndPassword(
+            email: 'resident@gmail.com',
+            password: 'Password123',
+          );
+          residentUid = cred.user!.uid;
+        } else {
+          rethrow;
+        }
+      }
+
+      // Update resident users document
+      await FirebaseFirestore.instance.collection('users').doc(residentUid).set({
+        'accountName': 'Elena Morales',
+        'email': 'resident@gmail.com',
+        'role': 'Resident',
+        'lastLogin': FieldValue.serverTimestamp(),
+      });
+
+      // 3. Seed Announcements
+      final announcements = FirebaseFirestore.instance.collection('announcements');
+      final annDocs = await announcements.limit(1).get();
+      if (annDocs.docs.isEmpty) {
+        final mockAnnouncements = [
+          {
+            'title': 'Barangay Clean-up Drive',
+            'description': 'Join us this Saturday for our monthly community clean-up drive.',
+            'date': 'September 11, 2024',
+            'category': 'event',
+            'status': 'published',
+            'createdAt': FieldValue.serverTimestamp(),
+          },
+          {
+            'title': 'Free Wellness Checkup',
+            'description': 'Low pressure area detected near the region. Prepare for heavy rains.',
+            'date': 'September 15, 2024',
+            'category': 'emergency',
+            'status': 'published',
+            'createdAt': FieldValue.serverTimestamp(),
+          },
+          {
+            'title': 'Quarterly Town Hall Meeting',
+            'description': 'Discussion on upcoming community budget plans.',
+            'date': 'September 22, 2024',
+            'category': 'news',
+            'status': 'draft',
+            'createdAt': FieldValue.serverTimestamp(),
+          }
+        ];
+        for (final ann in mockAnnouncements) {
+          await announcements.add(ann);
+        }
+      }
+
+      // 4. Seed Document Requests
+      final requests = FirebaseFirestore.instance.collection('document_requests');
+      final reqDocs = await requests.limit(1).get();
+      if (reqDocs.docs.isEmpty) {
+        final mockRequests = [
+          {
+            'residentId': residentUid,
+            'residentName': 'Elena Morales',
+            'initials': 'EM',
+            'documentType': 'Barangay Clearance',
+            'dateSubmitted': 'Oct 24, 2023',
+            'status': 'approved',
+            'purpose': 'Local Employment Application',
+            'contactNumber': '+63 917 123 4567',
+            'createdAt': FieldValue.serverTimestamp(),
+          },
+          {
+            'residentId': residentUid,
+            'residentName': 'Elena Morales',
+            'initials': 'EM',
+            'documentType': 'Certificate of Residency',
+            'dateSubmitted': 'Oct 25, 2023',
+            'status': 'pending',
+            'purpose': 'Bank Account Opening',
+            'contactNumber': '+63 917 123 4567',
+            'createdAt': FieldValue.serverTimestamp(),
+          }
+        ];
+        for (final req in mockRequests) {
+          await requests.add(req);
+        }
+      }
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Firebase seed successful! Users & mock data ready.')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Seed failed: $e'), backgroundColor: Colors.red),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isSubmitting = false);
+      }
+    }
   }
 
   @override
@@ -110,10 +289,8 @@ class _LoginScreenState extends State<LoginScreen> {
                         onSelectRole: (admin) =>
                             setState(() => _isAdmin = admin),
                         onSubmit: _handleLogin,
-                        onDemoLogin: (admin) {
-                          setState(() => _isAdmin = admin);
-                          _navigateToSelectedDashboard();
-                        },
+                        onDemoLogin: _handleQuickEntry,
+                        onSeed: _seedDatabase,
                       ),
                     ),
                   ),
@@ -226,6 +403,7 @@ class _LoginForm extends StatelessWidget {
   final ValueChanged<bool> onSelectRole;
   final VoidCallback onSubmit;
   final ValueChanged<bool> onDemoLogin;
+  final VoidCallback onSeed;
 
   const _LoginForm({
     required this.formKey,
@@ -241,6 +419,7 @@ class _LoginForm extends StatelessWidget {
     required this.onSelectRole,
     required this.onSubmit,
     required this.onDemoLogin,
+    required this.onSeed,
   });
 
   @override
@@ -530,7 +709,7 @@ class _LoginForm extends StatelessWidget {
                     Icon(Icons.bolt, color: AppColors.secondary, size: 18),
                     const SizedBox(width: 6),
                     Text(
-                      'Frontend Quick Entry (Bypass Firebase)',
+                      'Quick Entry (Enforces Auth)',
                       style: AppTextStyles.labelSm.copyWith(
                         color: AppColors.onSurface,
                         fontWeight: FontWeight.bold,
@@ -543,7 +722,7 @@ class _LoginForm extends StatelessWidget {
                   children: [
                     Expanded(
                       child: OutlinedButton.icon(
-                        onPressed: () => onDemoLogin(true),
+                        onPressed: isSubmitting ? null : () => onDemoLogin(true),
                         icon: const Icon(Icons.admin_panel_settings, size: 16),
                         label: const Text('Enter Admin'),
                         style: OutlinedButton.styleFrom(
@@ -558,7 +737,7 @@ class _LoginForm extends StatelessWidget {
                     const SizedBox(width: 8),
                     Expanded(
                       child: OutlinedButton.icon(
-                        onPressed: () => onDemoLogin(false),
+                        onPressed: isSubmitting ? null : () => onDemoLogin(false),
                         icon: const Icon(Icons.person, size: 16),
                         label: const Text('Enter Resident'),
                         style: OutlinedButton.styleFrom(
@@ -572,27 +751,48 @@ class _LoginForm extends StatelessWidget {
                     ),
                   ],
                 ),
+                const SizedBox(height: 8),
+                OutlinedButton.icon(
+                  onPressed: isSubmitting ? null : onSeed,
+                  icon: const Icon(Icons.cloud_download, size: 16),
+                  label: const Text('Seed Test Accounts & Mock Data'),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    visualDensity: VisualDensity.compact,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                ),
               ],
             ),
           ),
           const SizedBox(height: 20),
 
           Center(
-            child: Text.rich(
-              TextSpan(
-                text: "Need access? ",
-                style: AppTextStyles.bodySm.copyWith(
-                  color: AppColors.onSurfaceVariant,
-                ),
-                children: [
-                  TextSpan(
-                    text: 'Contact your system administrator',
-                    style: AppTextStyles.bodySm.copyWith(
-                      color: AppColors.primary,
-                      fontWeight: FontWeight.bold,
-                    ),
+            child: TextButton(
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const SignUpScreen()),
+                );
+              },
+              style: TextButton.styleFrom(padding: EdgeInsets.zero),
+              child: Text.rich(
+                TextSpan(
+                  text: "Don't have an account? ",
+                  style: AppTextStyles.bodySm.copyWith(
+                    color: AppColors.onSurfaceVariant,
                   ),
-                ],
+                  children: [
+                    TextSpan(
+                      text: 'Sign up',
+                      style: AppTextStyles.bodySm.copyWith(
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),

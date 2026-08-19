@@ -9,6 +9,10 @@ import '../widgets/quick_actions.dart';
 import '../widgets/requests_table.dart';
 import '../widgets/performance_chart.dart';
 import '../widgets/schedule_panel.dart';
+import '../screens/admin_reports_screen.dart';
+import '../screens/residents_directory_screen.dart';
+import '../screens/peace_and_order_screen.dart';
+import '../screens/admin_documentRequest.dart';
 
 /// Breakpoint above which the sidebar is shown permanently (like the
 /// original fixed 256px desktop sidebar). Below it, it becomes a Drawer.
@@ -47,7 +51,7 @@ class DashboardScreen extends StatelessWidget {
         return Scaffold(
           body: Row(
             children: [
-              const SidebarNav(),
+              const SidebarNav(selectedIndex: 0),
               Expanded(
                 child: Column(
                   children: [
@@ -70,7 +74,7 @@ class DashboardScreen extends StatelessWidget {
           title: Text('Barangay Admin',
               style: AppTextStyles.headlineSm.copyWith(color: AppColors.primary)),
         ),
-        drawer: const Drawer(child: SidebarNav()),
+        drawer: const Drawer(child: SidebarNav(selectedIndex: 0)),
         body: body,
       );
     });
@@ -80,6 +84,56 @@ class DashboardScreen extends StatelessWidget {
 class _WelcomeHeader extends StatelessWidget {
   final bool isWide;
   const _WelcomeHeader({required this.isWide});
+
+  void _showCreateRecordDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Row(
+          children: [
+            Icon(Icons.add_circle, color: AppColors.primary),
+            SizedBox(width: 12),
+            Text('Create New Barangay Record'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.person_add, color: AppColors.primary),
+              title: const Text('Register Resident Profile'),
+              subtitle: const Text('Add a new resident to the directory'),
+              onTap: () {
+                Navigator.pop(ctx);
+                Navigator.push(context, MaterialPageRoute(builder: (_) => const ResidentsDirectoryScreen()));
+              },
+            ),
+            const Divider(),
+            ListTile(
+              leading: const Icon(Icons.gavel, color: AppColors.tertiary),
+              title: const Text('File Peace & Order Incident'),
+              subtitle: const Text('Log a new blotter or community dispute'),
+              onTap: () {
+                Navigator.pop(ctx);
+                Navigator.push(context, MaterialPageRoute(builder: (_) => const PeaceAndOrderScreen()));
+              },
+            ),
+            const Divider(),
+            ListTile(
+              leading: const Icon(Icons.assignment, color: AppColors.secondary),
+              title: const Text('Issue Document Request'),
+              subtitle: const Text('Process clearance, residency, or indigency'),
+              onTap: () {
+                Navigator.pop(ctx);
+                Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminDocumentRequestScreen()));
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -99,7 +153,9 @@ class _WelcomeHeader extends StatelessWidget {
       runSpacing: 12,
       children: [
         OutlinedButton.icon(
-          onPressed: () {},
+          onPressed: () {
+            Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminReportsScreen()));
+          },
           icon: const Icon(Icons.download, size: 18),
           label: const Text('Export Daily Report'),
           style: OutlinedButton.styleFrom(
@@ -110,7 +166,7 @@ class _WelcomeHeader extends StatelessWidget {
           ),
         ),
         ElevatedButton.icon(
-          onPressed: () {},
+          onPressed: () => _showCreateRecordDialog(context),
           icon: const Icon(Icons.add),
           label: const Text('Create New Record'),
           style: ElevatedButton.styleFrom(

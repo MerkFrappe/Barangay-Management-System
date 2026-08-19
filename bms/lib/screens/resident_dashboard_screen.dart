@@ -18,7 +18,7 @@ class ResidentDashboardScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final width = MediaQuery.of(context).size.width;
 
-    final desktop = width >= 1100;
+    final desktop = width >= 1024;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -31,7 +31,7 @@ class ResidentDashboardScreen extends StatelessWidget {
             //-----------------------------------
             // LEFT SIDEBAR
             //-----------------------------------
-            if (desktop) const SizedBox(width: 270, child: ResidentSidebar()),
+            if (desktop) const ResidentSidebar(),
 
             //-----------------------------------
             // MAIN CONTENT

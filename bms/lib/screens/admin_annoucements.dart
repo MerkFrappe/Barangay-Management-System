@@ -1,28 +1,8 @@
 import 'package:flutter/material.dart';
-
-// ─── Entry Point ─────────────────────────────────────────────────────────────
-
-void main() {
-  runApp(const BarangayHQApp());
-}
-
-class BarangayHQApp extends StatelessWidget {
-  const BarangayHQApp({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Barangay HQ',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF002576)),
-        fontFamily: 'Inter',
-        useMaterial3: true,
-      ),
-      home: const AnnouncementPage(),
-    );
-  }
-}
+import 'package:cloud_firestore/cloud_firestore.dart';
+import '../theme/app_colors.dart';
+import '../widgets/sidebar.dart';
+import '../widgets/top_header.dart';
 
 // ─── Model ───────────────────────────────────────────────────────────────────
 
@@ -55,55 +35,101 @@ class Announcement {
 //   deleteAnnouncement() → replace with: http.delete(Uri.parse('$baseUrl/announcements/$id'))
 
 class AnnouncementService {
-  static final List<Announcement> _db = [
-    Announcement(
-      id: '1',
-      title: 'Barangay Clean-up Drive',
-      description: 'Join us this Saturday for our monthly...',
-      date: 'Oct 24, 2023',
-      category: AnnouncementCategory.event,
-      status: AnnouncementStatus.published,
-    ),
-    Announcement(
-      id: '2',
-      title: 'Heavy Rain Warning',
-      description: 'Low pressure area detected near...',
-      date: 'Oct 23, 2023',
-      category: AnnouncementCategory.emergency,
-      status: AnnouncementStatus.published,
-    ),
-    Announcement(
-      id: '3',
-      title: 'New Health Center Hours',
-      description: 'Starting next month, we will be...',
-      date: 'Oct 20, 2023',
-      category: AnnouncementCategory.news,
-      status: AnnouncementStatus.draft,
-    ),
-    Announcement(
-      id: '4',
-      title: 'Senior Citizen Payout',
-      description: 'Quarterly social pension distribution...',
-      date: 'Oct 18, 2023',
-      category: AnnouncementCategory.event,
-      status: AnnouncementStatus.scheduled,
-    ),
-  ];
+  static final _collection = FirebaseFirestore.instance.collection('announcements');
+
+  static AnnouncementCategory _parseCategory(String name) {
+    return AnnouncementCategory.values.firstWhere(
+      (e) => e.name == name,
+      orElse: () => AnnouncementCategory.news,
+    );
+  }
+
+  static AnnouncementStatus _parseStatus(String name) {
+    return AnnouncementStatus.values.firstWhere(
+      (e) => e.name == name,
+      orElse: () => AnnouncementStatus.published,
+    );
+  }
+
+  static Stream<List<Announcement>> getAnnouncementsStream() {
+    return _collection.orderBy('createdAt', descending: true).snapshots().map((snap) {
+      return snap.docs.map((doc) {
+        final data = doc.data();
+        return Announcement(
+          id: doc.id,
+          title: data['title'] ?? '',
+          description: data['description'] ?? '',
+          date: data['date'] ?? '',
+          category: _parseCategory(data['category'] ?? 'news'),
+          status: _parseStatus(data['status'] ?? 'published'),
+        );
+      }).toList();
+    });
+  }
 
   static Future<List<Announcement>> fetchAnnouncements() async {
-    await Future.delayed(const Duration(milliseconds: 800));
-    return List.from(_db);
+    try {
+      final snap = await _collection.orderBy('createdAt', descending: true).get();
+      return snap.docs.map((doc) {
+        final data = doc.data();
+        return Announcement(
+          id: doc.id,
+          title: data['title'] ?? '',
+          description: data['description'] ?? '',
+          date: data['date'] ?? '',
+          category: _parseCategory(data['category'] ?? 'news'),
+          status: _parseStatus(data['status'] ?? 'published'),
+        );
+      }).toList();
+    } catch (e) {
+      debugPrint('Error fetching announcements: $e');
+      return [];
+    }
   }
 
   static Future<Announcement> saveAnnouncement(Announcement a) async {
-    await Future.delayed(const Duration(milliseconds: 600));
-    _db.insert(0, a);
-    return a;
+    try {
+      if (a.id.isEmpty) {
+        final docRef = await _collection.add({
+          'title': a.title,
+          'description': a.description,
+          'date': a.date,
+          'category': a.category.name,
+          'status': a.status.name,
+          'createdAt': FieldValue.serverTimestamp(),
+        });
+        return Announcement(
+          id: docRef.id,
+          title: a.title,
+          description: a.description,
+          date: a.date,
+          category: a.category,
+          status: a.status,
+        );
+      } else {
+        await _collection.doc(a.id).set({
+          'title': a.title,
+          'description': a.description,
+          'date': a.date,
+          'category': a.category.name,
+          'status': a.status.name,
+          'createdAt': FieldValue.serverTimestamp(),
+        }, SetOptions(merge: true));
+        return a;
+      }
+    } catch (e) {
+      debugPrint('Error saving announcement: $e');
+      rethrow;
+    }
   }
 
   static Future<void> deleteAnnouncement(String id) async {
-    await Future.delayed(const Duration(milliseconds: 400));
-    _db.removeWhere((a) => a.id == id);
+    try {
+      await _collection.doc(id).delete();
+    } catch (e) {
+      debugPrint('Error deleting announcement: $e');
+      rethrow;
+    }
   }
 }
 
@@ -117,173 +143,48 @@ class AnnouncementPage extends StatefulWidget {
 }
 
 class _AnnouncementPageState extends State<AnnouncementPage> {
-  int _selectedNav = 3;
-
-  final List<_NavItem> _navItems = const [
-    _NavItem(icon: Icons.dashboard_outlined, label: 'Dashboard'),
-    _NavItem(icon: Icons.groups_outlined, label: 'Residents'),
-    _NavItem(icon: Icons.description_outlined, label: 'Services'),
-    _NavItem(icon: Icons.campaign_outlined, label: 'Announcements'),
-    _NavItem(icon: Icons.analytics_outlined, label: 'Reports'),
-  ];
-
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FF),
-      body: Row(
-        children: [
-          _Sidebar(
-            items: _navItems,
-            selectedIndex: _selectedNav,
-            onTap: (i) => setState(() => _selectedNav = i),
-          ),
-          const Expanded(child: _MainContent()),
-        ],
-      ),
-    );
-  }
-}
-
-// ─── Sidebar ─────────────────────────────────────────────────────────────────
-
-class _NavItem {
-  final IconData icon;
-  final String label;
-  const _NavItem({required this.icon, required this.label});
-}
-
-class _Sidebar extends StatelessWidget {
-  final List<_NavItem> items;
-  final int selectedIndex;
-  final ValueChanged<int> onTap;
-
-  const _Sidebar({
-    required this.items,
-    required this.selectedIndex,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 240,
-      color: const Color(0xFFEFF4FF),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(24, 28, 24, 24),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isWide = constraints.maxWidth >= 1024;
+        
+        final body = const _MainContent();
+        
+        if (isWide) {
+          return Scaffold(
+            backgroundColor: AppColors.background,
+            body: Row(
               children: [
-                const Text(
-                  'Barangay HQ',
-                  style: TextStyle(
-                    color: Color(0xFF002576),
-                    fontSize: 20,
-                    fontWeight: FontWeight.w700,
+                const SidebarNav(selectedIndex: 6),
+                Expanded(
+                  child: Column(
+                    children: [
+                      const TopHeader(),
+                      Expanded(child: body),
+                    ],
                   ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  'Official Portal',
-                  style: TextStyle(color: Colors.grey[600], fontSize: 12),
                 ),
               ],
             ),
-          ),
-          const Divider(height: 1, color: Color(0xFFC4C5D5)),
-          const SizedBox(height: 8),
-          Expanded(
-            child: ListView.builder(
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-              itemCount: items.length,
-              itemBuilder: (_, i) {
-                final isActive = selectedIndex == i;
-                return GestureDetector(
-                  onTap: () => onTap(i),
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 150),
-                    margin: const EdgeInsets.only(bottom: 2),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 12,
-                    ),
-                    decoration: BoxDecoration(
-                      color: isActive
-                          ? const Color(0xFF0038A8)
-                          : Colors.transparent,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          items[i].icon,
-                          size: 20,
-                          color: isActive
-                              ? const Color(0xFF96ADFF)
-                              : const Color(0xFF444653),
-                        ),
-                        const SizedBox(width: 12),
-                        Text(
-                          items[i].label,
-                          style: TextStyle(
-                            color: isActive
-                                ? Colors.white
-                                : const Color(0xFF444653),
-                            fontSize: 14,
-                            fontWeight: isActive
-                                ? FontWeight.w600
-                                : FontWeight.w400,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              },
+          );
+        }
+        
+        return Scaffold(
+          backgroundColor: AppColors.background,
+          appBar: AppBar(
+            backgroundColor: AppColors.surface,
+            elevation: 1,
+            title: Text(
+              'Announcements',
+              style: AppTextStyles.titleLg.copyWith(color: AppColors.onSurface),
             ),
+            iconTheme: IconThemeData(color: AppColors.onSurface),
           ),
-          const Divider(height: 1, color: Color(0xFFC4C5D5)),
-          Padding(
-            padding: const EdgeInsets.all(12),
-            child: Column(
-              children: [
-                _SidebarFooterItem(
-                  icon: Icons.help_outline,
-                  label: 'Help Center',
-                ),
-                const SizedBox(height: 4),
-                _SidebarFooterItem(icon: Icons.logout, label: 'Logout'),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _SidebarFooterItem extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  const _SidebarFooterItem({required this.icon, required this.label});
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-      child: Row(
-        children: [
-          Icon(icon, size: 20, color: const Color(0xFF444653)),
-          const SizedBox(width: 12),
-          Text(
-            label,
-            style: const TextStyle(color: Color(0xFF444653), fontSize: 14),
-          ),
-        ],
-      ),
+          drawer: const Drawer(child: SidebarNav(selectedIndex: 6)),
+          body: body,
+        );
+      },
     );
   }
 }
@@ -369,26 +270,22 @@ class _LeftColumn extends StatefulWidget {
 }
 
 class _LeftColumnState extends State<_LeftColumn> {
-  late Future<List<Announcement>> _future;
+  late Stream<List<Announcement>> _stream;
   String _filter = 'All';
 
   @override
   void initState() {
     super.initState();
-    _future = AnnouncementService.fetchAnnouncements();
+    _stream = AnnouncementService.getAnnouncementsStream();
   }
 
-  void refresh() => setState(() {
-    _future = AnnouncementService.fetchAnnouncements();
-  });
-
   List<Announcement> _applyFilter(List<Announcement> all) {
-    if (_filter == 'Drafts')
+    if (_filter == 'Drafts') {
       return all.where((a) => a.status == AnnouncementStatus.draft).toList();
-    if (_filter == 'Published')
-      return all
-          .where((a) => a.status == AnnouncementStatus.published)
-          .toList();
+    }
+    if (_filter == 'Published') {
+      return all.where((a) => a.status == AnnouncementStatus.published).toList();
+    }
     return all;
   }
 
@@ -438,8 +335,8 @@ class _LeftColumnState extends State<_LeftColumn> {
                   ],
                 ),
                 const SizedBox(height: 16),
-                FutureBuilder<List<Announcement>>(
-                  future: _future,
+                StreamBuilder<List<Announcement>>(
+                  stream: _stream,
                   builder: (context, snap) {
                     if (snap.connectionState == ConnectionState.waiting) {
                       return const Padding(
@@ -451,9 +348,10 @@ class _LeftColumnState extends State<_LeftColumn> {
                         ),
                       );
                     }
-                    if (snap.hasError)
+                    if (snap.hasError) {
                       return Center(child: Text('Error: ${snap.error}'));
-                    final items = _applyFilter(snap.data!);
+                    }
+                    final items = _applyFilter(snap.data ?? []);
                     if (items.isEmpty) {
                       return const Padding(
                         padding: EdgeInsets.symmetric(vertical: 40),
@@ -467,7 +365,7 @@ class _LeftColumnState extends State<_LeftColumn> {
                     }
                     return _AnnouncementsTable(
                       items: items,
-                      onDeleted: refresh,
+                      onDeleted: () {},
                     );
                   },
                 ),
@@ -891,7 +789,7 @@ class _AddEventFormState extends State<_AddEventForm> {
     setState(() => _isSaving = true);
 
     final a = Announcement(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      id: '',
       title: _titleController.text.trim(),
       description: _descController.text.trim().isEmpty
           ? 'No description provided.'
@@ -903,7 +801,6 @@ class _AddEventFormState extends State<_AddEventForm> {
       status: status,
     );
 
-    // 👉 Swap this with http.post() to save to a real Laravel/Express backend
     await AnnouncementService.saveAnnouncement(a);
 
     setState(() => _isSaving = false);

@@ -1,0 +1,10 @@
+{
+   "extDescription": {
+      "description": "Descripción de la extensión",
+      "message": "Elimina amigos de Facebook en masa rápidamente. Borra contactos inactivos, elimina varios amigos a la vez. Administra tu lista de amigos de FB fácilmente."
+   },
+   "extName": {
+      "description": "Nombre de la extensión",
+      "message": "FB Friends Remover - Herramienta de eliminación y desamistad en masa de FB"
+   }
+}

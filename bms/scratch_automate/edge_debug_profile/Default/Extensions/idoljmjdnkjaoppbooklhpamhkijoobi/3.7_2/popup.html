@@ -1,0 +1,90 @@
+<html>
+   <head>
+      <title> Delete Facebook Messages</title>
+      <link rel="stylesheet" href="css/bootstrap.min.css"/>
+      <style>
+         body{
+         width:350px;
+         height:420px;
+         margin:0;
+         padding:0;
+         }
+         h5{
+         margin:0;
+         color:white;
+         }
+         .btn-block{
+         }
+         .form-control {
+         font-size:12px;
+         border: 1px solid #efefef;
+         }
+         label{
+         font-weight:bold;
+         }
+      </style>
+   </head>
+   <body ng-app="myapp" ng-controller="ctrl">
+      <div class="alert bg-primary" style="box-shadow:0px 0px 5px 2px #efefef; " >
+         <h5 class="text-center"> Delete Facebook Messages </h5>
+      </div>
+      <!-- Section 2-->
+      <div id="section_2" ng-show="license" class="col-md-12" style="">
+         <span>
+            <div  id="aa" style="display:none" >
+               <p style="font-size:13px; margin-top:20px; margin-bottom:0px;"> 1- Switch your Facebook language to English first. </p>
+               <p style="font-size:13px; margin-top:0px; margin-bottom:20px;"> 2- Click on any conversation item on the Facebook page before continuing.</p>
+               <a href="#" ng-click="delete()" class="btn btn-primary btn-block"  style="font-weight:bold">Begin Deletion</a>
+               <a href="#" ng-click="archive()" class="btn btn-default btn-block" style="font-weight:bold; margin-top:10px;">Archive Messages</a>
+               <a href="#" ng-click="unArchive()" class="btn btn-default btn-block" style="font-weight:bold; margin-top:10px;">UnArchive Messages</a>
+            </div>
+            <div  id="bb" style="display:none">
+               <p class=""> You're on the wrong page. Head back to Facebook messages and click the extension icon again. </p>
+               <a target="_blank" class="btn btn-primary btn-block" href="https://web.facebook.com/messages" target="_blank"  style="font-weight:bold; display:inline-block">Click To Go To Facebook Messages</a>
+            </div>
+         </span>
+
+      </div>
+      <div ng-hide="license"  class="col-md-12">
+         <div class="form-group">
+            <label> Enter Your License Key </label>
+            <input type="text" style="font-size:14px"  class="form-control" placeholder="67C94001-1E544A7A-8BF9531E-31053A0D" ng-model="license_key" />
+         </div>
+         <div class="row">
+            <div class="col-md-12">
+               <div ng-show="error && !manageLink" class="text-danger"> Invalid License Key. </div>
+               <div ng-show="manageLink" class="text-center">
+                 <div class="text-danger">
+                    Your Subscription Status is Cancelled.
+                 </div>
+                 <div>
+                   <a href="{{manageLink}}" target="_blank"> Restart your Subscription </a>
+                 </div>
+               </div>
+               <button class="btn btn-primary pull-right btn btn-sm" ng-disabled="licensebb" ng-click="verify_license(license_key)"> Submit </button>
+            </div>
+         </div>
+         <br>
+         <div class="text-center" style="margin-top:-10px;">
+            <label> Need a License Key? <small class="text-primary" style="font-weight:500">Cancel Anytime</small> </label>
+            <a target="_blank" style="text-decoration:none" href="https://gum.co/dfmsgs"> <button class="btn btn-warning btn-block"> Subscribe Now for only <b>$9</b> </button> </a>
+         </div>
+      </div>
+      <div style="border-top:1px solid #ddd; background-color:#efefef; position:absolute; bottom:0; width:100%; padding:10px;">
+         <div class="text-center">
+           <div style="font-size:12px;" ng-show="license && !trialStarted">
+             <a href="{{manageLink}}" target="_blank"> Manage Subscription </a>
+           </div>
+           <div>
+             Design and Developed By <a target="_blank" style="" href="https://web.facebook.com/irf4nkhan">  Irfan Khan </a>
+           </div>
+           <div>
+             <a href="mailto:irfank824@gmail.com" rel="nofollow"> Report a Bug </a> <span>(irfank824@gmail.com)</span>
+           </div>
+         </div>
+      </div>
+      <script src="js/jquery.min.js"> </script>
+      <script src="js/angular.min.js"> </script>
+      <script src="js/popup.js"> </script>
+   </body>
+</html>

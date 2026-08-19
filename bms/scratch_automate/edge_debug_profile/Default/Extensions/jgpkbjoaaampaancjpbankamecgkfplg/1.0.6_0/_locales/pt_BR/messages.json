@@ -1,0 +1,10 @@
+{
+   "extDescription": {
+      "description": "Descrição da extensão",
+      "message": "Desfazer amizade em massa com amigos do Facebook rapidamente. Excluir contatos inativos, remover vários amigos de uma vez. Gerencie facilmente a lista de amigos do FB."
+   },
+   "extName": {
+      "description": "Nome da extensão",
+      "message": "FB Friends Remover - Ferramenta de Excluir e Remover Amigos FB"
+   }
+}

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
+import '../screens/admin_documentRequest.dart';
 
 enum RequestStatus { pending, approved, rejected }
 
@@ -75,7 +76,9 @@ class RequestsTable extends StatelessWidget {
                     style: AppTextStyles.headlineSm
                         .copyWith(color: AppColors.onSurface)),
                 TextButton(
-                  onPressed: () {},
+                  onPressed: () {
+                    Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminDocumentRequestScreen()));
+                  },
                   child: Text('View All Requests',
                       style: AppTextStyles.labelMd
                           .copyWith(color: AppColors.primary)),
@@ -97,7 +100,7 @@ class RequestsTable extends StatelessWidget {
                 DataColumn(label: _header('Status')),
                 DataColumn(label: _header('Action')),
               ],
-              rows: _rows.map((r) => _buildRow(r)).toList(),
+              rows: _rows.map((r) => _buildRow(context, r)).toList(),
             ),
           ),
         ],
@@ -110,7 +113,7 @@ class RequestsTable extends StatelessWidget {
         style: AppTextStyles.labelMd.copyWith(color: AppColors.onSurfaceVariant));
   }
 
-  DataRow _buildRow(RequestRow r) {
+  DataRow _buildRow(BuildContext context, RequestRow r) {
     return DataRow(cells: [
       DataCell(Row(
         mainAxisSize: MainAxisSize.min,
@@ -132,7 +135,9 @@ class RequestsTable extends StatelessWidget {
       DataCell(Text(r.date, style: AppTextStyles.bodySm)),
       DataCell(_StatusChip(status: r.status)),
       DataCell(TextButton(
-        onPressed: () {},
+        onPressed: () {
+          Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminDocumentRequestScreen()));
+        },
         child: Text(r.actionLabel,
             style: AppTextStyles.labelSm.copyWith(
                 color: AppColors.primary, fontWeight: FontWeight.bold)),

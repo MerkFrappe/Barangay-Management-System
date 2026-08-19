@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 void main() {
   runApp(const CivicHorizonApp());
@@ -9,16 +10,7 @@ class CivicHorizonApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Civic Horizon',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        fontFamily: 'Inter',
-        scaffoldBackgroundColor: AppColors.background,
-        useMaterial3: true,
-      ),
-      home: const CommunityEventsScreen(),
-    );
+    return const CommunityEventsScreen();
   }
 }
 
@@ -93,8 +85,18 @@ class _CommunityEventsScreenState extends State<CommunityEventsScreen> {
     'December',
   ];
 
-  // Parses dates like "September 11, 2024" without pulling in intl.
+  // Parses dates like "September 11, 2024" or "10/24/2023" without pulling in intl.
   DateTime? _parseEventDate(String dateStr) {
+    final slashParts = dateStr.split('/');
+    if (slashParts.length == 3) {
+      final month = int.tryParse(slashParts[0]);
+      final day = int.tryParse(slashParts[1]);
+      final year = int.tryParse(slashParts[2]);
+      if (month != null && day != null && year != null) {
+        return DateTime(year, month, day);
+      }
+    }
+
     final parts = dateStr.replaceAll(',', '').split(' ');
     if (parts.length != 3) return null;
     final month = _monthNames.indexOf(parts[0]) + 1;
@@ -138,63 +140,108 @@ class _CommunityEventsScreenState extends State<CommunityEventsScreen> {
     }
   }
 
-  final List<_EventData> _events = const [
-    _EventData(
-      imageUrl: 'assets/images/cleanup_drive.jpg',
-      category: 'Environment',
-      categoryIcon: Icons.eco,
-      categoryBg: AppColors.secondaryContainer,
-      categoryFg: AppColors.onSecondaryContainer,
-      title: 'Barangay Clean-up Drive',
-      date: 'September 11, 2024',
-      time: '07:00 AM - 11:00 AM',
-    ),
-    _EventData(
-      imageUrl: 'assets/images/health_checkup.jpg',
-      category: 'Health',
-      categoryIcon: Icons.medical_services,
-      categoryBg: AppColors.tertiaryContainer,
-      categoryFg: AppColors.onTertiary,
-      title: 'Free Wellness Checkup',
-      date: 'September 15, 2024',
-      time: '09:00 AM - 03:00 PM',
-    ),
-    _EventData(
-      imageUrl: 'assets/images/town_hall.jpg',
-      category: 'Assembly',
-      categoryIcon: Icons.groups,
-      categoryBg: AppColors.surfaceContainerHighest,
-      categoryFg: AppColors.primary,
-      title: 'Quarterly Town Hall',
-      date: 'September 22, 2024',
-      time: '05:00 PM - 07:00 PM',
-    ),
-  ];
+  static _EventData _mapAnnouncementToEvent(dynamic doc) {
+    final data = doc.data() as Map<String, dynamic>;
+    final String categoryName = data['category'] ?? 'news';
+    final String title = data['title'] ?? '';
+    final String date = data['date'] ?? '';
+    final String desc = data['description'] ?? 'No description provided.';
+    
+    String catLabel = 'News';
+    IconData catIcon = Icons.feed;
+    Color catBg = AppColors.primaryContainer;
+    Color catFg = AppColors.onPrimaryContainer;
+    String imageUrl = 'assets/images/town_hall.jpg';
+
+    if (categoryName == 'emergency') {
+      catLabel = 'Emergency';
+      catIcon = Icons.warning;
+      catBg = AppColors.errorContainer;
+      catFg = AppColors.error;
+      imageUrl = 'assets/images/weather_alert.jpg';
+    } else if (categoryName == 'event') {
+      catLabel = 'Event';
+      catIcon = Icons.eco;
+      catBg = AppColors.secondaryContainer;
+      catFg = AppColors.onSecondaryContainer;
+      imageUrl = 'assets/images/cleanup_drive.jpg';
+    } else if (categoryName == 'officialMemo') {
+      catLabel = 'Official Memo';
+      catIcon = Icons.description;
+      catBg = AppColors.surfaceVariant;
+      catFg = AppColors.primary;
+      imageUrl = 'assets/images/announcement.jpg';
+    }
+
+    return _EventData(
+      imageUrl: imageUrl,
+      category: catLabel,
+      categoryIcon: catIcon,
+      categoryBg: catBg,
+      categoryFg: catFg,
+      title: title,
+      date: date,
+      time: desc.length > 80 ? desc.substring(0, 80) + '...' : desc,
+    );
+  }
 
   Widget _buildAppContent() {
     return Column(
       children: [
         _buildTopAppBar(),
         Expanded(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildSectionHeader(),
-                const SizedBox(height: 24),
-                _buildCalendarCard(),
-                const SizedBox(height: 24),
-                _buildUpcomingEventsHeader(),
-                const SizedBox(height: 16),
-                for (final event in _events) ...[
-                  _EventCard(data: event, onViewDetails: () {}),
-                  const SizedBox(height: 16),
-                ],
-                const SizedBox(height: 8),
-                _buildAnnouncementsLink(),
-              ],
-            ),
+          child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+            stream: FirebaseFirestore.instance
+                .collection('announcements')
+                .where('status', isEqualTo: 'published')
+                .orderBy('createdAt', descending: true)
+                .snapshots(),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator());
+              }
+              if (snapshot.hasError) {
+                return Center(child: Text('Error: ${snapshot.error}'));
+              }
+              final docs = snapshot.data?.docs ?? [];
+              final eventsList = docs.map((doc) => _mapAnnouncementToEvent(doc)).toList();
+
+              return SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildSectionHeader(),
+                    const SizedBox(height: 24),
+                    _buildCalendarCard(eventsList),
+                    const SizedBox(height: 24),
+                    _buildUpcomingEventsHeader(),
+                    const SizedBox(height: 16),
+                    if (eventsList.isEmpty)
+                      const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 20),
+                        child: Center(
+                          child: Text(
+                            'No announcements or events posted.',
+                            style: TextStyle(color: Colors.grey),
+                          ),
+                        ),
+                      )
+                    else
+                      Column(
+                        children: eventsList.map((event) {
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 16),
+                            child: _EventCard(data: event, onViewDetails: () {}),
+                          );
+                        }).toList(),
+                      ),
+                    const SizedBox(height: 8),
+                    _buildAnnouncementsLink(),
+                  ],
+                ),
+              );
+            },
           ),
         ),
         _buildBottomNavBar(),
@@ -298,7 +345,7 @@ class _CommunityEventsScreenState extends State<CommunityEventsScreen> {
   // -------------------------------------------------------------------------
   // Calendar
   // -------------------------------------------------------------------------
-  Widget _buildCalendarCard() {
+  Widget _buildCalendarCard(List<_EventData> events) {
     const weekLabels = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 
     final year = _displayedMonth.year;
@@ -320,7 +367,7 @@ class _CommunityEventsScreenState extends State<CommunityEventsScreen> {
 
     // Which days in the visible month have an event, so we can show a dot.
     final eventDays = <int>{
-      for (final event in _events)
+      for (final event in events)
         if (_parseEventDate(event.date) case final d?)
           if (d.year == year && d.month == month) d.day,
     };

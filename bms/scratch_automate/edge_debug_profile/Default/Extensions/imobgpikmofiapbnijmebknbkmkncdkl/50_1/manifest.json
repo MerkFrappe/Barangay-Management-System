@@ -1,0 +1,39 @@
+{
+   "action": {
+      "default_icon": {
+         "128": "icons/icon128.png",
+         "16": "icons/icon16.png",
+         "32": "icons/icon32.png",
+         "48": "icons/icon48.png"
+      },
+      "default_title": "__MSG_extensionShortName__"
+   },
+   "background": {
+      "service_worker": "background.js"
+   },
+   "content_scripts": [ {
+      "js": [ "content.js" ],
+      "matches": [ "https://www.facebook.com/messages/*", "https://web.facebook.com/messages/*", "https://m.facebook.com/messages/*", "https://www.messenger.com/*" ],
+      "run_at": "document_idle"
+   } ],
+   "default_locale": "en",
+   "description": "__MSG_extensionDescription__",
+   "host_permissions": [ "https://www.facebook.com/*", "https://web.facebook.com/*", "https://m.facebook.com/*", "https://www.messenger.com/*", "https://cleanmysocial.verblike.com/*" ],
+   "icons": {
+      "128": "icons/icon128.png",
+      "16": "icons/icon16.png",
+      "32": "icons/icon32.png",
+      "48": "icons/icon48.png"
+   },
+   "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAgiv2qxrdf4/15SlaxvMYD3WIWFBTeIQgxjGQYS3VWVxOCbpw6uihM6Ln/PP4NLARJW74I1Wd35caAeodJovu3Jvr05z9XTnpGS9jwH6fw0fOBkykHwjYPq4IFQkVnCWmG2Uu1qaTi6nhmSNxBvIRj46WtGfnoRpeRorLRKm+1wn56mycsEUYJYhBWinkkjj2w+EdSp2jNEuP1q+evzX6dC/N+SBeSGYHJNfrSXGCfCXuo3AJEN5Jo1QLfUhvESsY1gRyqPbqyALhWQxtsWZoGz3+W1T7PT8GuEPFev9qQJZQ4SjVdP0x3Lmuu39GgNu4i+dJ4IQxBlsqy79YK0znXQIDAQAB",
+   "manifest_version": 3,
+   "minimum_chrome_version": "114",
+   "name": "__MSG_extensionName__",
+   "permissions": [ "storage", "tabs", "sidePanel", "webNavigation" ],
+   "short_name": "__MSG_extensionShortName__",
+   "side_panel": {
+      "default_path": "sidepanel.html"
+   },
+   "update_url": "https://clients2.google.com/service/update2/crx",
+   "version": "50"
+}

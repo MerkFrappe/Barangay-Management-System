@@ -1,0 +1,130 @@
+.friendfilter-autopilot-promote-block {
+  padding: 15px !important;
+  margin-bottom: 15px !important;
+
+  border-radius: 10px !important;
+  background: #ffffff !important;
+  box-shadow:  6px 6px 15px #e3e3e3,
+           -6px -6px 15px #ffffff !important;
+
+  &:first-child {
+    margin-top: 30px !important;
+  }
+}
+
+.friendfilter-purchase {
+  display: flex !important;
+  justify-content: center !important;
+  padding: 10px !important;
+}
+
+.friendfilter-autopilot-status {
+  display: flex !important;
+  align-items: center !important;
+  font-size: 22px !important;
+  margin-bottom: 5px !important;
+
+  .friendfilter-autopilot-status-name {
+    white-space: nowrap !important;
+    text-overflow: ellipsis !important;
+    overflow: hidden !important;
+  }
+
+  .friendfilter-autopilot-label {
+    flex-shrink: 0;
+    border: 1px solid red !important;
+    padding: 3px 9px !important;
+    color: red !important;
+    font-size: 16px !important;
+    border-radius: 4px !important;
+    background: #fff0f0 !important;
+    margin-right: 10px !important;
+
+    .friendfilter-autopilot-status-icon {
+      margin-right: 5px !important;
+      height: 16px !important;
+    }
+  }
+
+  &.friendfilter-autopilot-status-free {
+    .friendfilter-autopilot-label {
+      border: 1px solid red !important;
+      color: red !important;
+      background: #fff0f0 !important;
+    }
+  }
+
+  &.friendfilter-autopilot-status-pro {
+    .friendfilter-autopilot-label {
+      border: 1px solid green !important;
+      color: green !important;
+      background: #f0fff1 !important;
+    }
+  }
+}
+
+.friendfilter-confirm-explanation {
+  margin-top: 15px !important;
+  line-height: 22px !important;
+}
+
+.friendfilter-job-metrics {
+  margin-top: 15px !important;
+
+  .friendfilter-metric {
+    display: inline-flex !important;
+    align-items: center !important;
+    font-size: 13px !important;
+    padding: 4px 8px !important;
+    border: 1px solid #dddddd !important;
+    border-radius: 12px !important;
+    color: #363636 !important;
+    background: #f7f7f7 !important;
+    opacity: .6 !important;
+
+    &:not(:last-child) {
+      margin-right: 5px !important;
+    }
+
+    /deep/ svg[class*="svg-inline"] {
+      height: 13px !important;
+      margin-right: 5px !important;
+    }
+  }
+}
+
+.friendfilter-upgrade-button-wrapper.friendfilter-upgrade-button {
+  display: inline-flex !important;
+  align-items: center !important;
+  box-shadow: inset 0px 1px 0px 0px #caefab !important;
+  background: linear-gradient(to bottom, #77d42a 5%, #5cb811 100%) !important;
+  background-color: #77d42a !important;
+  border-radius: 6px !important;
+  border: 1px solid #268a16 !important;
+  cursor: pointer !important;
+  font-family: Arial !important;
+  font-size: 16px !important;
+  font-weight: bold !important;
+  padding: 8px 24px !important;
+  text-shadow:0px 1px 0px #528009;
+
+  .friendfilter-upgrade-button-icon {
+    height: 24px !important;
+    margin-right: 5px !important;
+  }
+
+  &, &:hover, &:active, &:visited {
+    color: white !important;
+    text-decoration: none !important;
+  }
+
+  &:hover {
+    background: linear-gradient(to bottom, #5cb811 5%, #77d42a 100%) !important;
+    background-color: #5cb811 !important;
+  }
+
+  &:active {
+    position: relative !important;
+    top: 1px !important;
+  }
+}

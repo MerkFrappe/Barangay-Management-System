@@ -106,7 +106,40 @@ class TopNavigationBar extends StatelessWidget {
               Icons.notifications_none_rounded,
               color: AppColors.onSurfaceVariant,
             ),
-            onPressed: () {},
+            onPressed: () {
+              showDialog(
+                context: context,
+                builder: (ctx) => AlertDialog(
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  title: const Row(
+                    children: [
+                      Icon(Icons.notifications_active, color: AppColors.primary),
+                      SizedBox(width: 12),
+                      Text('Resident Alerts'),
+                    ],
+                  ),
+                  content: const Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      ListTile(
+                        leading: Icon(Icons.check_circle, color: Colors.green),
+                        title: Text('Clearance Ready for Pickup'),
+                        subtitle: Text('Barangay Clearance #REQ-102 has been approved.'),
+                      ),
+                      Divider(),
+                      ListTile(
+                        leading: Icon(Icons.campaign, color: Colors.amber),
+                        title: Text('Barangay Assembly Notice'),
+                        subtitle: Text('Meeting on Aug 15 at 9:00 AM.'),
+                      ),
+                    ],
+                  ),
+                  actions: [
+                    TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('OK')),
+                  ],
+                ),
+              );
+            },
           ),
 
           const SizedBox(width: 12),

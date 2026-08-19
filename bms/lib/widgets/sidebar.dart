@@ -1,11 +1,20 @@
 import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
 import '../screens/login_screen.dart';
+import '../screens/dashboard_screen.dart';
 import '../screens/resident_dashboard_screen.dart';
 import '../screens/admin_documentRequest.dart';
+import '../screens/residents_directory_screen.dart';
+import '../screens/peace_and_order_screen.dart';
+import '../screens/admin_reports_screen.dart';
+import '../screens/emergency_broadcast_screen.dart';
+import '../screens/settings_screen.dart';
+import '../screens/health_center_screen.dart';
+import '../screens/admin_annoucements.dart';
 
 class SidebarNav extends StatefulWidget {
-  const SidebarNav({super.key});
+  final int selectedIndex;
+  const SidebarNav({super.key, this.selectedIndex = 0});
 
   @override
   State<SidebarNav> createState() => _SidebarNavState();
@@ -18,7 +27,13 @@ class _NavItem {
 }
 
 class _SidebarNavState extends State<SidebarNav> {
-  int _selectedIndex = 0;
+  late int _selectedIndex;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedIndex = widget.selectedIndex;
+  }
 
   static const _items = [
     _NavItem(Icons.dashboard, 'Dashboard'),
@@ -26,7 +41,42 @@ class _SidebarNavState extends State<SidebarNav> {
     _NavItem(Icons.pending_actions, 'Requests'),
     _NavItem(Icons.announcement, 'Annoucements'),
     _NavItem(Icons.assessment, 'Reports'),
+    _NavItem(Icons.local_hospital, 'Health Center'),
+    _NavItem(Icons.campaign, 'Announcements'),
   ];
+
+  void _onSelect(int index) {
+    setState(() => _selectedIndex = index);
+    Widget targetScreen;
+    switch (index) {
+      case 0:
+        targetScreen = const DashboardScreen();
+        break;
+      case 1:
+        targetScreen = const ResidentsDirectoryScreen();
+        break;
+      case 2:
+        targetScreen = const AdminDocumentRequestScreen();
+        break;
+      case 3:
+        targetScreen = const PeaceAndOrderScreen();
+        break;
+      case 4:
+        targetScreen = const AdminReportsScreen();
+        break;
+      case 5:
+        targetScreen = const HealthCenterScreen(isAdmin: true);
+        break;
+      case 6:
+        targetScreen = const AnnouncementPage();
+        break;
+      default:
+        targetScreen = const DashboardScreen();
+    }
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(builder: (_) => targetScreen),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -97,16 +147,7 @@ class _SidebarNavState extends State<SidebarNav> {
                   icon: item.icon,
                   label: item.label,
                   selected: selected,
-                  onTap: () {
-                    setState(() => _selectedIndex = index);
-                    if (item.label == 'Requests') {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) => const AdminDocumentRequestScreen(),
-                        ),
-                      );
-                    }
-                  },
+                  onTap: () => _onSelect(index),
                 );
               },
             ),
@@ -126,7 +167,11 @@ class _SidebarNavState extends State<SidebarNav> {
           const SizedBox(height: 8),
           // Emergency broadcast button
           ElevatedButton.icon(
-            onPressed: () {},
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const EmergencyBroadcastScreen()),
+              );
+            },
             icon: const Icon(Icons.campaign, size: 20),
             label: const Text('Emergency Broadcast'),
             style: ElevatedButton.styleFrom(
@@ -145,7 +190,15 @@ class _SidebarNavState extends State<SidebarNav> {
           const SizedBox(height: 8),
           Divider(color: AppColors.outlineVariant, height: 1),
           const SizedBox(height: 8),
-          _NavTile(icon: Icons.settings, label: 'Settings', onTap: () {}),
+          _NavTile(
+            icon: Icons.settings,
+            label: 'Settings',
+            onTap: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const SettingsScreen()),
+              );
+            },
+          ),
           _NavTile(
             icon: Icons.logout,
             label: 'Logout',

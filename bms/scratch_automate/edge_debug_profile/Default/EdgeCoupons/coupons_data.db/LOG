@@ -1,0 +1,6 @@
+2026/08/11-20:09:01.244 119c Reusing MANIFEST D:\BMS\bms\scratch_automate\edge_debug_profile\Default\EdgeCoupons/coupons_data.db/MANIFEST-000001
+2026/08/11-20:09:01.248 119c Recovering log #3
+2026/08/11-20:09:01.249 119c Reusing old log D:\BMS\bms\scratch_automate\edge_debug_profile\Default\EdgeCoupons/coupons_data.db/000003.log 
+2026/08/11-20:09:06.328 3e38 Level-0 table #5: started
+2026/08/11-20:09:06.333 3e38 Level-0 table #5: 683312 bytes OK
+2026/08/11-20:09:06.337 3e38 Delete type=0 #3

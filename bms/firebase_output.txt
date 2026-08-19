@@ -1,0 +1,15 @@
+
+To sign in to the Firebase CLI:
+
+1. Take note of your session ID:
+
+   [1m8E536[22m
+
+2. Visit the URL below on any device and follow the instructions to get your code:
+
+   https://auth.firebase.tools/login?code_challenge=e-qcC6Dm-n7ayH2gerCDk2lvMaP4uR4YfB8s_O74tLo&session=8e536513-ffcf-4b30-9559-827b669d3869&attest=Ez2hlj5c85-5i2ozl5XmIwbCe-k2zzHjwhEqSFDC8Yw
+
+3. Complete the login by running:
+
+   [1mfirebase login <authorizationCode>[22m
+

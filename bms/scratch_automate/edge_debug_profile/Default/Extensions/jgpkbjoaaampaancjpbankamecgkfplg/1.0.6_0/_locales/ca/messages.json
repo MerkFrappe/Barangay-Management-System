@@ -1,0 +1,10 @@
+{
+   "extDescription": {
+      "description": "Descripció de l'extensió",
+      "message": "Desamigueu ràpidament els amics de Facebook. Elimineu contactes inactius, suprimiu diversos amics a la vegada. Gestioneu fàcilment la llista d'amics de FB."
+   },
+   "extName": {
+      "description": "Nom de l'extensió",
+      "message": "FB Friends Remover - Eina de supressió massiva i desamistat de Facebook"
+   }
+}
