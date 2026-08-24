@@ -18,7 +18,9 @@ class ResidentDashboardScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final width = MediaQuery.of(context).size.width;
 
-    final desktop = width >= 1024;
+    // Keep the full desktop composition only when there is enough room for
+    // both the 256px sidebar and the two-column dashboard content.
+    final desktop = width >= 1100;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -48,9 +50,10 @@ class ResidentDashboardScreen extends StatelessWidget {
                         child: ConstrainedBox(
                           constraints: const BoxConstraints(maxWidth: 1400),
 
-                          child: desktop
-                              ? const _DesktopLayout()
-                              : const _MobileLayout(),
+                          child:
+                              desktop
+                                  ? const _DesktopLayout()
+                                  : const _MobileLayout(),
                         ),
                       ),
                     ),

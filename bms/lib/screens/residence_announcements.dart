@@ -92,7 +92,13 @@ class _CommunityEventsScreenState extends State<CommunityEventsScreen> {
       final month = int.tryParse(slashParts[0]);
       final day = int.tryParse(slashParts[1]);
       final year = int.tryParse(slashParts[2]);
-      if (month != null && day != null && year != null) {
+      if (month != null &&
+          day != null &&
+          year != null &&
+          month >= 1 &&
+          month <= 12 &&
+          day >= 1 &&
+          day <= 31) {
         return DateTime(year, month, day);
       }
     }
@@ -146,7 +152,7 @@ class _CommunityEventsScreenState extends State<CommunityEventsScreen> {
     final String title = data['title'] ?? '';
     final String date = data['date'] ?? '';
     final String desc = data['description'] ?? 'No description provided.';
-    
+
     String catLabel = 'News';
     IconData catIcon = Icons.feed;
     Color catBg = AppColors.primaryContainer;
@@ -191,20 +197,45 @@ class _CommunityEventsScreenState extends State<CommunityEventsScreen> {
         _buildTopAppBar(),
         Expanded(
           child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+            // Filtering and ordering these two fields together requires a
+            // Firestore composite index. Read the collection, then apply the
+            // small client-side filter/order so the resident view also works
+            // before an index has been deployed.
             stream: FirebaseFirestore.instance
                 .collection('announcements')
-                .where('status', isEqualTo: 'published')
-                .orderBy('createdAt', descending: true)
                 .snapshots(),
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
                 return const Center(child: CircularProgressIndicator());
               }
               if (snapshot.hasError) {
-                return Center(child: Text('Error: ${snapshot.error}'));
+                return const Center(
+                  child: Padding(
+                    padding: EdgeInsets.all(24),
+                    child: Text(
+                      'Announcements are temporarily unavailable. Please try again shortly.',
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                );
               }
-              final docs = snapshot.data?.docs ?? [];
-              final eventsList = docs.map((doc) => _mapAnnouncementToEvent(doc)).toList();
+              final docs = snapshot.data?.docs
+                      .where((doc) => doc.data()['status'] == 'published')
+                      .toList() ??
+                  [];
+              docs.sort((a, b) {
+                final aCreatedAt = a.data()['createdAt'];
+                final bCreatedAt = b.data()['createdAt'];
+                final aMillis = aCreatedAt is Timestamp
+                    ? aCreatedAt.millisecondsSinceEpoch
+                    : 0;
+                final bMillis = bCreatedAt is Timestamp
+                    ? bCreatedAt.millisecondsSinceEpoch
+                    : 0;
+                return bMillis.compareTo(aMillis);
+              });
+              final eventsList =
+                  docs.map((doc) => _mapAnnouncementToEvent(doc)).toList();
 
               return SingleChildScrollView(
                 padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
@@ -229,12 +260,16 @@ class _CommunityEventsScreenState extends State<CommunityEventsScreen> {
                       )
                     else
                       Column(
-                        children: eventsList.map((event) {
-                          return Padding(
-                            padding: const EdgeInsets.only(bottom: 16),
-                            child: _EventCard(data: event, onViewDetails: () {}),
-                          );
-                        }).toList(),
+                        children:
+                            eventsList.map((event) {
+                              return Padding(
+                                padding: const EdgeInsets.only(bottom: 16),
+                                child: _EventCard(
+                                  data: event,
+                                  onViewDetails: () {},
+                                ),
+                              );
+                            }).toList(),
                       ),
                     const SizedBox(height: 8),
                     _buildAnnouncementsLink(),
@@ -275,7 +310,8 @@ class _CommunityEventsScreenState extends State<CommunityEventsScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Row(
+          Expanded(
+            child: Row(
             children: [
               Container(
                 width: 40,
@@ -286,25 +322,25 @@ class _CommunityEventsScreenState extends State<CommunityEventsScreen> {
                   border: Border.all(color: AppColors.outlineVariant),
                 ),
                 clipBehavior: Clip.antiAlias,
-                child: Image.asset(
-                  'assets/images/logo.png',
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) => const Icon(
-                    Icons.account_balance,
-                    color: AppColors.onPrimary,
-                  ),
+                child: const Icon(
+                  Icons.account_balance,
+                  color: AppColors.onPrimary,
                 ),
               ),
               const SizedBox(width: 12),
-              const Text(
-                'Civic Horizon',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.primary,
+              const Expanded(
+                child: Text(
+                  'Civic Horizon',
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.primary,
+                  ),
                 ),
               ),
             ],
+            ),
           ),
           IconButton(
             onPressed: () {},
@@ -504,17 +540,19 @@ class _CommunityEventsScreenState extends State<CommunityEventsScreen> {
               decoration: BoxDecoration(
                 color: isSelected ? AppColors.primary : Colors.transparent,
                 shape: BoxShape.circle,
-                border: (isToday && !isSelected)
-                    ? Border.all(color: AppColors.primary, width: 1.5)
-                    : null,
+                border:
+                    (isToday && !isSelected)
+                        ? Border.all(color: AppColors.primary, width: 1.5)
+                        : null,
               ),
               child: Text(
                 '$day',
                 style: TextStyle(
                   fontSize: 12,
-                  fontWeight: (isSelected || isToday)
-                      ? FontWeight.bold
-                      : FontWeight.normal,
+                  fontWeight:
+                      (isSelected || isToday)
+                          ? FontWeight.bold
+                          : FontWeight.normal,
                   color: isSelected ? AppColors.onPrimary : AppColors.onSurface,
                 ),
               ),
@@ -586,7 +624,8 @@ class _CommunityEventsScreenState extends State<CommunityEventsScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Row(
+          Expanded(
+            child: Row(
             children: [
               Container(
                 width: 40,
@@ -601,7 +640,8 @@ class _CommunityEventsScreenState extends State<CommunityEventsScreen> {
                 ),
               ),
               const SizedBox(width: 12),
-              Column(
+              Expanded(
+                child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: const [
                   Text(
@@ -621,8 +661,10 @@ class _CommunityEventsScreenState extends State<CommunityEventsScreen> {
                     ),
                   ),
                 ],
+                ),
               ),
             ],
+            ),
           ),
           const Icon(Icons.chevron_right, color: AppColors.onSurfaceVariant),
         ],
@@ -725,17 +767,16 @@ class _EventCard extends StatelessWidget {
         children: [
           Stack(
             children: [
-              SizedBox(
+              const SizedBox(
                 height: 160,
                 width: double.infinity,
-                child: Image.asset(
-                  data.imageUrl,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) => Container(
-                    color: AppColors.surfaceVariant,
-                    child: const Icon(
-                      Icons.image_not_supported_outlined,
-                      color: AppColors.outline,
+                child: ColoredBox(
+                  color: AppColors.surfaceVariant,
+                  child: Center(
+                    child: Icon(
+                      Icons.campaign_outlined,
+                      size: 48,
+                      color: AppColors.primary,
                     ),
                   ),
                 ),
@@ -793,11 +834,15 @@ class _EventCard extends StatelessWidget {
                       color: AppColors.onSurfaceVariant,
                     ),
                     const SizedBox(width: 8),
-                    Text(
-                      data.date,
+                    Expanded(
+                      child: Text(
+                        data.date,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
                         fontSize: 14,
                         color: AppColors.onSurfaceVariant,
+                      ),
                       ),
                     ),
                   ],
@@ -811,11 +856,15 @@ class _EventCard extends StatelessWidget {
                       color: AppColors.onSurfaceVariant,
                     ),
                     const SizedBox(width: 8),
-                    Text(
-                      data.time,
+                    Expanded(
+                      child: Text(
+                        data.time,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
                         fontSize: 14,
                         color: AppColors.onSurfaceVariant,
+                      ),
                       ),
                     ),
                   ],
@@ -890,18 +939,20 @@ class _NavItem extends StatelessWidget {
           children: [
             Icon(
               icon,
-              color: isActive
-                  ? AppColors.onSecondaryContainer
-                  : AppColors.onSurfaceVariant,
+              color:
+                  isActive
+                      ? AppColors.onSecondaryContainer
+                      : AppColors.onSurfaceVariant,
             ),
             Text(
               label,
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
-                color: isActive
-                    ? AppColors.onSecondaryContainer
-                    : AppColors.onSurfaceVariant,
+                color:
+                    isActive
+                        ? AppColors.onSecondaryContainer
+                        : AppColors.onSurfaceVariant,
               ),
             ),
           ],

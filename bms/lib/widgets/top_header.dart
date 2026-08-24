@@ -12,9 +12,12 @@ class TopHeader extends StatelessWidget implements PreferredSizeWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return LayoutBuilder(builder: (context, constraints) {
+      final compact = constraints.maxWidth < 1050;
+
+      return Container(
       height: 64,
-      padding: const EdgeInsets.symmetric(horizontal: 32),
+      padding: const EdgeInsets.symmetric(horizontal: 24),
       decoration: BoxDecoration(
         color: AppColors.surface,
         border: Border(bottom: BorderSide(color: AppColors.outlineVariant)),
@@ -22,8 +25,10 @@ class TopHeader extends StatelessWidget implements PreferredSizeWidget {
       child: Row(
         children: [
           // Search bar
-          Container(
-            width: 340,
+          Flexible(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 340),
+              child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             decoration: BoxDecoration(
               color: AppColors.surfaceContainer,
@@ -48,8 +53,10 @@ class TopHeader extends StatelessWidget implements PreferredSizeWidget {
                 ),
               ],
             ),
+              ),
+            ),
           ),
-          const Spacer(),
+          if (!compact) const Spacer() else const SizedBox(width: 8),
 
           // Portal Switch Button
           ElevatedButton.icon(
@@ -61,7 +68,7 @@ class TopHeader extends StatelessWidget implements PreferredSizeWidget {
                   );
                 },
             icon: const Icon(Icons.swap_horiz_rounded, size: 18),
-            label: const Text('Switch to Resident View'),
+            label: Text(compact ? 'Resident' : 'Switch to Resident View'),
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primaryFixed,
               foregroundColor: AppColors.primary,
@@ -75,7 +82,7 @@ class TopHeader extends StatelessWidget implements PreferredSizeWidget {
               ),
             ),
           ),
-          const SizedBox(width: 16),
+          const SizedBox(width: 8),
 
           // Notifications
           IconButton(
@@ -134,8 +141,8 @@ class TopHeader extends StatelessWidget implements PreferredSizeWidget {
               );
             },
           ),
-          const SizedBox(width: 16),
-          IconButton(
+          if (!compact) const SizedBox(width: 8),
+          if (!compact) IconButton(
             icon: Icon(Icons.help_outline, color: AppColors.onSurfaceVariant),
             onPressed: () {
               showDialog(
@@ -149,7 +156,7 @@ class TopHeader extends StatelessWidget implements PreferredSizeWidget {
               );
             },
           ),
-          const SizedBox(width: 16),
+          if (!compact) const SizedBox(width: 8),
           Container(
             padding: const EdgeInsets.only(left: 16),
             decoration: BoxDecoration(
@@ -158,7 +165,8 @@ class TopHeader extends StatelessWidget implements PreferredSizeWidget {
             ),
             child: Row(
               children: [
-                Column(
+                if (!compact)
+                  Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
@@ -173,7 +181,7 @@ class TopHeader extends StatelessWidget implements PreferredSizeWidget {
                             color: AppColors.onSurfaceVariant)),
                   ],
                 ),
-                const SizedBox(width: 12),
+                if (!compact) const SizedBox(width: 12),
                 CircleAvatar(
                   radius: 20,
                   backgroundColor: AppColors.primaryContainer,
@@ -185,5 +193,6 @@ class TopHeader extends StatelessWidget implements PreferredSizeWidget {
         ],
       ),
     );
+    });
   }
 }

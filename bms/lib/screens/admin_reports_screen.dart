@@ -254,7 +254,7 @@ class _AdminReportsScreenState extends State<AdminReportsScreen> {
                     rows: docs.map((doc) {
                       final data = doc.data() as Map<String, dynamic>;
                       return DataRow(cells: [
-                        DataCell(Text(doc.id.substring(0, 6).toUpperCase())),
+                        DataCell(Text(doc.id.substring(0, doc.id.length < 6 ? doc.id.length : 6).toUpperCase())),
                         DataCell(Text(data['documentType'] ?? 'Document')),
                         DataCell(Text(data['residentName'] ?? 'Resident')),
                         DataCell(

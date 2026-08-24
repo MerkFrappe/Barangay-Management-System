@@ -17,6 +17,13 @@ class _EmergencyBroadcastScreenState extends State<EmergencyBroadcastScreen> {
   String _alertLevel = 'High (Warning)';
   bool _isBroadcasting = false;
 
+  @override
+  void dispose() {
+    _titleCtrl.dispose();
+    _msgCtrl.dispose();
+    super.dispose();
+  }
+
   void _sendBroadcast() async {
     final title = _titleCtrl.text.trim();
     final msg = _msgCtrl.text.trim();
@@ -70,7 +77,14 @@ class _EmergencyBroadcastScreenState extends State<EmergencyBroadcastScreen> {
         ),
       );
     } catch (e) {
+      if (!mounted) return;
       setState(() => _isBroadcasting = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Unable to send the emergency alert: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
   }
 
@@ -172,7 +186,15 @@ class _EmergencyBroadcastScreenState extends State<EmergencyBroadcastScreen> {
               children: [
                 const Icon(Icons.warning, color: Colors.red),
                 const SizedBox(width: 12),
-                Text('Compose Broadcast', style: AppTextStyles.titleLg.copyWith(fontWeight: FontWeight.bold, color: Colors.red[900])),
+                Expanded(
+                  child: Text(
+                    'Compose Broadcast',
+                    style: AppTextStyles.titleLg.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.red[900],
+                    ),
+                  ),
+                ),
               ],
             ),
             const SizedBox(height: 16),

@@ -210,7 +210,7 @@ class _admin_documentRequestState extends State<admin_documentRequest> {
 
                                       return DataRow(
                                         cells: [
-                                          DataCell(Text('REQ-${doc.id.substring(0, 5).toUpperCase()}')),
+                                          DataCell(Text('REQ-${doc.id.substring(0, doc.id.length < 5 ? doc.id.length : 5).toUpperCase()}')),
                                           DataCell(Text(data['residentName'] ?? 'N/A', style: const TextStyle(fontWeight: FontWeight.bold))),
                                           DataCell(Text(data['documentType'] ?? 'N/A')),
                                           DataCell(Text(data['dateSubmitted'] ?? 'N/A')),

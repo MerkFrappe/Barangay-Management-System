@@ -27,7 +27,12 @@ class ResidentSidebar extends StatelessWidget {
           children: [
             const Icon(Icons.campaign, color: Colors.red, size: 28),
             const SizedBox(width: 12),
-            Text('Report Emergency to HQ', style: TextStyle(color: Colors.red[900])),
+            Expanded(
+              child: Text(
+                'Report Emergency to HQ',
+                style: TextStyle(color: Colors.red[900]),
+              ),
+            ),
           ],
         ),
         content: SingleChildScrollView(
@@ -111,9 +116,10 @@ class ResidentSidebar extends StatelessWidget {
       height: double.infinity,
       color: AppColors.surfaceContainerLow,
       child: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(18),
-          child: Column(
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.all(18),
+            child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // LOGO
@@ -230,7 +236,7 @@ class ResidentSidebar extends StatelessWidget {
                 },
               ),
 
-              const Spacer(),
+              const SizedBox(height: 24),
 
               // REPORT BUTTON
               SizedBox(
@@ -276,6 +282,7 @@ class ResidentSidebar extends StatelessWidget {
                 },
               ),
             ],
+            ),
           ),
         ),
       ),

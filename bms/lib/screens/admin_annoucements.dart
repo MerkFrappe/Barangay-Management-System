@@ -867,10 +867,12 @@ class _AddEventFormState extends State<_AddEventForm> {
             ),
           ),
 
-          // Fields
-          Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(
+          // Keep the form usable on short browser windows. The header and
+          // actions remain available while the fields scroll independently.
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(20),
+              child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _FormLabel('Event Title'),
@@ -1016,6 +1018,7 @@ class _AddEventFormState extends State<_AddEventForm> {
                   ),
                 ),
               ],
+              ),
             ),
           ),
 

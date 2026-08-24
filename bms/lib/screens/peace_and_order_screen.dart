@@ -246,7 +246,7 @@ class _PeaceAndOrderScreenState extends State<PeaceAndOrderScreen> {
                       final data = doc.data() as Map<String, dynamic>;
                       final status = data['status'] ?? 'Open';
                       return DataRow(cells: [
-                        DataCell(Text('BLT-${doc.id.substring(0, 4).toUpperCase()}')),
+                        DataCell(Text('BLT-${doc.id.substring(0, doc.id.length < 4 ? doc.id.length : 4).toUpperCase()}')),
                         DataCell(Text(data['complainant'] ?? 'N/A')),
                         DataCell(Text(data['respondent'] ?? 'N/A')),
                         DataCell(Text(data['category'] ?? 'General')),

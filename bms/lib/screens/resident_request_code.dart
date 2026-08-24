@@ -40,7 +40,25 @@ class _DashboardPageState extends State<DashboardPage> {
   }
 
   String _getMonthName(int month) {
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
+    // DateTime normally supplies 1–12, but keeping this defensive avoids a
+    // RangeError if a malformed date reaches this helper.
+    if (month < 1 || month > months.length) {
+      return '';
+    }
     return months[month - 1];
   }
 
@@ -48,7 +66,11 @@ class _DashboardPageState extends State<DashboardPage> {
     final clean = name.trim();
     if (clean.isEmpty) return 'RN';
     final parts = clean.split(' ');
-    return parts.map((p) => p.isNotEmpty ? p[0] : '').take(2).join().toUpperCase();
+    return parts
+        .map((p) => p.isNotEmpty ? p[0] : '')
+        .take(2)
+        .join()
+        .toUpperCase();
   }
 
   Future<void> _submitRequest() async {
@@ -71,8 +93,9 @@ class _DashboardPageState extends State<DashboardPage> {
 
     try {
       final now = DateTime.now();
-      final dateStr = '${_getMonthName(now.month)} ${now.day.toString().padLeft(2, '0')}, ${now.year}';
-      
+      final dateStr =
+          '${_getMonthName(now.month)} ${now.day.toString().padLeft(2, '0')}, ${now.year}';
+
       await FirebaseFirestore.instance.collection('document_requests').add({
         'documentType': _selectedDocumentType,
         'dateSubmitted': dateStr,
@@ -87,7 +110,9 @@ class _DashboardPageState extends State<DashboardPage> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Successfully submitted request for $_selectedDocumentType!'),
+            content: Text(
+              'Successfully submitted request for $_selectedDocumentType!',
+            ),
             backgroundColor: const Color(0xFF002576),
           ),
         );
@@ -255,11 +280,12 @@ class _DashboardPageState extends State<DashboardPage> {
   }
 
   Widget _buildAnnouncementListStream() {
-    final stream = FirebaseFirestore.instance
-        .collection('announcements')
-        .where('status', isEqualTo: 'published')
-        .orderBy('createdAt', descending: true)
-        .snapshots();
+    final stream =
+        FirebaseFirestore.instance
+            .collection('announcements')
+            .where('status', isEqualTo: 'published')
+            .orderBy('createdAt', descending: true)
+            .snapshots();
 
     return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
       stream: stream,
@@ -291,72 +317,77 @@ class _DashboardPageState extends State<DashboardPage> {
         }
 
         return Column(
-          children: docs.map((doc) {
-            final data = doc.data();
-            final title = data['title'] ?? '';
-            final desc = data['description'] ?? 'No details provided.';
-            final date = data['date'] ?? '';
-            final categoryName = data['category'] ?? 'news';
-            
-            Color catColor = const Color(0xFF0038A8);
-            if (categoryName == 'emergency') catColor = const Color(0xFFDC2626);
-            if (categoryName == 'event') catColor = const Color(0xFF15803D);
+          children:
+              docs.map((doc) {
+                final data = doc.data();
+                final title = data['title'] ?? '';
+                final desc = data['description'] ?? 'No details provided.';
+                final date = data['date'] ?? '';
+                final categoryName = data['category'] ?? 'news';
 
-            return Container(
-              decoration: const BoxDecoration(
-                border: Border(
-                  bottom: BorderSide(color: Color(0xFFC4C5D5), width: 0.5),
-                ),
-              ),
-              padding: const EdgeInsets.symmetric(vertical: 12),
-              child: Row(
-                children: [
-                  Expanded(
-                    flex: 3,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          title,
-                          style: const TextStyle(
+                Color catColor = const Color(0xFF0038A8);
+                if (categoryName == 'emergency')
+                  catColor = const Color(0xFFDC2626);
+                if (categoryName == 'event') catColor = const Color(0xFF15803D);
+
+                return Container(
+                  decoration: const BoxDecoration(
+                    border: Border(
+                      bottom: BorderSide(color: Color(0xFFC4C5D5), width: 0.5),
+                    ),
+                  ),
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        flex: 3,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              title,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF0038A8),
+                              ),
+                            ),
+                            Text(
+                              desc,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Expanded(
+                        child: Text(date, style: const TextStyle(fontSize: 12)),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: catColor.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(
+                          categoryName.toUpperCase(),
+                          style: TextStyle(
+                            color: catColor,
+                            fontSize: 10,
                             fontWeight: FontWeight.bold,
-                            color: Color(0xFF0038A8),
                           ),
                         ),
-                        Text(
-                          desc,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(fontSize: 12, color: Colors.grey),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Expanded(
-                    child: Text(
-                      date,
-                      style: const TextStyle(fontSize: 12),
-                    ),
-                  ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: catColor.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: Text(
-                      categoryName.toUpperCase(),
-                      style: TextStyle(
-                        color: catColor,
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
                       ),
-                    ),
+                    ],
                   ),
-                ],
-              ),
-            );
-          }).toList(),
+                );
+              }).toList(),
         );
       },
     );
@@ -398,14 +429,32 @@ class _DashboardPageState extends State<DashboardPage> {
                   value: _selectedDocumentType,
                   decoration: const InputDecoration(
                     border: OutlineInputBorder(),
-                    contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                    contentPadding: EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 10,
+                    ),
                   ),
                   items: const [
-                    DropdownMenuItem(value: 'Barangay Clearance', child: Text('Barangay Clearance')),
-                    DropdownMenuItem(value: 'Certificate of Residency', child: Text('Certificate of Residency')),
-                    DropdownMenuItem(value: 'Business Permit', child: Text('Business Permit')),
-                    DropdownMenuItem(value: 'Indigency Certificate', child: Text('Indigency Certificate')),
-                    DropdownMenuItem(value: 'Barangay ID', child: Text('Barangay ID')),
+                    DropdownMenuItem(
+                      value: 'Barangay Clearance',
+                      child: Text('Barangay Clearance'),
+                    ),
+                    DropdownMenuItem(
+                      value: 'Certificate of Residency',
+                      child: Text('Certificate of Residency'),
+                    ),
+                    DropdownMenuItem(
+                      value: 'Business Permit',
+                      child: Text('Business Permit'),
+                    ),
+                    DropdownMenuItem(
+                      value: 'Indigency Certificate',
+                      child: Text('Indigency Certificate'),
+                    ),
+                    DropdownMenuItem(
+                      value: 'Barangay ID',
+                      child: Text('Barangay ID'),
+                    ),
                   ],
                   onChanged: (val) {
                     if (val != null) {
@@ -465,7 +514,8 @@ class _DashboardPageState extends State<DashboardPage> {
                   controller: _reasonController,
                   maxLines: 4,
                   decoration: const InputDecoration(
-                    hintText: 'Describe why you are requesting this document...',
+                    hintText:
+                        'Describe why you are requesting this document...',
                     border: OutlineInputBorder(),
                   ),
                 ),
@@ -476,15 +526,20 @@ class _DashboardPageState extends State<DashboardPage> {
                   children: [
                     Expanded(
                       child: OutlinedButton(
-                        onPressed: _isSaving ? null : () {
-                          _nameController.clear();
-                          _dobController.clear();
-                          _addressController.clear();
-                          _reasonController.clear();
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Form cleared!')),
-                          );
-                        },
+                        onPressed:
+                            _isSaving
+                                ? null
+                                : () {
+                                  _nameController.clear();
+                                  _dobController.clear();
+                                  _addressController.clear();
+                                  _reasonController.clear();
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Form cleared!'),
+                                    ),
+                                  );
+                                },
                         child: const Padding(
                           padding: EdgeInsets.all(12),
                           child: Text('Clear Form'),
@@ -501,16 +556,17 @@ class _DashboardPageState extends State<DashboardPage> {
                         ),
                         child: Padding(
                           padding: const EdgeInsets.all(12),
-                          child: _isSaving
-                              ? const SizedBox(
-                                  width: 20,
-                                  height: 20,
-                                  child: CircularProgressIndicator(
-                                    color: Colors.white,
-                                    strokeWidth: 2,
-                                  ),
-                                )
-                              : const Text('Submit Request'),
+                          child:
+                              _isSaving
+                                  ? const SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(
+                                      color: Colors.white,
+                                      strokeWidth: 2,
+                                    ),
+                                  )
+                                  : const Text('Submit Request'),
                         ),
                       ),
                     ),
@@ -618,9 +674,8 @@ class _DashboardPageState extends State<DashboardPage> {
             color: isSelected ? Colors.black : Colors.grey,
           ),
         ),
-        backgroundColor: isSelected
-            ? const Color(0xFFD3E4FE)
-            : Colors.transparent,
+        backgroundColor:
+            isSelected ? const Color(0xFFD3E4FE) : Colors.transparent,
         side: BorderSide.none,
         padding: EdgeInsets.zero,
       ),
@@ -648,110 +703,115 @@ class _DashboardPageState extends State<DashboardPage> {
   void _showPreviewDialog(BuildContext context) {
     showDialog(
       context: context,
-      builder: (context) => Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        child: Container(
-          width: 500,
-          clipBehavior: Clip.antiAlias,
-          decoration: BoxDecoration(borderRadius: BorderRadius.circular(20)),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Stack(
+      builder:
+          (context) => Dialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Container(
+              width: 500,
+              clipBehavior: Clip.antiAlias,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  Image.network(
-                    'https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=800',
-                    height: 200,
-                    width: double.infinity,
-                    fit: BoxFit.cover,
+                  Stack(
+                    children: [
+                      Image.network(
+                        'https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=800',
+                        height: 200,
+                        width: double.infinity,
+                        fit: BoxFit.cover,
+                      ),
+                      Positioned(
+                        top: 10,
+                        right: 10,
+                        child: CircleAvatar(
+                          backgroundColor: Colors.black26,
+                          child: IconButton(
+                            icon: const Icon(Icons.close, color: Colors.white),
+                            onPressed: () => Navigator.pop(context),
+                          ),
+                        ),
+                      ),
+                      Positioned(
+                        bottom: 10,
+                        left: 10,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF002576),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: const Text(
+                            'EVENT',
+                            style: TextStyle(color: Colors.white, fontSize: 10),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                  Positioned(
-                    top: 10,
-                    right: 10,
-                    child: CircleAvatar(
-                      backgroundColor: Colors.black26,
-                      child: IconButton(
-                        icon: const Icon(Icons.close, color: Colors.white),
-                        onPressed: () => Navigator.pop(context),
-                      ),
-                    ),
-                  ),
-                  Positioned(
-                    bottom: 10,
-                    left: 10,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF002576),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: const Text(
-                        'EVENT',
-                        style: TextStyle(color: Colors.white, fontSize: 10),
-                      ),
+                  Padding(
+                    padding: const EdgeInsets.all(24.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Annual Community Clean-up',
+                          style: TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF002576),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        const Text(
+                          'Join your fellow residents this coming Saturday as we revitalize our community spaces. Tools and refreshments provided.',
+                          style: TextStyle(color: Color(0xFF444653)),
+                        ),
+                        const SizedBox(height: 20),
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFEFF4FF),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: const Row(
+                            children: [
+                              Icon(Icons.location_on, color: Color(0xFF002576)),
+                              SizedBox(width: 12),
+                              Text(
+                                'Main Barangay Plaza',
+                                style: TextStyle(fontWeight: FontWeight.bold),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton(
+                            onPressed: () {},
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF002576),
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.all(16),
+                            ),
+                            child: const Text('Confirm Participation'),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ],
               ),
-              Padding(
-                padding: const EdgeInsets.all(24.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Annual Community Clean-up',
-                      style: TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF002576),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    const Text(
-                      'Join your fellow residents this coming Saturday as we revitalize our community spaces. Tools and refreshments provided.',
-                      style: TextStyle(color: Color(0xFF444653)),
-                    ),
-                    const SizedBox(height: 20),
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFEFF4FF),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: const Row(
-                        children: [
-                          Icon(Icons.location_on, color: Color(0xFF002576)),
-                          SizedBox(width: 12),
-                          Text(
-                            'Main Barangay Plaza',
-                            style: TextStyle(fontWeight: FontWeight.bold),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: () {},
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF002576),
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.all(16),
-                        ),
-                        child: const Text('Confirm Participation'),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
+            ),
           ),
-        ),
-      ),
     );
   }
 }

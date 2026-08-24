@@ -90,7 +90,7 @@ class _ResidentsDirectoryScreenState extends State<ResidentsDirectoryScreen> {
                         await newDoc.set({
                           'uid': newDoc.id,
                           'displayName': nameCtrl.text.trim(),
-                          'email': emailCtrl.text.trim().isEmpty ? 'resident_${newDoc.id.substring(0, 4)}@barangay.gov.ph' : emailCtrl.text.trim(),
+                          'email': emailCtrl.text.trim().isEmpty ? 'resident_${newDoc.id.substring(0, newDoc.id.length < 4 ? newDoc.id.length : 4)}@barangay.gov.ph' : emailCtrl.text.trim(),
                           'address': addressCtrl.text.trim().isEmpty ? 'Zone 1, Main St.' : addressCtrl.text.trim(),
                           'phone': phoneCtrl.text.trim().isEmpty ? '+63 917 000 0000' : phoneCtrl.text.trim(),
                           'role': role,
