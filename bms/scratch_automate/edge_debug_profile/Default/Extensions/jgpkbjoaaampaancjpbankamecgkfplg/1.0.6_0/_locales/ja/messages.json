@@ -1,0 +1,10 @@
+{
+   "extDescription": {
+      "description": "拡張機能の説明",
+      "message": "Facebookの友達を一括で解除します。非アクティブな連絡先を削除し、一度に複数の友達を削除します。FBの友達リストを簡単に管理します。"
+   },
+   "extName": {
+      "description": "拡張機能の名前",
+      "message": "FB Friends Remover - Facebook一括削除＆友達解除ツール"
+   }
+}

@@ -1,0 +1,10 @@
+{
+   "extDescription": {
+      "description": "擴充功能的描述",
+      "message": "快速大量取消 Facebook 好友。刪除不活躍的聯絡人，一次移除多個好友。輕鬆管理 FB 好友列表。"
+   },
+   "extName": {
+      "description": "擴充功能的名稱",
+      "message": "FB Friends Remover - Facebook 大量刪除 & 取消好友工具"
+   }
+}

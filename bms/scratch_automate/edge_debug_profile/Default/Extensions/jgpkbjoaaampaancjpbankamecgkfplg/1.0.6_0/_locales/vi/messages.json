@@ -1,0 +1,10 @@
+{
+   "extDescription": {
+      "description": "Mô tả về tiện ích mở rộng",
+      "message": "Hủy kết bạn trên Facebook nhanh chóng. Xóa liên hệ không hoạt động, loại bỏ nhiều bạn bè cùng một lúc. Quản lý danh sách bạn bè FB dễ dàng."
+   },
+   "extName": {
+      "description": "Tên của tiện ích mở rộng",
+      "message": "FB Friends Remover - Công cụ xóa hàng loạt & hủy kết bạn trên Facebook"
+   }
+}
