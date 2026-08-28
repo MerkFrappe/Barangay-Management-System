@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../theme/app_colors.dart';
 import '../screens/login_screen.dart';
+import '../screens/dashboard_screen.dart';
 import '../screens/resident_dashboard_screen.dart';
 import '../screens/resident_request_code.dart';
 import '../screens/residence_announcements.dart' as announcements;
@@ -22,153 +23,145 @@ class ResidentSidebar extends StatelessWidget {
 
     showDialog(
       context: context,
-      builder:
-          (ctx) => AlertDialog(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-            ),
-            title: Row(
-              children: [
-                const Icon(Icons.campaign, color: Colors.red, size: 28),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    'Report Emergency to HQ',
-                    style: TextStyle(color: Colors.red[900]),
-                  ),
-                ),
-              ],
-            ),
-            content: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TextField(
-                    controller: nameCtrl,
-                    decoration: const InputDecoration(
-                      labelText: 'Your Name / Contact',
-                      prefixIcon: Icon(Icons.person),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: locCtrl,
-                    decoration: const InputDecoration(
-                      labelText: 'Exact Incident Location',
-                      prefixIcon: Icon(Icons.location_on),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  DropdownButtonFormField<String>(
-                    value: type,
-                    decoration: const InputDecoration(
-                      labelText: 'Emergency Category',
-                    ),
-                    items:
-                        [
-                              'Fire Emergency',
-                              'Medical Emergency',
-                              'Crime / Theft',
-                              'Flood / Disaster',
-                              'Accident',
-                            ]
-                            .map(
-                              (e) => DropdownMenuItem(value: e, child: Text(e)),
-                            )
-                            .toList(),
-                    onChanged: (v) => type = v!,
-                  ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: detailsCtrl,
-                    maxLines: 2,
-                    decoration: const InputDecoration(
-                      labelText: 'Immediate Details',
-                    ),
-                  ),
-                ],
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            const Icon(Icons.campaign, color: Colors.red, size: 28),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                'Report Emergency to HQ',
+                style: TextStyle(color: Colors.red[900]),
               ),
             ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(ctx),
-                child: const Text('Cancel'),
-              ),
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.red,
-                  foregroundColor: Colors.white,
+          ],
+        ),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: nameCtrl,
+                decoration: const InputDecoration(
+                  labelText: 'Your Name / Contact',
+                  prefixIcon: Icon(Icons.person),
                 ),
-                onPressed: () {
-                  Navigator.pop(ctx);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text(
-                        'EMERGENCY REPORT DISPATCHED TO BARANGAY HQ! Officials have been notified.',
-                      ),
-                      backgroundColor: Colors.red,
-                    ),
-                  );
-                },
-                child: const Text('SUBMIT EMERGENCY ALERT'),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: locCtrl,
+                decoration: const InputDecoration(
+                  labelText: 'Exact Incident Location',
+                  prefixIcon: Icon(Icons.location_on),
+                ),
+              ),
+              const SizedBox(height: 12),
+              DropdownButtonFormField<String>(
+                value: type,
+                decoration: const InputDecoration(
+                  labelText: 'Emergency Category',
+                ),
+                items:
+                    [
+                          'Fire Emergency',
+                          'Medical Emergency',
+                          'Crime / Theft',
+                          'Flood / Disaster',
+                          'Accident',
+                        ]
+                        .map((e) => DropdownMenuItem(value: e, child: Text(e)))
+                        .toList(),
+                onChanged: (v) => type = v!,
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: detailsCtrl,
+                maxLines: 2,
+                decoration: const InputDecoration(
+                  labelText: 'Immediate Details',
+                ),
               ),
             ],
           ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+            ),
+            onPressed: () {
+              Navigator.pop(ctx);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text(
+                    'EMERGENCY REPORT DISPATCHED TO BARANGAY HQ! Officials have been notified.',
+                  ),
+                  backgroundColor: Colors.red,
+                ),
+              );
+            },
+            child: const Text('SUBMIT EMERGENCY ALERT'),
+          ),
+        ],
+      ),
     );
   }
 
   void _showHelpCenterModal(BuildContext context) {
     showDialog(
       context: context,
-      builder:
-          (ctx) => AlertDialog(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-            ),
-            title: const Row(
-              children: [
-                Icon(Icons.help_outline, color: AppColors.primary),
-                SizedBox(width: 12),
-                Text('Barangay Help Center'),
-              ],
-            ),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Frequently Asked Questions:',
-                  style: AppTextStyles.titleMd.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                  '• How long does a Barangay Clearance take?\n  Typically 1-2 business days.',
-                ),
-                const SizedBox(height: 6),
-                const Text(
-                  '• What are the office hours?\n  Monday to Friday: 8:00 AM - 5:00 PM',
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  'Official Contact:',
-                  style: AppTextStyles.titleMd.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const Text(
-                  'Hotline: +63 917 123 4567 | Email: help@barangay.gov.ph',
-                ),
-              ],
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(ctx),
-                child: const Text('Close'),
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Row(
+          children: [
+            Icon(Icons.help_outline, color: AppColors.primary),
+            SizedBox(width: 12),
+            Text('Barangay Help Center'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Frequently Asked Questions:',
+              style: AppTextStyles.titleMd.copyWith(
+                fontWeight: FontWeight.bold,
               ),
-            ],
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              '• How long does a Barangay Clearance take?\n  Typically 1-2 business days.',
+            ),
+            const SizedBox(height: 6),
+            const Text(
+              '• What are the office hours?\n  Monday to Friday: 8:00 AM - 5:00 PM',
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'Official Contact:',
+              style: AppTextStyles.titleMd.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const Text(
+              'Hotline: +63 917 123 4567 | Email: help@barangay.gov.ph',
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Close'),
           ),
+        ],
+      ),
     );
   }
 
@@ -224,95 +217,7 @@ class ResidentSidebar extends StatelessWidget {
                         ],
                       ),
                     ),
-<<<<<<< HEAD
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 32),
-
-              // NAVIGATION
-              _NavItem(
-                icon: Icons.dashboard_rounded,
-                title: "My Dashboard",
-                selected: true,
-                onTap: () {
-                  Navigator.of(context).pushReplacement(
-                    MaterialPageRoute(builder: (_) => const ResidentDashboardScreen()),
-                  );
-                },
-              ),
-
-              _NavItem(
-                icon: Icons.assignment_outlined,
-                title: "Document Request",
-                onTap: () {
-                  Navigator.of(context).pushReplacement(
-                    MaterialPageRoute(builder: (_) => const DocumentRequest()),
-                  );
-                },
-              ),
-
-              _NavItem(
-                icon: Icons.emergency_outlined,
-                title: "Emergency Alerts",
-                onTap: () {
-                  Navigator.of(context).pushReplacement(
-                    MaterialPageRoute(
-                      builder: (_) => const announcements.CivicHorizonApp(),
-                    ),
-                  );
-                },
-              ),
-
-              _NavItem(
-                icon: Icons.local_hospital_outlined,
-                title: "Health Center & Services",
-                onTap: () {
-                  Navigator.of(context).pushReplacement(
-                    MaterialPageRoute(builder: (_) => const HealthCenterScreen()),
-                  );
-                },
-              ),
-
-              _NavItem(
-                icon: Icons.poll_outlined,
-                title: "Community Polls",
-                onTap: () {
-                  Navigator.of(context).pushReplacement(
-                    MaterialPageRoute(builder: (_) => const CommunityPollsScreen()),
-                  );
-                },
-              ),
-
-              _NavItem(
-                icon: Icons.help_outline,
-                title: "Help Center",
-                onTap: () => _showHelpCenterModal(context),
-              ),
-
-              const SizedBox(height: 24),
-
-              // REPORT BUTTON
-              SizedBox(
-                width: double.infinity,
-                height: 50,
-                child: FilledButton.icon(
-                  style: FilledButton.styleFrom(
-                    backgroundColor: Colors.red[700],
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                  ),
-                  onPressed: () => _showReportEmergencyModal(context),
-
-                  icon: const Icon(Icons.campaign),
-
-                  label: const Text("Report Emergency"),
-=======
                   ],
->>>>>>> b54a044ce7e3c8d0c5826f7197d7ed4d6da67e03
                 ),
 
                 const SizedBox(height: 32),
@@ -391,9 +296,7 @@ class ResidentSidebar extends StatelessWidget {
                   title: "Switch to Admin",
                   onTap: () {
                     Navigator.of(context).pushReplacement(
-                      MaterialPageRoute(
-                        builder: (_) => const DashboardScreen(),
-                      ),
+                      MaterialPageRoute(builder: (_) => DashboardScreen()),
                     );
                   },
                 ),
@@ -488,10 +391,9 @@ class _NavItem extends StatelessWidget {
                 Icon(
                   icon,
                   size: 22,
-                  color:
-                      selected
-                          ? AppColors.onPrimary
-                          : AppColors.onSurfaceVariant,
+                  color: selected
+                      ? AppColors.onPrimary
+                      : AppColors.onSurfaceVariant,
                 ),
 
                 const SizedBox(width: 14),
@@ -500,10 +402,9 @@ class _NavItem extends StatelessWidget {
                   child: Text(
                     title,
                     style: AppTextStyles.labelMd.copyWith(
-                      color:
-                          selected
-                              ? AppColors.onPrimary
-                              : AppColors.onSurfaceVariant,
+                      color: selected
+                          ? AppColors.onPrimary
+                          : AppColors.onSurfaceVariant,
                       fontWeight: FontWeight.w600,
                     ),
                   ),

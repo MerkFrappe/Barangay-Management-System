@@ -67,87 +67,60 @@ class _DashboardPageState extends State<DashboardPage> {
     return months[month - 1];
   }
 
-<<<<<<< HEAD
-=======
-  String _getInitials(String name) {
-    final clean = name.trim();
-    if (clean.isEmpty) return 'RN';
-    final parts = clean.split(' ');
-    return parts
-        .map((p) => p.isNotEmpty ? p[0] : '')
-        .take(2)
-        .join()
-        .toUpperCase();
-  }
-
-  bool _isSupportedIdFile(String filename) {
-    final extension = filename.split('.').last.toLowerCase();
-    return const {'jpg', 'jpeg', 'png', 'pdf'}.contains(extension);
-  }
-
-  Future<void> _selectIdFile() async {
-    final files = await file_picker.FilePicker.pickFiles(
-      type: file_picker.FileType.custom,
-      allowedExtensions: const ['jpg', 'jpeg', 'png', 'pdf'],
-    );
-    if (files.isEmpty) return;
-    final file = files.first;
-    final bytes = await file.readAsBytes();
-    if (!mounted) return;
-    setState(() {
-      _idFileBytes = bytes;
-      _idFileName = file.name;
-    });
-  }
-
-  Future<void> _useDroppedIdFile(XFile file) async {
-    if (!_isSupportedIdFile(file.name)) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'Please upload a JPG, PNG, or PDF identification file.',
-            ),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-      return;
-    }
-    final bytes = await file.readAsBytes();
-    if (!mounted) return;
-    setState(() {
-      _idFileBytes = bytes;
-      _idFileName = file.name;
-    });
-  }
-
   Future<void> _uploadIdAttachment({
-    required DocumentReference<Map<String, dynamic>> requestRef,
+    required DocumentReference requestRef,
     required Uint8List fileBytes,
     required String fileName,
   }) async {
     try {
-      final safeFileName = fileName.replaceAll(RegExp(r'[^A-Za-z0-9._-]'), '_');
-      final attachmentRef = FirebaseStorage.instance.ref().child(
-        'document_requests/${requestRef.id}/$safeFileName',
-      );
-      await attachmentRef.putData(fileBytes);
-      final downloadUrl = await attachmentRef.getDownloadURL();
+      final storageRef = FirebaseStorage.instance
+          .ref()
+          .child('id_attachments')
+          .child('${requestRef.id}_$fileName');
+
+      final uploadTask = await storageRef.putData(fileBytes);
+      final downloadUrl = await uploadTask.ref.getDownloadURL();
+
       await requestRef.update({
         'idAttachmentUrl': downloadUrl,
         'attachmentUploadStatus': 'uploaded',
-        'attachmentUploadError': FieldValue.delete(),
       });
-    } catch (_) {
+    } catch (e) {
+      debugPrint('Failed to upload ID attachment: $e');
       await requestRef.update({
         'attachmentUploadStatus': 'failed',
-        'attachmentUploadError': 'ID attachment upload failed',
       });
     }
   }
 
->>>>>>> b54a044ce7e3c8d0c5826f7197d7ed4d6da67e03
+  Future<void> _selectIdFile() async {
+    final result = await file_picker.FilePicker.pickFiles(
+      type: file_picker.FileType.custom,
+      allowedExtensions: ['jpg', 'jpeg', 'png', 'pdf'],
+    );
+
+    if (result.isNotEmpty) {
+      final file = result.first;
+      final bytes = await file.readAsBytes();
+      setState(() {
+        _idFileBytes = bytes;
+        _idFileName = file.name;
+      });
+    }
+  }
+
+  Future<void> _useDroppedIdFile(XFile file) async {
+    try {
+      final bytes = await file.readAsBytes();
+      setState(() {
+        _idFileBytes = bytes;
+        _idFileName = file.name;
+      });
+    } catch (e) {
+      debugPrint('Error reading dropped file: $e');
+    }
+  }
+
   Future<void> _submitRequest() async {
     final reason = _reasonController.text.trim();
 
@@ -168,8 +141,9 @@ class _DashboardPageState extends State<DashboardPage> {
       final dateStr =
           '${_getMonthName(now.month)} ${now.day.toString().padLeft(2, '0')}, ${now.year}';
 
-      final requestRef =
-          FirebaseFirestore.instance.collection('document_requests').doc();
+      final requestRef = FirebaseFirestore.instance
+          .collection('document_requests')
+          .doc();
       final idFileBytes = _idFileBytes;
       final idFileName = _idFileName;
 
@@ -177,23 +151,16 @@ class _DashboardPageState extends State<DashboardPage> {
         'residentId': FirebaseAuth.instance.currentUser?.uid,
         'documentType': _selectedDocumentType,
         'dateSubmitted': dateStr,
-<<<<<<< HEAD
         'residentName': 'Resident User',
         'initials': 'RU',
         'status': 'pending',
-=======
-        'residentName': name,
-        'initials': _getInitials(name),
-        'dateOfBirth': dob,
-        'address': address,
-        'status': 'Pending',
->>>>>>> b54a044ce7e3c8d0c5826f7197d7ed4d6da67e03
         'purpose': reason,
         'contactNumber': '',
         'idAttachmentName': idFileName,
         'idAttachmentUrl': null,
-        'attachmentUploadStatus':
-            idFileBytes == null ? 'not_provided' : 'uploading',
+        'attachmentUploadStatus': idFileBytes == null
+            ? 'not_provided'
+            : 'uploading',
         'createdAt': FieldValue.serverTimestamp(),
       });
 
@@ -389,8 +356,9 @@ class _DashboardPageState extends State<DashboardPage> {
     // Filtering and ordering together requires a Firestore composite index.
     // Keep this small dashboard feed index-free by sorting the streamed data
     // after it reaches the client.
-    final stream =
-        FirebaseFirestore.instance.collection('announcements').snapshots();
+    final stream = FirebaseFirestore.instance
+        .collection('announcements')
+        .snapshots();
 
     return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
       stream: stream,
@@ -408,17 +376,18 @@ class _DashboardPageState extends State<DashboardPage> {
           );
         }
 
-        final docs =
-            (snapshot.data?.docs ?? [])
-                .where((doc) => doc.data()['status'] == 'published')
-                .toList();
+        final docs = (snapshot.data?.docs ?? [])
+            .where((doc) => doc.data()['status'] == 'published')
+            .toList();
         docs.sort((a, b) {
           final aCreatedAt = a.data()['createdAt'];
           final bCreatedAt = b.data()['createdAt'];
-          final aMillis =
-              aCreatedAt is Timestamp ? aCreatedAt.millisecondsSinceEpoch : 0;
-          final bMillis =
-              bCreatedAt is Timestamp ? bCreatedAt.millisecondsSinceEpoch : 0;
+          final aMillis = aCreatedAt is Timestamp
+              ? aCreatedAt.millisecondsSinceEpoch
+              : 0;
+          final bMillis = bCreatedAt is Timestamp
+              ? bCreatedAt.millisecondsSinceEpoch
+              : 0;
           return bMillis.compareTo(aMillis);
         });
         if (docs.isEmpty) {
@@ -434,77 +403,75 @@ class _DashboardPageState extends State<DashboardPage> {
         }
 
         return Column(
-          children:
-              docs.map((doc) {
-                final data = doc.data();
-                final title = data['title'] ?? '';
-                final desc = data['description'] ?? 'No details provided.';
-                final date = data['date'] ?? '';
-                final categoryName = data['category'] ?? 'news';
+          children: docs.map((doc) {
+            final data = doc.data();
+            final title = data['title'] ?? '';
+            final desc = data['description'] ?? 'No details provided.';
+            final date = data['date'] ?? '';
+            final categoryName = data['category'] ?? 'news';
 
-                Color catColor = const Color(0xFF0038A8);
-                if (categoryName == 'emergency')
-                  catColor = const Color(0xFFDC2626);
-                if (categoryName == 'event') catColor = const Color(0xFF15803D);
+            Color catColor = const Color(0xFF0038A8);
+            if (categoryName == 'emergency') catColor = const Color(0xFFDC2626);
+            if (categoryName == 'event') catColor = const Color(0xFF15803D);
 
-                return Container(
-                  decoration: const BoxDecoration(
-                    border: Border(
-                      bottom: BorderSide(color: Color(0xFFC4C5D5), width: 0.5),
-                    ),
-                  ),
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        flex: 3,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              title,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                                color: Color(0xFF0038A8),
-                              ),
-                            ),
-                            Text(
-                              desc,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                fontSize: 12,
-                                color: Colors.grey,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Expanded(
-                        child: Text(date, style: const TextStyle(fontSize: 12)),
-                      ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: catColor.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: Text(
-                          categoryName.toUpperCase(),
-                          style: TextStyle(
-                            color: catColor,
-                            fontSize: 10,
+            return Container(
+              decoration: const BoxDecoration(
+                border: Border(
+                  bottom: BorderSide(color: Color(0xFFC4C5D5), width: 0.5),
+                ),
+              ),
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              child: Row(
+                children: [
+                  Expanded(
+                    flex: 3,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          title,
+                          style: const TextStyle(
                             fontWeight: FontWeight.bold,
+                            color: Color(0xFF0038A8),
                           ),
                         ),
-                      ),
-                    ],
+                        Text(
+                          desc,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                );
-              }).toList(),
+                  Expanded(
+                    child: Text(date, style: const TextStyle(fontSize: 12)),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: catColor.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      categoryName.toUpperCase(),
+                      style: TextStyle(
+                        color: catColor,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }).toList(),
         );
       },
     );
@@ -597,21 +564,20 @@ class _DashboardPageState extends State<DashboardPage> {
                   children: [
                     Expanded(
                       child: OutlinedButton(
-                        onPressed:
-                            _isSaving
-                                ? null
-                                : () {
-                                  _reasonController.clear();
-                                  setState(() {
-                                    _idFileBytes = null;
-                                    _idFileName = null;
-                                  });
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text('Form cleared!'),
-                                    ),
-                                  );
-                                },
+                        onPressed: _isSaving
+                            ? null
+                            : () {
+                                _reasonController.clear();
+                                setState(() {
+                                  _idFileBytes = null;
+                                  _idFileName = null;
+                                });
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('Form cleared!'),
+                                  ),
+                                );
+                              },
                         child: const Padding(
                           padding: EdgeInsets.all(12),
                           child: Text('Clear Form'),
@@ -628,17 +594,16 @@ class _DashboardPageState extends State<DashboardPage> {
                         ),
                         child: Padding(
                           padding: const EdgeInsets.all(12),
-                          child:
-                              _isSaving
-                                  ? const SizedBox(
-                                    width: 20,
-                                    height: 20,
-                                    child: CircularProgressIndicator(
-                                      color: Colors.white,
-                                      strokeWidth: 2,
-                                    ),
-                                  )
-                                  : const Text('Submit Request'),
+                          child: _isSaving
+                              ? const SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                    color: Colors.white,
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                              : const Text('Submit Request'),
                         ),
                       ),
                     ),
@@ -682,16 +647,14 @@ class _DashboardPageState extends State<DashboardPage> {
           padding: const EdgeInsets.all(32),
           decoration: BoxDecoration(
             border: Border.all(
-              color:
-                  _isDraggingId
-                      ? const Color(0xFF002576)
-                      : const Color(0xFFC4C5D5),
+              color: _isDraggingId
+                  ? const Color(0xFF002576)
+                  : const Color(0xFFC4C5D5),
               width: _isDraggingId ? 2 : 1,
             ),
-            color:
-                _isDraggingId
-                    ? const Color(0xFFDCE9FF)
-                    : const Color(0xFFEFF4FF),
+            color: _isDraggingId
+                ? const Color(0xFFDCE9FF)
+                : const Color(0xFFEFF4FF),
             borderRadius: BorderRadius.circular(12),
           ),
           child: Column(
@@ -775,8 +738,9 @@ class _DashboardPageState extends State<DashboardPage> {
             color: isSelected ? Colors.black : Colors.grey,
           ),
         ),
-        backgroundColor:
-            isSelected ? const Color(0xFFD3E4FE) : Colors.transparent,
+        backgroundColor: isSelected
+            ? const Color(0xFFD3E4FE)
+            : Colors.transparent,
         side: BorderSide.none,
         padding: EdgeInsets.zero,
       ),
@@ -804,115 +768,110 @@ class _DashboardPageState extends State<DashboardPage> {
   void _showPreviewDialog(BuildContext context) {
     showDialog(
       context: context,
-      builder:
-          (context) => Dialog(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Container(
-              width: 500,
-              clipBehavior: Clip.antiAlias,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        child: Container(
+          width: 500,
+          clipBehavior: Clip.antiAlias,
+          decoration: BoxDecoration(borderRadius: BorderRadius.circular(20)),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Stack(
                 children: [
-                  Stack(
-                    children: [
-                      Image.network(
-                        'https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=800',
-                        height: 200,
-                        width: double.infinity,
-                        fit: BoxFit.cover,
-                      ),
-                      Positioned(
-                        top: 10,
-                        right: 10,
-                        child: CircleAvatar(
-                          backgroundColor: Colors.black26,
-                          child: IconButton(
-                            icon: const Icon(Icons.close, color: Colors.white),
-                            onPressed: () => Navigator.pop(context),
-                          ),
-                        ),
-                      ),
-                      Positioned(
-                        bottom: 10,
-                        left: 10,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 4,
-                          ),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF002576),
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: const Text(
-                            'EVENT',
-                            style: TextStyle(color: Colors.white, fontSize: 10),
-                          ),
-                        ),
-                      ),
-                    ],
+                  Image.network(
+                    'https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=800',
+                    height: 200,
+                    width: double.infinity,
+                    fit: BoxFit.cover,
                   ),
-                  Padding(
-                    padding: const EdgeInsets.all(24.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Annual Community Clean-up',
-                          style: TextStyle(
-                            fontSize: 22,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF002576),
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        const Text(
-                          'Join your fellow residents this coming Saturday as we revitalize our community spaces. Tools and refreshments provided.',
-                          style: TextStyle(color: Color(0xFF444653)),
-                        ),
-                        const SizedBox(height: 20),
-                        Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFEFF4FF),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: const Row(
-                            children: [
-                              Icon(Icons.location_on, color: Color(0xFF002576)),
-                              SizedBox(width: 12),
-                              Text(
-                                'Main Barangay Plaza',
-                                style: TextStyle(fontWeight: FontWeight.bold),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 24),
-                        SizedBox(
-                          width: double.infinity,
-                          child: ElevatedButton(
-                            onPressed: () {},
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF002576),
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.all(16),
-                            ),
-                            child: const Text('Confirm Participation'),
-                          ),
-                        ),
-                      ],
+                  Positioned(
+                    top: 10,
+                    right: 10,
+                    child: CircleAvatar(
+                      backgroundColor: Colors.black26,
+                      child: IconButton(
+                        icon: const Icon(Icons.close, color: Colors.white),
+                        onPressed: () => Navigator.pop(context),
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    bottom: 10,
+                    left: 10,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF002576),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: const Text(
+                        'EVENT',
+                        style: TextStyle(color: Colors.white, fontSize: 10),
+                      ),
                     ),
                   ),
                 ],
               ),
-            ),
+              Padding(
+                padding: const EdgeInsets.all(24.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Annual Community Clean-up',
+                      style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF002576),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      'Join your fellow residents this coming Saturday as we revitalize our community spaces. Tools and refreshments provided.',
+                      style: TextStyle(color: Color(0xFF444653)),
+                    ),
+                    const SizedBox(height: 20),
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFEFF4FF),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Row(
+                        children: [
+                          Icon(Icons.location_on, color: Color(0xFF002576)),
+                          SizedBox(width: 12),
+                          Text(
+                            'Main Barangay Plaza',
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: () {},
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF002576),
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.all(16),
+                        ),
+                        child: const Text('Confirm Participation'),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
+        ),
+      ),
     );
   }
 }
