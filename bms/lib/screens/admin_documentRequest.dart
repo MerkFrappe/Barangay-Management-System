@@ -4,7 +4,6 @@ import '../theme/app_colors.dart';
 import '../widgets/sidebar.dart';
 import '../widgets/top_header.dart';
 
-
 typedef AdminDocumentRequestScreen = admin_documentRequest;
 
 class admin_documentRequest extends StatefulWidget {
@@ -18,41 +17,101 @@ class _admin_documentRequestState extends State<admin_documentRequest> {
   String _searchQuery = '';
   String _selectedStatus = 'All Statuses';
 
-  final CollectionReference _collection = FirebaseFirestore.instance.collection('document_requests');
+  final CollectionReference _collection = FirebaseFirestore.instance.collection(
+    'document_requests',
+  );
 
-  void _showStatusUpdateDialog(BuildContext context, String docId, Map<String, dynamic> data) {
+  String _normalizedStatus(dynamic value) {
+    final status = (value ?? 'Pending').toString().trim().toLowerCase();
+    switch (status) {
+      case 'in review':
+        return 'In Review';
+      case 'approved':
+        return 'Approved';
+      case 'rejected':
+        return 'Rejected';
+      default:
+        return 'Pending';
+    }
+  }
+
+  void _showStatusUpdateDialog(
+    BuildContext context,
+    String docId,
+    Map<String, dynamic> data,
+  ) {
     showDialog(
       context: context,
       builder: (ctx) {
-        String currentStatus = data['status'] ?? 'Pending';
+        String currentStatus = _normalizedStatus(data['status']);
         return AlertDialog(
-          title: Text('Update Request Status', style: AppTextStyles.headlineSm.copyWith(color: AppColors.primary)),
+          title: Text(
+            'Update Request Status',
+            style: AppTextStyles.headlineSm.copyWith(color: AppColors.primary),
+          ),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Resident: ${data['residentName'] ?? 'N/A'}', style: AppTextStyles.bodyMd),
+              Text(
+                'Resident: ${data['residentName'] ?? 'N/A'}',
+                style: AppTextStyles.bodyMd,
+              ),
               const SizedBox(height: 8),
-              Text('Document: ${data['documentType'] ?? 'N/A'}', style: AppTextStyles.bodyMd),
+              Text(
+                'Document: ${data['documentType'] ?? 'N/A'}',
+                style: AppTextStyles.bodyMd,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Purpose: ${data['purpose'] ?? 'N/A'}',
+                style: AppTextStyles.bodyMd,
+              ),
+              if ((data['address'] ?? '').toString().isNotEmpty) ...[
+                const SizedBox(height: 8),
+                Text(
+                  'Address: ${data['address']}',
+                  style: AppTextStyles.bodyMd,
+                ),
+              ],
+              if ((data['idAttachmentName'] ?? '').toString().isNotEmpty) ...[
+                const SizedBox(height: 8),
+                Text(
+                  'Attached ID: ${data['idAttachmentName']}',
+                  style: AppTextStyles.bodyMd,
+                ),
+              ],
               const SizedBox(height: 16),
               const Text('Select new status:'),
               const SizedBox(height: 8),
               Wrap(
                 spacing: 8,
-                children: ['Pending', 'In Review', 'Approved', 'Rejected'].map((status) {
-                  return ChoiceChip(
-                    label: Text(status),
-                    selected: currentStatus == status,
-                    onSelected: (selected) {
-                      if (selected) {
-                        _collection.doc(docId).update({'status': status}).then((_) {
-                          Navigator.pop(ctx);
-                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Status updated to $status')));
-                        });
-                      }
-                    },
-                  );
-                }).toList(),
+                children:
+                    ['Pending', 'In Review', 'Approved', 'Rejected'].map((
+                      status,
+                    ) {
+                      return ChoiceChip(
+                        label: Text(status),
+                        selected: currentStatus == status,
+                        onSelected: (selected) {
+                          if (selected) {
+                            _collection
+                                .doc(docId)
+                                .update({'status': status})
+                                .then((_) {
+                                  Navigator.pop(ctx);
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(
+                                        'Status updated to $status',
+                                      ),
+                                    ),
+                                  );
+                                });
+                          }
+                        },
+                      );
+                    }).toList(),
               ),
             ],
           ),
@@ -97,11 +156,18 @@ class _admin_documentRequestState extends State<admin_documentRequest> {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text('Document Requests', style: AppTextStyles.headlineLg.copyWith(color: AppColors.primary)),
+                                  Text(
+                                    'Document Requests',
+                                    style: AppTextStyles.headlineLg.copyWith(
+                                      color: AppColors.primary,
+                                    ),
+                                  ),
                                   const SizedBox(height: 4),
                                   Text(
                                     'Review and process resident document applications like clearances and certificates.',
-                                    style: AppTextStyles.bodyMd.copyWith(color: AppColors.onSurfaceVariant),
+                                    style: AppTextStyles.bodyMd.copyWith(
+                                      color: AppColors.onSurfaceVariant,
+                                    ),
                                   ),
                                 ],
                               ),
@@ -114,13 +180,32 @@ class _admin_documentRequestState extends State<admin_documentRequest> {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Text('Requests Database', style: AppTextStyles.headlineSm.copyWith(fontWeight: FontWeight.bold)),
+                            Text(
+                              'Requests Database',
+                              style: AppTextStyles.headlineSm.copyWith(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
                             DropdownButton<String>(
                               value: _selectedStatus,
-                              items: ['All Statuses', 'Pending', 'In Review', 'Approved', 'Rejected']
-                                  .map((s) => DropdownMenuItem(value: s, child: Text(s)))
-                                  .toList(),
-                              onChanged: (val) => setState(() => _selectedStatus = val!),
+                              items:
+                                  [
+                                        'All Statuses',
+                                        'Pending',
+                                        'In Review',
+                                        'Approved',
+                                        'Rejected',
+                                      ]
+                                      .map(
+                                        (s) => DropdownMenuItem(
+                                          value: s,
+                                          child: Text(s),
+                                        ),
+                                      )
+                                      .toList(),
+                              onChanged:
+                                  (val) =>
+                                      setState(() => _selectedStatus = val!),
                             ),
                           ],
                         ),
@@ -132,50 +217,72 @@ class _admin_documentRequestState extends State<admin_documentRequest> {
                           color: AppColors.surfaceContainerLowest,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(16),
-                            side: const BorderSide(color: AppColors.outlineVariant),
+                            side: const BorderSide(
+                              color: AppColors.outlineVariant,
+                            ),
                           ),
                           child: Padding(
                             padding: const EdgeInsets.all(24),
                             child: StreamBuilder<QuerySnapshot>(
-                              stream: _collection.orderBy('createdAt', descending: true).snapshots(),
+                              stream:
+                                  _collection
+                                      .orderBy('createdAt', descending: true)
+                                      .snapshots(),
                               builder: (context, snapshot) {
                                 if (snapshot.hasError) {
-                                  return Center(child: Text('Error: ${snapshot.error}'));
+                                  return Center(
+                                    child: Text('Error: ${snapshot.error}'),
+                                  );
                                 }
-                                if (snapshot.connectionState == ConnectionState.waiting) {
-                                  return const Center(child: CircularProgressIndicator());
+                                if (snapshot.connectionState ==
+                                    ConnectionState.waiting) {
+                                  return const Center(
+                                    child: CircularProgressIndicator(),
+                                  );
                                 }
 
                                 final docs = snapshot.data?.docs ?? [];
-                                final filteredDocs = docs.where((doc) {
-                                  final data = doc.data() as Map<String, dynamic>;
-                                  
-                                  // Status filter
-                                  if (_selectedStatus != 'All Statuses') {
-                                    if ((data['status'] ?? 'Pending') != _selectedStatus) {
-                                      return false;
-                                    }
-                                  }
+                                final filteredDocs =
+                                    docs.where((doc) {
+                                      final data =
+                                          doc.data() as Map<String, dynamic>;
 
-                                  // Search filter
-                                  if (_searchQuery.isNotEmpty) {
-                                    final searchLower = _searchQuery.toLowerCase();
-                                    final name = (data['residentName'] ?? '').toLowerCase();
-                                    final id = doc.id.toLowerCase();
-                                    final type = (data['documentType'] ?? '').toLowerCase();
-                                    if (!name.contains(searchLower) && !id.contains(searchLower) && !type.contains(searchLower)) {
-                                      return false;
-                                    }
-                                  }
-                                  
-                                  return true;
-                                }).toList();
+                                      // Status filter
+                                      if (_selectedStatus != 'All Statuses') {
+                                        if (_normalizedStatus(data['status']) !=
+                                            _selectedStatus) {
+                                          return false;
+                                        }
+                                      }
+
+                                      // Search filter
+                                      if (_searchQuery.isNotEmpty) {
+                                        final searchLower =
+                                            _searchQuery.toLowerCase();
+                                        final name =
+                                            (data['residentName'] ?? '')
+                                                .toLowerCase();
+                                        final id = doc.id.toLowerCase();
+                                        final type =
+                                            (data['documentType'] ?? '')
+                                                .toLowerCase();
+                                        if (!name.contains(searchLower) &&
+                                            !id.contains(searchLower) &&
+                                            !type.contains(searchLower)) {
+                                          return false;
+                                        }
+                                      }
+
+                                      return true;
+                                    }).toList();
 
                                 if (filteredDocs.isEmpty) {
                                   return const Center(
                                     child: Padding(
                                       padding: EdgeInsets.all(32),
-                                      child: Text('No requests found matching your filters.'),
+                                      child: Text(
+                                        'No requests found matching your filters.',
+                                      ),
                                     ),
                                   );
                                 }
@@ -191,51 +298,91 @@ class _admin_documentRequestState extends State<admin_documentRequest> {
                                       DataColumn(label: Text('Status')),
                                       DataColumn(label: Text('Action')),
                                     ],
-                                    rows: filteredDocs.map((doc) {
-                                      final data = doc.data() as Map<String, dynamic>;
-                                      final status = data['status'] ?? 'Pending';
-                                      
-                                      Color statusBg = AppColors.primaryContainer;
-                                      Color statusText = AppColors.onPrimary;
-                                      if (status == 'Approved') {
-                                        statusBg = AppColors.successGreenBg;
-                                        statusText = AppColors.successGreen;
-                                      } else if (status == 'Rejected') {
-                                        statusBg = AppColors.errorContainer;
-                                        statusText = AppColors.error;
-                                      } else if (status == 'Pending') {
-                                        statusBg = AppColors.secondaryContainer;
-                                        statusText = AppColors.secondary;
-                                      }
+                                    rows:
+                                        filteredDocs.map((doc) {
+                                          final data =
+                                              doc.data()
+                                                  as Map<String, dynamic>;
+                                          final status = _normalizedStatus(
+                                            data['status'],
+                                          );
 
-                                      return DataRow(
-                                        cells: [
-                                          DataCell(Text('REQ-${doc.id.substring(0, doc.id.length < 5 ? doc.id.length : 5).toUpperCase()}')),
-                                          DataCell(Text(data['residentName'] ?? 'N/A', style: const TextStyle(fontWeight: FontWeight.bold))),
-                                          DataCell(Text(data['documentType'] ?? 'N/A')),
-                                          DataCell(Text(data['dateSubmitted'] ?? 'N/A')),
-                                          DataCell(
-                                            Chip(
-                                              label: Text(status),
-                                              labelStyle: TextStyle(color: statusText, fontWeight: FontWeight.bold),
-                                              backgroundColor: statusBg,
-                                              side: BorderSide.none,
-                                            ),
-                                          ),
-                                          DataCell(
-                                            ElevatedButton(
-                                              onPressed: () => _showStatusUpdateDialog(context, doc.id, data),
-                                              style: ElevatedButton.styleFrom(
-                                                elevation: 0,
-                                                backgroundColor: AppColors.primaryContainer,
-                                                foregroundColor: AppColors.onPrimary,
+                                          Color statusBg =
+                                              AppColors.primaryContainer;
+                                          Color statusText =
+                                              AppColors.onPrimary;
+                                          if (status == 'Approved') {
+                                            statusBg = AppColors.successGreenBg;
+                                            statusText = AppColors.successGreen;
+                                          } else if (status == 'Rejected') {
+                                            statusBg = AppColors.errorContainer;
+                                            statusText = AppColors.error;
+                                          } else if (status == 'Pending') {
+                                            statusBg =
+                                                AppColors.secondaryContainer;
+                                            statusText = AppColors.secondary;
+                                          }
+
+                                          return DataRow(
+                                            cells: [
+                                              DataCell(
+                                                Text(
+                                                  'REQ-${doc.id.substring(0, doc.id.length < 5 ? doc.id.length : 5).toUpperCase()}',
+                                                ),
                                               ),
-                                              child: const Text('Update'),
-                                            ),
-                                          ),
-                                        ],
-                                      );
-                                    }).toList(),
+                                              DataCell(
+                                                Text(
+                                                  data['residentName'] ?? 'N/A',
+                                                  style: const TextStyle(
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
+                                                ),
+                                              ),
+                                              DataCell(
+                                                Text(
+                                                  data['documentType'] ?? 'N/A',
+                                                ),
+                                              ),
+                                              DataCell(
+                                                Text(
+                                                  data['dateSubmitted'] ??
+                                                      'N/A',
+                                                ),
+                                              ),
+                                              DataCell(
+                                                Chip(
+                                                  label: Text(status),
+                                                  labelStyle: TextStyle(
+                                                    color: statusText,
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
+                                                  backgroundColor: statusBg,
+                                                  side: BorderSide.none,
+                                                ),
+                                              ),
+                                              DataCell(
+                                                ElevatedButton(
+                                                  onPressed:
+                                                      () =>
+                                                          _showStatusUpdateDialog(
+                                                            context,
+                                                            doc.id,
+                                                            data,
+                                                          ),
+                                                  style: ElevatedButton.styleFrom(
+                                                    elevation: 0,
+                                                    backgroundColor:
+                                                        AppColors
+                                                            .primaryContainer,
+                                                    foregroundColor:
+                                                        AppColors.onPrimary,
+                                                  ),
+                                                  child: const Text('Update'),
+                                                ),
+                                              ),
+                                            ],
+                                          );
+                                        }).toList(),
                                   ),
                                 );
                               },
@@ -253,7 +400,10 @@ class _admin_documentRequestState extends State<admin_documentRequest> {
 
         return Scaffold(
           backgroundColor: AppColors.background,
-          drawer: isMobile ? const Drawer(child: SidebarNav(selectedIndex: 2)) : null,
+          drawer:
+              isMobile
+                  ? const Drawer(child: SidebarNav(selectedIndex: 2))
+                  : null,
           body: Row(
             children: [
               if (!isMobile) const SidebarNav(selectedIndex: 2),
