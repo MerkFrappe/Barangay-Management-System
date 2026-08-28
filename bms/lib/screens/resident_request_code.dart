@@ -1,5 +1,13 @@
+import 'dart:async';
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'package:cross_file/cross_file.dart';
+import 'package:desktop_drop/desktop_drop.dart';
+import 'package:file_picker/file_picker.dart' as file_picker;
 import '../widgets/resident_sidebar.dart';
 
 void main() {
@@ -29,6 +37,9 @@ class _DashboardPageState extends State<DashboardPage> {
   final _reasonController = TextEditingController();
   String _selectedDocumentType = 'Barangay Clearance';
   bool _isSaving = false;
+  bool _isDraggingId = false;
+  Uint8List? _idFileBytes;
+  String? _idFileName;
 
   @override
   void dispose() {
@@ -73,6 +84,73 @@ class _DashboardPageState extends State<DashboardPage> {
         .toUpperCase();
   }
 
+  bool _isSupportedIdFile(String filename) {
+    final extension = filename.split('.').last.toLowerCase();
+    return const {'jpg', 'jpeg', 'png', 'pdf'}.contains(extension);
+  }
+
+  Future<void> _selectIdFile() async {
+    final files = await file_picker.FilePicker.pickFiles(
+      type: file_picker.FileType.custom,
+      allowedExtensions: const ['jpg', 'jpeg', 'png', 'pdf'],
+    );
+    if (files.isEmpty) return;
+    final file = files.first;
+    final bytes = await file.readAsBytes();
+    if (!mounted) return;
+    setState(() {
+      _idFileBytes = bytes;
+      _idFileName = file.name;
+    });
+  }
+
+  Future<void> _useDroppedIdFile(XFile file) async {
+    if (!_isSupportedIdFile(file.name)) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Please upload a JPG, PNG, or PDF identification file.',
+            ),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+      return;
+    }
+    final bytes = await file.readAsBytes();
+    if (!mounted) return;
+    setState(() {
+      _idFileBytes = bytes;
+      _idFileName = file.name;
+    });
+  }
+
+  Future<void> _uploadIdAttachment({
+    required DocumentReference<Map<String, dynamic>> requestRef,
+    required Uint8List fileBytes,
+    required String fileName,
+  }) async {
+    try {
+      final safeFileName = fileName.replaceAll(RegExp(r'[^A-Za-z0-9._-]'), '_');
+      final attachmentRef = FirebaseStorage.instance.ref().child(
+        'document_requests/${requestRef.id}/$safeFileName',
+      );
+      await attachmentRef.putData(fileBytes);
+      final downloadUrl = await attachmentRef.getDownloadURL();
+      await requestRef.update({
+        'idAttachmentUrl': downloadUrl,
+        'attachmentUploadStatus': 'uploaded',
+        'attachmentUploadError': FieldValue.delete(),
+      });
+    } catch (_) {
+      await requestRef.update({
+        'attachmentUploadStatus': 'failed',
+        'attachmentUploadError': 'ID attachment upload failed',
+      });
+    }
+  }
+
   Future<void> _submitRequest() async {
     final name = _nameController.text.trim();
     final dob = _dobController.text.trim();
@@ -96,16 +174,40 @@ class _DashboardPageState extends State<DashboardPage> {
       final dateStr =
           '${_getMonthName(now.month)} ${now.day.toString().padLeft(2, '0')}, ${now.year}';
 
-      await FirebaseFirestore.instance.collection('document_requests').add({
+      final requestRef =
+          FirebaseFirestore.instance.collection('document_requests').doc();
+      final idFileBytes = _idFileBytes;
+      final idFileName = _idFileName;
+
+      await requestRef.set({
+        'residentId': FirebaseAuth.instance.currentUser?.uid,
         'documentType': _selectedDocumentType,
         'dateSubmitted': dateStr,
         'residentName': name,
         'initials': _getInitials(name),
-        'status': 'pending',
+        'dateOfBirth': dob,
+        'address': address,
+        'status': 'Pending',
         'purpose': reason,
         'contactNumber': '',
+        'idAttachmentName': idFileName,
+        'idAttachmentUrl': null,
+        'attachmentUploadStatus':
+            idFileBytes == null ? 'not_provided' : 'uploading',
         'createdAt': FieldValue.serverTimestamp(),
       });
+
+      // The request appears in the admin database immediately. Uploading an
+      // optional ID must not keep the resident waiting on the submit button.
+      if (idFileBytes != null && idFileName != null) {
+        unawaited(
+          _uploadIdAttachment(
+            requestRef: requestRef,
+            fileBytes: idFileBytes,
+            fileName: idFileName,
+          ),
+        );
+      }
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -120,6 +222,10 @@ class _DashboardPageState extends State<DashboardPage> {
         _dobController.clear();
         _addressController.clear();
         _reasonController.clear();
+        setState(() {
+          _idFileBytes = null;
+          _idFileName = null;
+        });
       }
     } catch (e) {
       if (mounted) {
@@ -221,7 +327,10 @@ class _DashboardPageState extends State<DashboardPage> {
   }
 
   Widget _buildSidebar() {
-    return const SizedBox(width: 256, child: ResidentSidebar());
+    return const SizedBox(
+      width: 256,
+      child: ResidentSidebar(selectedItem: 'Document Request'),
+    );
   }
 
   Widget _buildLeftColumn() {
@@ -280,12 +389,11 @@ class _DashboardPageState extends State<DashboardPage> {
   }
 
   Widget _buildAnnouncementListStream() {
+    // Filtering and ordering together requires a Firestore composite index.
+    // Keep this small dashboard feed index-free by sorting the streamed data
+    // after it reaches the client.
     final stream =
-        FirebaseFirestore.instance
-            .collection('announcements')
-            .where('status', isEqualTo: 'published')
-            .orderBy('createdAt', descending: true)
-            .snapshots();
+        FirebaseFirestore.instance.collection('announcements').snapshots();
 
     return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
       stream: stream,
@@ -303,7 +411,19 @@ class _DashboardPageState extends State<DashboardPage> {
           );
         }
 
-        final docs = snapshot.data?.docs ?? [];
+        final docs =
+            (snapshot.data?.docs ?? [])
+                .where((doc) => doc.data()['status'] == 'published')
+                .toList();
+        docs.sort((a, b) {
+          final aCreatedAt = a.data()['createdAt'];
+          final bCreatedAt = b.data()['createdAt'];
+          final aMillis =
+              aCreatedAt is Timestamp ? aCreatedAt.millisecondsSinceEpoch : 0;
+          final bMillis =
+              bCreatedAt is Timestamp ? bCreatedAt.millisecondsSinceEpoch : 0;
+          return bMillis.compareTo(aMillis);
+        });
         if (docs.isEmpty) {
           return const Padding(
             padding: EdgeInsets.symmetric(vertical: 20),
@@ -534,6 +654,10 @@ class _DashboardPageState extends State<DashboardPage> {
                                   _dobController.clear();
                                   _addressController.clear();
                                   _reasonController.clear();
+                                  setState(() {
+                                    _idFileBytes = null;
+                                    _idFileName = null;
+                                  });
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     const SnackBar(
                                       content: Text('Form cleared!'),
@@ -594,30 +718,59 @@ class _DashboardPageState extends State<DashboardPage> {
   }
 
   Widget _buildUploadArea() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(32),
-      decoration: BoxDecoration(
-        border: Border.all(
-          color: const Color(0xFFC4C5D5),
-          style: BorderStyle.none,
+    return DropTarget(
+      onDragEntered: (_) => setState(() => _isDraggingId = true),
+      onDragExited: (_) => setState(() => _isDraggingId = false),
+      onDragDone: (details) async {
+        setState(() => _isDraggingId = false);
+        if (details.files.isNotEmpty) {
+          await _useDroppedIdFile(details.files.first);
+        }
+      },
+      child: GestureDetector(
+        onTap: _selectIdFile,
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(32),
+          decoration: BoxDecoration(
+            border: Border.all(
+              color:
+                  _isDraggingId
+                      ? const Color(0xFF002576)
+                      : const Color(0xFFC4C5D5),
+              width: _isDraggingId ? 2 : 1,
+            ),
+            color:
+                _isDraggingId
+                    ? const Color(0xFFDCE9FF)
+                    : const Color(0xFFEFF4FF),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Column(
+            children: [
+              Icon(
+                _idFileBytes == null
+                    ? Icons.cloud_upload_outlined
+                    : Icons.check_circle_outline,
+                size: 48,
+                color: const Color(0xFF747685),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                _idFileName ?? 'Drop ID here or click to upload',
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const Text(
+                'JPG, PNG, or PDF',
+                style: TextStyle(fontSize: 10, color: Colors.grey),
+              ),
+            ],
+          ),
         ),
-        color: const Color(0xFFEFF4FF),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: const Column(
-        children: [
-          Icon(Icons.cloud_upload_outlined, size: 48, color: Color(0xFF747685)),
-          SizedBox(height: 8),
-          Text(
-            'Drop ID here or click to upload',
-            style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
-          ),
-          Text(
-            'Recommended: 1200x630px',
-            style: TextStyle(fontSize: 10, color: Colors.grey),
-          ),
-        ],
       ),
     );
   }
