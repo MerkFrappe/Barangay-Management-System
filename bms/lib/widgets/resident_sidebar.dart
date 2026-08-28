@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 
 import '../theme/app_colors.dart';
 import '../screens/login_screen.dart';
-import '../screens/dashboard_screen.dart';
 import '../screens/resident_dashboard_screen.dart';
 import '../screens/resident_request_code.dart';
 import '../screens/residence_announcements.dart' as announcements;
@@ -224,16 +223,6 @@ class ResidentSidebar extends StatelessWidget {
                 icon: Icons.help_outline,
                 title: "Help Center",
                 onTap: () => _showHelpCenterModal(context),
-              ),
-
-              _NavItem(
-                icon: Icons.admin_panel_settings_rounded,
-                title: "Switch to Admin",
-                onTap: () {
-                  Navigator.of(context).pushReplacement(
-                    MaterialPageRoute(builder: (_) => const DashboardScreen()),
-                  );
-                },
               ),
 
               const SizedBox(height: 24),

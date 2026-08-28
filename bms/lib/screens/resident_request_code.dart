@@ -23,18 +23,12 @@ class DashboardPage extends StatefulWidget {
 }
 
 class _DashboardPageState extends State<DashboardPage> {
-  final _nameController = TextEditingController();
-  final _dobController = TextEditingController();
-  final _addressController = TextEditingController();
   final _reasonController = TextEditingController();
   String _selectedDocumentType = 'Barangay Clearance';
   bool _isSaving = false;
 
   @override
   void dispose() {
-    _nameController.dispose();
-    _dobController.dispose();
-    _addressController.dispose();
     _reasonController.dispose();
     super.dispose();
   }
@@ -62,27 +56,13 @@ class _DashboardPageState extends State<DashboardPage> {
     return months[month - 1];
   }
 
-  String _getInitials(String name) {
-    final clean = name.trim();
-    if (clean.isEmpty) return 'RN';
-    final parts = clean.split(' ');
-    return parts
-        .map((p) => p.isNotEmpty ? p[0] : '')
-        .take(2)
-        .join()
-        .toUpperCase();
-  }
-
   Future<void> _submitRequest() async {
-    final name = _nameController.text.trim();
-    final dob = _dobController.text.trim();
-    final address = _addressController.text.trim();
     final reason = _reasonController.text.trim();
 
-    if (name.isEmpty || reason.isEmpty) {
+    if (reason.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Please fill out Name and Reason fields.'),
+          content: Text('Please enter a Reason for document.'),
           backgroundColor: Colors.red,
         ),
       );
@@ -99,8 +79,8 @@ class _DashboardPageState extends State<DashboardPage> {
       await FirebaseFirestore.instance.collection('document_requests').add({
         'documentType': _selectedDocumentType,
         'dateSubmitted': dateStr,
-        'residentName': name,
-        'initials': _getInitials(name),
+        'residentName': 'Resident User',
+        'initials': 'RU',
         'status': 'pending',
         'purpose': reason,
         'contactNumber': '',
@@ -116,9 +96,6 @@ class _DashboardPageState extends State<DashboardPage> {
             backgroundColor: const Color(0xFF002576),
           ),
         );
-        _nameController.clear();
-        _dobController.clear();
-        _addressController.clear();
         _reasonController.clear();
       }
     } catch (e) {
@@ -463,52 +440,6 @@ class _DashboardPageState extends State<DashboardPage> {
                   },
                 ),
                 const SizedBox(height: 16),
-                _buildFieldLabel('Full Name'),
-                TextField(
-                  controller: _nameController,
-                  decoration: const InputDecoration(
-                    hintText: 'e.g. Juan Dela Cruz',
-                    border: OutlineInputBorder(),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Row(
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _buildFieldLabel('Date of Birth'),
-                          TextField(
-                            controller: _dobController,
-                            decoration: const InputDecoration(
-                              hintText: 'MM/DD/YYYY',
-                              suffixIcon: Icon(Icons.calendar_today),
-                              border: OutlineInputBorder(),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _buildFieldLabel('Address'),
-                          TextField(
-                            controller: _addressController,
-                            decoration: const InputDecoration(
-                              hintText: 'e.g. Phase 2, Blk 4',
-                              border: OutlineInputBorder(),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
                 _buildFieldLabel('Reason for Request / Purpose'),
                 TextField(
                   controller: _reasonController,
@@ -530,9 +461,6 @@ class _DashboardPageState extends State<DashboardPage> {
                             _isSaving
                                 ? null
                                 : () {
-                                  _nameController.clear();
-                                  _dobController.clear();
-                                  _addressController.clear();
                                   _reasonController.clear();
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     const SnackBar(

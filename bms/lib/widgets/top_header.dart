@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
-import '../screens/resident_dashboard_screen.dart';
 
 class TopHeader extends StatelessWidget implements PreferredSizeWidget {
   final VoidCallback? onSwitchPortal;
@@ -58,31 +57,7 @@ class TopHeader extends StatelessWidget implements PreferredSizeWidget {
           ),
           if (!compact) const Spacer() else const SizedBox(width: 8),
 
-          // Portal Switch Button
-          ElevatedButton.icon(
-            onPressed: onSwitchPortal ??
-                () {
-                  Navigator.of(context).pushReplacement(
-                    MaterialPageRoute(
-                        builder: (_) => const ResidentDashboardScreen()),
-                  );
-                },
-            icon: const Icon(Icons.swap_horiz_rounded, size: 18),
-            label: Text(compact ? 'Resident' : 'Switch to Resident View'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primaryFixed,
-              foregroundColor: AppColors.primary,
-              elevation: 0,
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20),
-              ),
-              textStyle: AppTextStyles.labelSm.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-          const SizedBox(width: 8),
+
 
           // Notifications
           IconButton(

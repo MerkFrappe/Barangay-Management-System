@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+import '../theme/app_colors.dart';
+import '../widgets/resident_sidebar.dart';
+import '../widgets/top_navigation_bar.dart';
+
 void main() {
   runApp(const CivicHorizonApp());
 }
@@ -12,42 +16,6 @@ class CivicHorizonApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return const CommunityEventsScreen();
   }
-}
-
-// ---------------------------------------------------------------------------
-// Color palette pulled straight from the Tailwind config in the HTML file.
-// ---------------------------------------------------------------------------
-class AppColors {
-  static const surfaceContainerLow = Color(0xFFEFF4FF);
-  static const surfaceContainerHighest = Color(0xFFD3E4FE);
-  static const onBackground = Color(0xFF0B1C30);
-  static const surfaceBright = Color(0xFFF8F9FF);
-  static const onPrimaryContainer = Color(0xFF96ADFF);
-  static const onSecondaryContainer = Color(0xFF6E5700);
-  static const onTertiaryContainer = Color(0xFFFF918B);
-  static const onSecondary = Color(0xFFFFFFFF);
-  static const primary = Color(0xFF002576);
-  static const secondaryFixedDim = Color(0xFFF0C100);
-  static const onTertiary = Color(0xFFFFFFFF);
-  static const tertiary = Color(0xFF62000A);
-  static const surfaceContainerHigh = Color(0xFFDCE9FF);
-  static const surfaceContainer = Color(0xFFE5EEFF);
-  static const outlineVariant = Color(0xFFC4C5D5);
-  static const error = Color(0xFFBA1A1A);
-  static const surface = Color(0xFFF8F9FF);
-  static const errorContainer = Color(0xFFFFDAD6);
-  static const secondary = Color(0xFF735C00);
-  static const background = Color(0xFFF8F9FF);
-  static const surfaceContainerLowest = Color(0xFFFFFFFF);
-  static const onSurface = Color(0xFF0B1C30);
-  static const secondaryContainer = Color(0xFFFECC00);
-  static const onError = Color(0xFFFFFFFF);
-  static const outline = Color(0xFF747685);
-  static const primaryContainer = Color(0xFF0038A8);
-  static const onSurfaceVariant = Color(0xFF444653);
-  static const tertiaryContainer = Color(0xFF8C0014);
-  static const surfaceVariant = Color(0xFFD3E4FE);
-  static const onPrimary = Color(0xFFFFFFFF);
 }
 
 // ---------------------------------------------------------------------------
@@ -68,7 +36,6 @@ class _CommunityEventsScreenState extends State<CommunityEventsScreen> {
     DateTime.now().month,
   );
   DateTime? _selectedDate = DateTime.now();
-  int _selectedNavIndex = 1; // "Services" tab is active by default
 
   static const List<String> _monthNames = [
     'January',
@@ -187,170 +154,283 @@ class _CommunityEventsScreenState extends State<CommunityEventsScreen> {
       categoryFg: catFg,
       title: title,
       date: date,
-      time: desc.length > 80 ? desc.substring(0, 80) + '...' : desc,
+      time: desc.length > 80 ? '${desc.substring(0, 80)}...' : desc,
+      fullDescription: desc,
     );
   }
 
-  Widget _buildAppContent() {
-    return Column(
-      children: [
-        _buildTopAppBar(),
-        Expanded(
-          child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-            // Filtering and ordering these two fields together requires a
-            // Firestore composite index. Read the collection, then apply the
-            // small client-side filter/order so the resident view also works
-            // before an index has been deployed.
-            stream: FirebaseFirestore.instance
-                .collection('announcements')
-                .snapshots(),
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Center(child: CircularProgressIndicator());
-              }
-              if (snapshot.hasError) {
-                return const Center(
-                  child: Padding(
-                    padding: EdgeInsets.all(24),
-                    child: Text(
-                      'Announcements are temporarily unavailable. Please try again shortly.',
-                      textAlign: TextAlign.center,
-                    ),
-                  ),
-                );
-              }
-              final docs = snapshot.data?.docs
-                      .where((doc) => doc.data()['status'] == 'published')
-                      .toList() ??
-                  [];
-              docs.sort((a, b) {
-                final aCreatedAt = a.data()['createdAt'];
-                final bCreatedAt = b.data()['createdAt'];
-                final aMillis = aCreatedAt is Timestamp
-                    ? aCreatedAt.millisecondsSinceEpoch
-                    : 0;
-                final bMillis = bCreatedAt is Timestamp
-                    ? bCreatedAt.millisecondsSinceEpoch
-                    : 0;
-                return bMillis.compareTo(aMillis);
-              });
-              final eventsList =
-                  docs.map((doc) => _mapAnnouncementToEvent(doc)).toList();
-
-              return SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildSectionHeader(),
-                    const SizedBox(height: 24),
-                    _buildCalendarCard(eventsList),
-                    const SizedBox(height: 24),
-                    _buildUpcomingEventsHeader(),
-                    const SizedBox(height: 16),
-                    if (eventsList.isEmpty)
-                      const Padding(
-                        padding: EdgeInsets.symmetric(vertical: 20),
-                        child: Center(
-                          child: Text(
-                            'No announcements or events posted.',
-                            style: TextStyle(color: Colors.grey),
-                          ),
-                        ),
-                      )
-                    else
-                      Column(
-                        children:
-                            eventsList.map((event) {
-                              return Padding(
-                                padding: const EdgeInsets.only(bottom: 16),
-                                child: _EventCard(
-                                  data: event,
-                                  onViewDetails: () {},
-                                ),
-                              );
-                            }).toList(),
-                      ),
-                    const SizedBox(height: 8),
-                    _buildAnnouncementsLink(),
-                  ],
+  void _showEventDetailsModal(BuildContext context, _EventData event) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: event.categoryBg,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(event.categoryIcon, color: event.categoryFg, size: 20),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                event.title,
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.primary,
                 ),
-              );
-            },
+              ),
+            ),
+          ],
+        ),
+        content: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                children: [
+                  const Icon(Icons.calendar_today, size: 16, color: AppColors.onSurfaceVariant),
+                  const SizedBox(width: 8),
+                  Text(event.date, style: const TextStyle(fontWeight: FontWeight.w600)),
+                ],
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'Announcement Details:',
+                style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                event.fullDescription,
+                style: const TextStyle(fontSize: 14, height: 1.5),
+              ),
+            ],
           ),
         ),
-        _buildBottomNavBar(),
-      ],
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    final width = MediaQuery.of(context).size.width;
+    final desktop = width >= 1100;
+
     return Scaffold(
       backgroundColor: AppColors.background,
+      drawer: desktop ? null : const Drawer(child: ResidentSidebar()),
       body: SafeArea(
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 480),
-            child: _buildAppContent(),
-          ),
+        child: Row(
+          children: [
+            //-----------------------------------
+            // LEFT SIDEBAR (Desktop)
+            //-----------------------------------
+            if (desktop) const ResidentSidebar(),
+
+            //-----------------------------------
+            // MAIN CONTENT
+            //-----------------------------------
+            Expanded(
+              child: Column(
+                children: [
+                  const TopNavigationBar(),
+                  Expanded(
+                    child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+                      stream: FirebaseFirestore.instance
+                          .collection('announcements')
+                          .snapshots(),
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState == ConnectionState.waiting) {
+                          return const Center(child: CircularProgressIndicator());
+                        }
+                        if (snapshot.hasError) {
+                          return const Center(
+                            child: Padding(
+                              padding: EdgeInsets.all(24),
+                              child: Text(
+                                'Announcements are temporarily unavailable. Please try again shortly.',
+                                textAlign: TextAlign.center,
+                              ),
+                            ),
+                          );
+                        }
+                        final docs = snapshot.data?.docs
+                                .where((doc) => doc.data()['status'] == 'published')
+                                .toList() ??
+                            [];
+                        docs.sort((a, b) {
+                          final aCreatedAt = a.data()['createdAt'];
+                          final bCreatedAt = b.data()['createdAt'];
+                          final aMillis = aCreatedAt is Timestamp
+                              ? aCreatedAt.millisecondsSinceEpoch
+                              : 0;
+                          final bMillis = bCreatedAt is Timestamp
+                              ? bCreatedAt.millisecondsSinceEpoch
+                              : 0;
+                          return bMillis.compareTo(aMillis);
+                        });
+                        final eventsList =
+                            docs.map((doc) => _mapAnnouncementToEvent(doc)).toList();
+
+                        return SingleChildScrollView(
+                          padding: EdgeInsets.all(desktop ? 32 : 16),
+                          child: Center(
+                            child: ConstrainedBox(
+                              constraints: const BoxConstraints(maxWidth: 1400),
+                              child: desktop
+                                  ? _buildDesktopLayout(eventsList)
+                                  : _buildMobileLayout(eventsList),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
 
   // -------------------------------------------------------------------------
-  // TopAppBar
+  // Desktop Layout
   // -------------------------------------------------------------------------
-  Widget _buildTopAppBar() {
-    return Container(
-      width: double.infinity,
-      color: AppColors.surfaceContainerLow,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Expanded(
-            child: Row(
-            children: [
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: AppColors.primaryContainer,
-                  shape: BoxShape.circle,
-                  border: Border.all(color: AppColors.outlineVariant),
-                ),
-                clipBehavior: Clip.antiAlias,
-                child: const Icon(
-                  Icons.account_balance,
-                  color: AppColors.onPrimary,
-                ),
+  Widget _buildDesktopLayout(List<_EventData> eventsList) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildSectionHeader(),
+        const SizedBox(height: 32),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Left: Announcements Feed / Cards
+            Expanded(
+              flex: 7,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildUpcomingEventsHeader(),
+                  const SizedBox(height: 16),
+                  if (eventsList.isEmpty)
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 40),
+                      child: Center(
+                        child: Text(
+                          'No announcements or events posted.',
+                          style: TextStyle(color: Colors.grey, fontSize: 16),
+                        ),
+                      ),
+                    )
+                  else
+                    LayoutBuilder(
+                      builder: (context, constraints) {
+                        final useGrid = constraints.maxWidth >= 600;
+                        if (useGrid) {
+                          final itemWidth = (constraints.maxWidth - 16) / 2;
+                          return Wrap(
+                            spacing: 16,
+                            runSpacing: 16,
+                            children: eventsList.map((event) {
+                              return SizedBox(
+                                width: itemWidth,
+                                child: _EventCard(
+                                  data: event,
+                                  onViewDetails: () =>
+                                      _showEventDetailsModal(context, event),
+                                ),
+                              );
+                            }).toList(),
+                          );
+                        } else {
+                          return Column(
+                            children: eventsList.map((event) {
+                              return Padding(
+                                padding: const EdgeInsets.only(bottom: 16),
+                                child: _EventCard(
+                                  data: event,
+                                  onViewDetails: () =>
+                                      _showEventDetailsModal(context, event),
+                                ),
+                              );
+                            }).toList(),
+                          );
+                        }
+                      },
+                    ),
+                ],
               ),
-              const SizedBox(width: 12),
-              const Expanded(
-                child: Text(
-                  'Civic Horizon',
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.primary,
-                  ),
-                ),
+            ),
+            const SizedBox(width: 32),
+            // Right: Calendar & Quick Links
+            Expanded(
+              flex: 5,
+              child: Column(
+                children: [
+                  _buildCalendarCard(eventsList),
+                  const SizedBox(height: 24),
+                  _buildAnnouncementsLink(),
+                ],
               ),
-            ],
             ),
-          ),
-          IconButton(
-            onPressed: () {},
-            icon: const Icon(
-              Icons.notifications_outlined,
-              color: AppColors.primary,
+          ],
+        ),
+      ],
+    );
+  }
+
+  // -------------------------------------------------------------------------
+  // Mobile Layout
+  // -------------------------------------------------------------------------
+  Widget _buildMobileLayout(List<_EventData> eventsList) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildSectionHeader(),
+        const SizedBox(height: 24),
+        _buildCalendarCard(eventsList),
+        const SizedBox(height: 24),
+        _buildUpcomingEventsHeader(),
+        const SizedBox(height: 16),
+        if (eventsList.isEmpty)
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 20),
+            child: Center(
+              child: Text(
+                'No announcements or events posted.',
+                style: TextStyle(color: Colors.grey),
+              ),
             ),
+          )
+        else
+          Column(
+            children: eventsList.map((event) {
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 16),
+                child: _EventCard(
+                  data: event,
+                  onViewDetails: () => _showEventDetailsModal(context, event),
+                ),
+              );
+            }).toList(),
           ),
-        ],
-      ),
+        const SizedBox(height: 8),
+        _buildAnnouncementsLink(),
+      ],
     );
   }
 
@@ -362,17 +442,17 @@ class _CommunityEventsScreenState extends State<CommunityEventsScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text(
-          'Community Events',
+          'Community Events & Announcements',
           style: TextStyle(
-            fontSize: 24,
-            fontWeight: FontWeight.w600,
+            fontSize: 28,
+            fontWeight: FontWeight.bold,
             color: AppColors.primary,
           ),
         ),
-        const SizedBox(height: 4),
+        const SizedBox(height: 6),
         Text(
-          'Stay updated with the latest happenings in our Barangay.',
-          style: TextStyle(fontSize: 14, color: AppColors.onSurfaceVariant),
+          'Stay updated with official bulletins and upcoming happenings in our Barangay.',
+          style: TextStyle(fontSize: 15, color: AppColors.onSurfaceVariant),
         ),
       ],
     );
@@ -388,20 +468,15 @@ class _CommunityEventsScreenState extends State<CommunityEventsScreen> {
     final month = _displayedMonth.month;
     final daysInMonth = DateUtils.getDaysInMonth(year, month);
 
-    // DateTime.weekday is Monday=1..Sunday=7. Our week starts on Sunday,
-    // so Sunday needs 0 leading blanks, Monday needs 1, and so on.
     final firstWeekday = DateTime(year, month, 1).weekday;
     final leadingBlanks = firstWeekday % 7;
 
-    // Day numbers from the previous month, to fill those leading blanks
-    // the way a real calendar does (faded, non-interactive).
     final prevMonthLastDay = DateTime(year, month, 0).day;
     final leadingLabels = List.generate(
       leadingBlanks,
       (i) => prevMonthLastDay - leadingBlanks + 1 + i,
     );
 
-    // Which days in the visible month have an event, so we can show a dot.
     final eventDays = <int>{
       for (final event in events)
         if (_parseEventDate(event.date) case final d?)
@@ -495,7 +570,7 @@ class _CommunityEventsScreenState extends State<CommunityEventsScreen> {
                     '$label',
                     style: TextStyle(
                       fontSize: 12,
-                      color: AppColors.outlineVariant.withOpacity(0.5),
+                      color: AppColors.outlineVariant.withValues(alpha: 0.5),
                     ),
                   ),
                 ),
@@ -583,7 +658,7 @@ class _CommunityEventsScreenState extends State<CommunityEventsScreen> {
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(
-          'UPCOMING EVENTS',
+          'UPCOMING EVENTS & ANNOUNCEMENTS',
           style: TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w600,
@@ -626,94 +701,48 @@ class _CommunityEventsScreenState extends State<CommunityEventsScreen> {
         children: [
           Expanded(
             child: Row(
-            children: [
-              Container(
-                width: 40,
-                height: 40,
-                decoration: const BoxDecoration(
-                  color: AppColors.surfaceContainerHighest,
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.campaign_outlined,
-                  color: AppColors.primary,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: const [
-                  Text(
-                    'Official Announcements',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.onSurface,
-                    ),
+              children: [
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: const BoxDecoration(
+                    color: AppColors.surfaceContainerHighest,
+                    shape: BoxShape.circle,
                   ),
-                  SizedBox(height: 2),
-                  Text(
-                    'View past bulletins',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: AppColors.onSurfaceVariant,
-                    ),
+                  child: const Icon(
+                    Icons.campaign_outlined,
+                    color: AppColors.primary,
                   ),
-                ],
                 ),
-              ),
-            ],
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: const [
+                      Text(
+                        'Official Announcements',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.onSurface,
+                        ),
+                      ),
+                      SizedBox(height: 2),
+                      Text(
+                        'View past bulletins',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: AppColors.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
           ),
           const Icon(Icons.chevron_right, color: AppColors.onSurfaceVariant),
         ],
-      ),
-    );
-  }
-
-  // -------------------------------------------------------------------------
-  // Bottom nav bar
-  // -------------------------------------------------------------------------
-  Widget _buildBottomNavBar() {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        border: Border(top: BorderSide(color: AppColors.outlineVariant)),
-        boxShadow: const [
-          BoxShadow(
-            color: Colors.black12,
-            blurRadius: 8,
-            offset: Offset(0, -2),
-          ),
-        ],
-      ),
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-      child: SafeArea(
-        top: false,
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: [
-            _NavItem(
-              icon: Icons.dashboard_outlined,
-              label: 'Dashboard',
-              isActive: _selectedNavIndex == 0,
-              onTap: () => setState(() => _selectedNavIndex = 0),
-            ),
-            _NavItem(
-              icon: Icons.account_balance,
-              label: 'Services',
-              isActive: _selectedNavIndex == 1,
-              onTap: () => setState(() => _selectedNavIndex = 1),
-            ),
-            _NavItem(
-              icon: Icons.person_outline,
-              label: 'Profile',
-              isActive: _selectedNavIndex == 2,
-              onTap: () => setState(() => _selectedNavIndex = 2),
-            ),
-          ],
-        ),
       ),
     );
   }
@@ -731,6 +760,7 @@ class _EventData {
   final String title;
   final String date;
   final String time;
+  final String fullDescription;
 
   const _EventData({
     required this.imageUrl,
@@ -741,6 +771,7 @@ class _EventData {
     required this.title,
     required this.date,
     required this.time,
+    required this.fullDescription,
   });
 }
 
@@ -820,7 +851,7 @@ class _EventCard extends StatelessWidget {
                 Text(
                   data.title,
                   style: const TextStyle(
-                    fontSize: 20,
+                    fontSize: 18,
                     fontWeight: FontWeight.w600,
                     color: AppColors.primary,
                   ),
@@ -839,10 +870,10 @@ class _EventCard extends StatelessWidget {
                         data.date,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 14,
-                        color: AppColors.onSurfaceVariant,
-                      ),
+                        style: const TextStyle(
+                          fontSize: 14,
+                          color: AppColors.onSurfaceVariant,
+                        ),
                       ),
                     ),
                   ],
@@ -861,10 +892,10 @@ class _EventCard extends StatelessWidget {
                         data.time,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 14,
-                        color: AppColors.onSurfaceVariant,
-                      ),
+                        style: const TextStyle(
+                          fontSize: 14,
+                          color: AppColors.onSurfaceVariant,
+                        ),
                       ),
                     ),
                   ],
@@ -903,60 +934,6 @@ class _EventCard extends StatelessWidget {
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Bottom nav item
-// ---------------------------------------------------------------------------
-class _NavItem extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final bool isActive;
-  final VoidCallback onTap;
-
-  const _NavItem({
-    required this.icon,
-    required this.label,
-    required this.isActive,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-        decoration: BoxDecoration(
-          color: isActive ? AppColors.secondaryContainer : Colors.transparent,
-          borderRadius: BorderRadius.circular(999),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              icon,
-              color:
-                  isActive
-                      ? AppColors.onSecondaryContainer
-                      : AppColors.onSurfaceVariant,
-            ),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color:
-                    isActive
-                        ? AppColors.onSecondaryContainer
-                        : AppColors.onSurfaceVariant,
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }

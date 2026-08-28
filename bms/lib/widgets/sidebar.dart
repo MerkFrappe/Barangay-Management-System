@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
 import '../screens/login_screen.dart';
 import '../screens/dashboard_screen.dart';
-import '../screens/resident_dashboard_screen.dart';
 import '../screens/admin_documentRequest.dart';
 import '../screens/residents_directory_screen.dart';
 import '../screens/peace_and_order_screen.dart';
@@ -152,19 +151,7 @@ class _SidebarNavState extends State<SidebarNav> {
               },
             ),
           ),
-          // Switch to Resident View Action Tile
-          _NavTile(
-            icon: Icons.swap_horiz_rounded,
-            label: 'Switch to Resident',
-            onTap: () {
-              Navigator.of(context).pushReplacement(
-                MaterialPageRoute(
-                  builder: (_) => const ResidentDashboardScreen(),
-                ),
-              );
-            },
-          ),
-          const SizedBox(height: 8),
+
           // Emergency broadcast button
           ElevatedButton.icon(
             onPressed: () {
