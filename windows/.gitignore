@@ -1,10 +1,23 @@
 flutter/ephemeral/
 
+# Flutter & Dart
+.dart_tool/
+.packages
+.flutter-plugins
+.flutter-plugins-dependencies
+.pub/
+build/
+
+# IDEs
+.idea/
+.vscode/
+
 # Visual Studio user-specific files.
 *.suo
 *.user
 *.userosscache
 *.sln.docstates
+
 
 # Visual Studio build-related files.
 x64/

@@ -83,4 +83,10 @@ class AppTextStyles {
       TextStyle(fontSize: 16, height: 24 / 16, fontWeight: FontWeight.w400);
   static const bodyLg =
       TextStyle(fontSize: 18, height: 28 / 18, fontWeight: FontWeight.w400);
+  static const titleSm =
+      TextStyle(fontSize: 14, height: 20 / 14, fontWeight: FontWeight.w600);
+  static const titleMd =
+      TextStyle(fontSize: 16, height: 24 / 16, fontWeight: FontWeight.w600);
+  static const titleLg =
+      TextStyle(fontSize: 18, height: 26 / 18, fontWeight: FontWeight.w600);
 }

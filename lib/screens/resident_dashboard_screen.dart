@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
+import '../models/resident_profile.dart';
 import '../theme/app_colors.dart';
 import '../widgets/resident_sidebar.dart';
 import '../widgets/top_navigation_bar.dart';
@@ -10,6 +13,7 @@ import '../widgets/emergency_card.dart';
 import '../widgets/community_poll_card.dart';
 import '../widgets/did_you_know_card.dart';
 import '../widgets/footer_section.dart';
+import 'profile_completion_screen.dart';
 
 class ResidentDashboardScreen extends StatelessWidget {
   const ResidentDashboardScreen({super.key});
@@ -18,6 +22,8 @@ class ResidentDashboardScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final width = MediaQuery.of(context).size.width;
 
+    // Keep the full desktop composition only when there is enough room for
+    // both the 256px sidebar and the two-column dashboard content.
     final desktop = width >= 1100;
 
     return Scaffold(
@@ -31,7 +37,7 @@ class ResidentDashboardScreen extends StatelessWidget {
             //-----------------------------------
             // LEFT SIDEBAR
             //-----------------------------------
-            if (desktop) const SizedBox(width: 270, child: ResidentSidebar()),
+            if (desktop) const ResidentSidebar(),
 
             //-----------------------------------
             // MAIN CONTENT
@@ -78,6 +84,8 @@ class _DesktopLayout extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
+        const _ProfileCompletionBanner(),
+        const SizedBox(height: 20),
         const HeroBanner(),
 
         const SizedBox(height: 32),
@@ -140,6 +148,8 @@ class _MobileLayout extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: const [
+        _ProfileCompletionBanner(),
+        SizedBox(height: 20),
         HeroBanner(),
 
         SizedBox(height: 24),
@@ -166,6 +176,97 @@ class _MobileLayout extends StatelessWidget {
 
         FooterSection(),
       ],
+    );
+  }
+}
+
+class _ProfileCompletionBanner extends StatefulWidget {
+  const _ProfileCompletionBanner();
+
+  @override
+  State<_ProfileCompletionBanner> createState() =>
+      _ProfileCompletionBannerState();
+}
+
+class _ProfileCompletionBannerState extends State<_ProfileCompletionBanner> {
+  Future<DocumentSnapshot<Map<String, dynamic>>>? _profileFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _reloadProfile();
+  }
+
+  void _reloadProfile() {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    _profileFuture = uid == null
+        ? null
+        : FirebaseFirestore.instance.collection('users').doc(uid).get();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final profileFuture = _profileFuture;
+    if (profileFuture == null) return const SizedBox.shrink();
+    return FutureBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+      future: profileFuture,
+      builder: (context, snapshot) {
+        if (!snapshot.hasData || !snapshot.data!.exists) {
+          return const SizedBox.shrink();
+        }
+        final profile = ResidentProfile.fromMap(snapshot.data!.data());
+        if (profile.isComplete) return const SizedBox.shrink();
+        return Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: AppColors.secondaryContainer.withOpacity(0.2),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: AppColors.secondaryContainer),
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Icon(Icons.person_outline, color: AppColors.secondary),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Complete your profile',
+                      style: AppTextStyles.titleMd.copyWith(
+                        color: AppColors.onSecondaryContainer,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Complete your resident profile to auto-fill document requests.',
+                      style: AppTextStyles.bodySm.copyWith(
+                        color: AppColors.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              TextButton(
+                onPressed: () async {
+                  final saved = await Navigator.of(context).push<bool>(
+                    MaterialPageRoute(
+                      builder: (_) => const ProfileCompletionScreen(),
+                    ),
+                  );
+                  if (saved == true && mounted) setState(_reloadProfile);
+                },
+                style: TextButton.styleFrom(
+                  foregroundColor: AppColors.secondary,
+                  textStyle: AppTextStyles.labelMd,
+                ),
+                child: const Text('Complete now'),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }
