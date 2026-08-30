@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../theme/app_colors.dart';
 import '../screens/admin_documentRequest.dart';
 
 enum RequestStatus { pending, approved, rejected }
 
-class RequestRow {
+class RequestRowData {
   final String initials;
   final String name;
   final String type;
@@ -12,7 +13,7 @@ class RequestRow {
   final RequestStatus status;
   final String actionLabel;
 
-  const RequestRow({
+  const RequestRowData({
     required this.initials,
     required this.name,
     required this.type,
@@ -25,36 +26,28 @@ class RequestRow {
 class RequestsTable extends StatelessWidget {
   const RequestsTable({super.key});
 
-  static const _rows = [
-    RequestRow(
-        initials: 'RM',
-        name: 'Ricardo Mercado',
-        type: 'Barangay Clearance',
-        date: 'Oct 24, 2023',
-        status: RequestStatus.pending,
-        actionLabel: 'Review'),
-    RequestRow(
-        initials: 'ES',
-        name: 'Elena Santos',
-        type: 'Business Permit',
-        date: 'Oct 23, 2023',
-        status: RequestStatus.approved,
-        actionLabel: 'Details'),
-    RequestRow(
-        initials: 'JD',
-        name: 'Jose Delos Reyes',
-        type: 'Indigency Certificate',
-        date: 'Oct 23, 2023',
-        status: RequestStatus.pending,
-        actionLabel: 'Review'),
-    RequestRow(
-        initials: 'MC',
-        name: 'Maria Clara',
-        type: 'Barangay Clearance',
-        date: 'Oct 22, 2023',
-        status: RequestStatus.rejected,
-        actionLabel: 'Appeal'),
-  ];
+  String _getInitials(String name) {
+    final parts = name.trim().split(RegExp(r'\s+'));
+    if (parts.isEmpty || name.isEmpty) return 'R';
+    if (parts.length == 1) return parts[0].substring(0, parts[0].length > 2 ? 2 : parts[0].length).toUpperCase();
+    return (parts[0][0] + parts[1][0]).toUpperCase();
+  }
+
+  String _formatDate(dynamic timestamp) {
+    if (timestamp is Timestamp) {
+      final dt = timestamp.toDate();
+      final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      return '${months[dt.month - 1]} ${dt.day}, ${dt.year}';
+    }
+    return 'Recent';
+  }
+
+  RequestStatus _parseStatus(dynamic rawStatus) {
+    final statusStr = (rawStatus ?? 'pending').toString().toLowerCase().trim();
+    if (statusStr == 'approved') return RequestStatus.approved;
+    if (statusStr == 'rejected') return RequestStatus.rejected;
+    return RequestStatus.pending;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -87,21 +80,69 @@ class RequestsTable extends StatelessWidget {
             ),
           ),
           Divider(height: 1, color: AppColors.outlineVariant),
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: DataTable(
-              headingRowColor:
-                  MaterialStateProperty.all(AppColors.surfaceContainerLow),
-              dividerThickness: 1,
-              columns: [
-                DataColumn(label: _header('Resident Name')),
-                DataColumn(label: _header('Request Type')),
-                DataColumn(label: _header('Date')),
-                DataColumn(label: _header('Status')),
-                DataColumn(label: _header('Action')),
-              ],
-              rows: _rows.map((r) => _buildRow(context, r)).toList(),
-            ),
+          StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+            stream: FirebaseFirestore.instance
+                .collection('document_requests')
+                .orderBy('createdAt', descending: true)
+                .limit(5)
+                .snapshots(),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Padding(
+                  padding: EdgeInsets.all(32),
+                  child: Center(child: CircularProgressIndicator()),
+                );
+              }
+
+              final docs = snapshot.data?.docs ?? [];
+
+              if (docs.isEmpty) {
+                return const Padding(
+                  padding: EdgeInsets.all(32),
+                  child: Center(
+                    child: Text('No document requests filed yet.',
+                        style: TextStyle(color: AppColors.onSurfaceVariant)),
+                  ),
+                );
+              }
+
+              final rowsData = docs.map((doc) {
+                final data = doc.data();
+                final name = (data['residentName'] ?? 'Resident').toString();
+                final type = (data['documentType'] ?? 'Clearance').toString();
+                final date = _formatDate(data['createdAt']);
+                final status = _parseStatus(data['status']);
+                final actionLabel = status == RequestStatus.approved
+                    ? 'Details'
+                    : (status == RequestStatus.rejected ? 'Appeal' : 'Review');
+
+                return RequestRowData(
+                  initials: _getInitials(name),
+                  name: name,
+                  type: type,
+                  date: date,
+                  status: status,
+                  actionLabel: actionLabel,
+                );
+              }).toList();
+
+              return SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: DataTable(
+                  headingRowColor:
+                      WidgetStateProperty.all(AppColors.surfaceContainerLow),
+                  dividerThickness: 1,
+                  columns: [
+                    DataColumn(label: _header('Resident Name')),
+                    DataColumn(label: _header('Request Type')),
+                    DataColumn(label: _header('Date')),
+                    DataColumn(label: _header('Status')),
+                    DataColumn(label: _header('Action')),
+                  ],
+                  rows: rowsData.map((r) => _buildRow(context, r)).toList(),
+                ),
+              );
+            },
           ),
         ],
       ),
@@ -113,7 +154,7 @@ class RequestsTable extends StatelessWidget {
         style: AppTextStyles.labelMd.copyWith(color: AppColors.onSurfaceVariant));
   }
 
-  DataRow _buildRow(BuildContext context, RequestRow r) {
+  DataRow _buildRow(BuildContext context, RequestRowData r) {
     return DataRow(cells: [
       DataCell(Row(
         mainAxisSize: MainAxisSize.min,
@@ -180,3 +221,4 @@ class _StatusChip extends StatelessWidget {
     );
   }
 }
+

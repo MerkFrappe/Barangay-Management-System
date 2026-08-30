@@ -19,6 +19,11 @@ class OverviewCards extends StatelessWidget {
         .collection('document_requests')
         .snapshots();
 
+    // 3. Stream of peace and order incidents
+    final incidentsStream = FirebaseFirestore.instance
+        .collection('incidents')
+        .snapshots();
+
     return LayoutBuilder(builder: (context, constraints) {
       final width = constraints.maxWidth;
       final columns = width > 1000 ? 4 : (width > 640 ? 2 : 1);
@@ -33,67 +38,83 @@ class OverviewCards extends StatelessWidget {
             builder: (context, requestSnapshot) {
               final requests = requestSnapshot.data?.docs ?? [];
               
-              final pendingCount = requests.where((doc) => doc.data()['status'] == 'pending').length;
-              final issuedClearancesCount = requests.where((doc) => doc.data()['status'] == 'approved' && doc.data()['documentType'] == 'Barangay Clearance').length;
+              final pendingCount = requests.where((doc) {
+                final s = (doc.data()['status'] ?? '').toString().toLowerCase();
+                return s == 'pending' || s == 'in review';
+              }).length;
               
-              final activePeaceAndOrder = 2; // Keep static for visual alignment
+              final issuedClearancesCount = requests.where((doc) {
+                final s = (doc.data()['status'] ?? '').toString().toLowerCase();
+                return s == 'approved';
+              }).length;
 
-              return GridView.count(
-                crossAxisCount: columns,
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                mainAxisSpacing: 24,
-                crossAxisSpacing: 24,
-                childAspectRatio: 1.7,
-                children: [
-                  _StatCard(
-                    icon: Icons.group,
-                    iconBg: AppColors.surfaceContainer,
-                    iconColor: AppColors.primary,
-                    badgeText: '+2.4%',
-                    badgeIcon: Icons.trending_up,
-                    badgeColor: AppColors.successGreen,
-                    badgeBg: AppColors.successGreenBg,
-                    label: 'Total Residents',
-                    value: totalResidents.toString(),
-                    valueColor: AppColors.primary,
-                  ),
-                  _StatCard(
-                    icon: Icons.hourglass_empty,
-                    iconBg: AppColors.secondaryContainer,
-                    iconColor: AppColors.onSecondaryContainer,
-                    badgeText: 'Action Required',
-                    badgeColor: AppColors.secondary,
-                    badgeBg: AppColors.secondaryFixed,
-                    label: 'Pending Requests',
-                    value: pendingCount.toString(),
-                    valueColor: AppColors.secondary,
-                    leftBorderColor: AppColors.secondary,
-                  ),
-                  _StatCard(
-                    icon: Icons.gavel,
-                    iconBg: AppColors.errorContainer,
-                    iconColor: AppColors.error,
-                    badgeText: 'Priority',
-                    badgeColor: AppColors.error,
-                    badgeBg: AppColors.errorContainer,
-                    label: 'Active Peace & Order',
-                    value: activePeaceAndOrder.toString(),
-                    valueColor: AppColors.error,
-                    leftBorderColor: AppColors.error,
-                  ),
-                  _StatCard(
-                    icon: Icons.verified,
-                    iconBg: AppColors.surfaceContainer,
-                    iconColor: AppColors.primary,
-                    badgeText: 'Monthly',
-                    badgeColor: AppColors.onSurfaceVariant,
-                    badgeBg: AppColors.surfaceVariant,
-                    label: 'Issued Clearances',
-                    value: issuedClearancesCount.toString(),
-                    valueColor: AppColors.primary,
-                  ),
-                ],
+              return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+                stream: incidentsStream,
+                builder: (context, incidentSnapshot) {
+                  final incidentDocs = incidentSnapshot.data?.docs ?? [];
+                  final activePeaceAndOrder = incidentDocs.where((doc) {
+                    final status = (doc.data()['status'] ?? '').toString().toLowerCase();
+                    return status != 'resolved' && status != 'closed';
+                  }).length;
+
+                  return GridView.count(
+                    crossAxisCount: columns,
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    mainAxisSpacing: 24,
+                    crossAxisSpacing: 24,
+                    childAspectRatio: 1.7,
+                    children: [
+                      _StatCard(
+                        icon: Icons.group,
+                        iconBg: AppColors.surfaceContainer,
+                        iconColor: AppColors.primary,
+                        badgeText: '+2.4%',
+                        badgeIcon: Icons.trending_up,
+                        badgeColor: AppColors.successGreen,
+                        badgeBg: AppColors.successGreenBg,
+                        label: 'Total Residents',
+                        value: totalResidents.toString(),
+                        valueColor: AppColors.primary,
+                      ),
+                      _StatCard(
+                        icon: Icons.hourglass_empty,
+                        iconBg: AppColors.secondaryContainer,
+                        iconColor: AppColors.onSecondaryContainer,
+                        badgeText: 'Action Required',
+                        badgeColor: AppColors.secondary,
+                        badgeBg: AppColors.secondaryFixed,
+                        label: 'Pending Requests',
+                        value: pendingCount.toString(),
+                        valueColor: AppColors.secondary,
+                        leftBorderColor: AppColors.secondary,
+                      ),
+                      _StatCard(
+                        icon: Icons.gavel,
+                        iconBg: AppColors.errorContainer,
+                        iconColor: AppColors.error,
+                        badgeText: 'Priority',
+                        badgeColor: AppColors.error,
+                        badgeBg: AppColors.errorContainer,
+                        label: 'Active Peace & Order',
+                        value: activePeaceAndOrder.toString(),
+                        valueColor: AppColors.error,
+                        leftBorderColor: AppColors.error,
+                      ),
+                      _StatCard(
+                        icon: Icons.verified,
+                        iconBg: AppColors.surfaceContainer,
+                        iconColor: AppColors.primary,
+                        badgeText: 'Monthly',
+                        badgeColor: AppColors.onSurfaceVariant,
+                        badgeBg: AppColors.surfaceVariant,
+                        label: 'Issued Clearances',
+                        value: issuedClearancesCount.toString(),
+                        valueColor: AppColors.primary,
+                      ),
+                    ],
+                  );
+                },
               );
             },
           );

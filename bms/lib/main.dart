@@ -84,8 +84,9 @@ class AuthWrapper extends StatelessWidget {
             }
             if (roleSnapshot.hasData && roleSnapshot.data!.exists) {
               final data = roleSnapshot.data!.data() as Map<String, dynamic>;
-              final role = data['role'] ?? 'Resident';
-              if (role == 'Chairman' || role == 'Admin') {
+              final role = (data['role'] ?? 'Resident').toString();
+              const adminRoles = ['Chairman', 'Admin', 'Secretary', 'Treasurer', 'Auditor', 'Councilor'];
+              if (adminRoles.contains(role)) {
                 return const DashboardScreen();
               } else {
                 return const ResidentDashboardScreen();
