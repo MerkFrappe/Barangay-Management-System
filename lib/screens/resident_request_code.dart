@@ -352,7 +352,7 @@ class _DashboardPageState extends State<DashboardPage> {
   Widget _buildLeftColumn() {
     return Column(
       children: [
-        // Recent Announcements Table Card
+        // Resident request history
         Card(
           elevation: 0,
           color: const Color(0xFFEFF4FF),
@@ -369,30 +369,17 @@ class _DashboardPageState extends State<DashboardPage> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     const Text(
-                      'Recent Announcements',
+                      'My Requested Documents',
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    Row(
-                      children: [
-                        _filterChip('All', true),
-                        _filterChip('Drafts', false),
-                        _filterChip('Published', false),
-                      ],
-                    ),
+                    const Icon(Icons.history, color: Color(0xFF002576)),
                   ],
                 ),
                 const SizedBox(height: 16),
-                _buildAnnouncementListStream(),
-                const SizedBox(height: 16),
-                Center(
-                  child: TextButton(
-                    onPressed: () {},
-                    child: const Text('View All History'),
-                  ),
-                ),
+                _buildRequestHistoryStream(),
               ],
             ),
           ),
@@ -404,12 +391,14 @@ class _DashboardPageState extends State<DashboardPage> {
     );
   }
 
-  Widget _buildAnnouncementListStream() {
-    // Filtering and ordering together requires a Firestore composite index.
-    // Keep this small dashboard feed index-free by sorting the streamed data
-    // after it reaches the client.
+  Widget _buildRequestHistoryStream() {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) {
+      return const Text('Sign in to view your requested documents.');
+    }
     final stream = FirebaseFirestore.instance
-        .collection('announcements')
+        .collection('document_requests')
+        .where('residentId', isEqualTo: uid)
         .snapshots();
 
     return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
@@ -428,9 +417,7 @@ class _DashboardPageState extends State<DashboardPage> {
           );
         }
 
-        final docs = (snapshot.data?.docs ?? [])
-            .where((doc) => doc.data()['status'] == 'published')
-            .toList();
+        final docs = snapshot.data?.docs.toList() ?? [];
         docs.sort((a, b) {
           final aCreatedAt = a.data()['createdAt'];
           final bCreatedAt = b.data()['createdAt'];
@@ -447,7 +434,7 @@ class _DashboardPageState extends State<DashboardPage> {
             padding: EdgeInsets.symmetric(vertical: 20),
             child: Center(
               child: Text(
-                'No announcements published yet.',
+                'No document requests submitted yet.',
                 style: TextStyle(color: Colors.grey),
               ),
             ),
@@ -455,16 +442,18 @@ class _DashboardPageState extends State<DashboardPage> {
         }
 
         return Column(
-          children: docs.map((doc) {
+          children: docs.take(5).map((doc) {
             final data = doc.data();
-            final title = data['title'] ?? '';
-            final desc = data['description'] ?? 'No details provided.';
-            final date = data['date'] ?? '';
-            final categoryName = data['category'] ?? 'news';
-
-            Color catColor = const Color(0xFF0038A8);
-            if (categoryName == 'emergency') catColor = const Color(0xFFDC2626);
-            if (categoryName == 'event') catColor = const Color(0xFF15803D);
+            final documentType = data['documentType'] ?? 'Document';
+            final purpose = data['purpose'] ?? 'No purpose provided.';
+            final date = data['dateSubmitted'] ?? 'Date unavailable';
+            final status = (data['status'] ?? 'pending').toString();
+            final statusColor = status.toLowerCase() == 'rejected'
+                ? Colors.red
+                : status.toLowerCase() == 'finished' ||
+                      status.toLowerCase() == 'released'
+                ? Colors.green
+                : const Color(0xFF0038A8);
 
             return Container(
               decoration: const BoxDecoration(
@@ -481,14 +470,14 @@ class _DashboardPageState extends State<DashboardPage> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          title,
+                          documentType,
                           style: const TextStyle(
                             fontWeight: FontWeight.bold,
                             color: Color(0xFF0038A8),
                           ),
                         ),
                         Text(
-                          desc,
+                          purpose,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
@@ -508,13 +497,13 @@ class _DashboardPageState extends State<DashboardPage> {
                       vertical: 4,
                     ),
                     decoration: BoxDecoration(
-                      color: catColor.withValues(alpha: 0.1),
+                      color: statusColor.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: Text(
-                      categoryName.toUpperCase(),
+                      status.toUpperCase(),
                       style: TextStyle(
-                        color: catColor,
+                        color: statusColor,
                         fontSize: 10,
                         fontWeight: FontWeight.bold,
                       ),
@@ -829,67 +818,6 @@ class _DashboardPageState extends State<DashboardPage> {
             ],
           ),
         ),
-      ),
-    );
-  }
-
-  Widget _statCard(
-    String title,
-    String value,
-    IconData icon,
-    Color bgColor,
-    Color textColor,
-  ) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: bgColor,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFC4C5D5)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            title,
-            style: TextStyle(color: textColor.withValues(alpha: 0.7), fontSize: 12),
-          ),
-          const SizedBox(height: 8),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                value,
-                style: TextStyle(
-                  color: textColor,
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              Icon(icon, color: textColor.withValues(alpha: 0.5), size: 32),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _filterChip(String label, bool isSelected) {
-    return Padding(
-      padding: const EdgeInsets.only(left: 4),
-      child: Chip(
-        label: Text(
-          label,
-          style: TextStyle(
-            fontSize: 12,
-            color: isSelected ? Colors.black : Colors.grey,
-          ),
-        ),
-        backgroundColor: isSelected
-            ? const Color(0xFFD3E4FE)
-            : Colors.transparent,
-        side: BorderSide.none,
-        padding: EdgeInsets.zero,
       ),
     );
   }

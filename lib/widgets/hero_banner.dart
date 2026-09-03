@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../theme/app_colors.dart';
+import '../screens/resident_request_code.dart';
 
 class HeroBanner extends StatelessWidget {
   const HeroBanner({super.key});
@@ -110,7 +111,9 @@ class HeroBanner extends StatelessWidget {
                   OutlinedButton(
                     style: OutlinedButton.styleFrom(
                       foregroundColor: Colors.white,
-                      side: BorderSide(color: Colors.white.withValues(alpha: .35)),
+                      side: BorderSide(
+                        color: Colors.white.withValues(alpha: .35),
+                      ),
                       padding: const EdgeInsets.symmetric(
                         horizontal: 24,
                         vertical: 18,
@@ -119,7 +122,13 @@ class HeroBanner extends StatelessWidget {
                         borderRadius: BorderRadius.circular(14),
                       ),
                     ),
-                    onPressed: () {},
+                    onPressed: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const DocumentRequest(),
+                        ),
+                      );
+                    },
 
                     child: const Text("View My Requests"),
                   ),

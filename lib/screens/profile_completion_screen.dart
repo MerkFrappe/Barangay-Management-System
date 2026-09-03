@@ -1,4 +1,4 @@
-import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -151,7 +151,7 @@ class _ProfileCompletionScreenState extends State<ProfileCompletionScreen> {
   String? _validIdType; // one of _kPrimaryValidIds
   String? _validIdSecondaryType; // one of _kSecondaryValidIds, if "Others"
 
-  File? _validIdPhotoFile;
+  Uint8List? _validIdPhotoBytes;
   String? _validIdPhotoPath; // existing (saved) path/url, if any
 
   bool _isVoter = false;
@@ -264,15 +264,16 @@ class _ProfileCompletionScreenState extends State<ProfileCompletionScreen> {
         imageQuality: 85,
       );
       if (picked == null) return;
+      final bytes = await picked.readAsBytes();
       setState(() {
-        _validIdPhotoFile = File(picked.path);
+        _validIdPhotoBytes = bytes;
         _validIdPhotoPath = picked.path;
       });
     } catch (error) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Unable to get photo: $error')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Unable to get photo: $error')));
       }
     }
   }
@@ -308,10 +309,7 @@ class _ProfileCompletionScreenState extends State<ProfileCompletionScreen> {
       },
       occupation: _emptyToNull(_occupationController.text),
       employmentStatus: _emptyToNull(_employmentStatusController.text),
-      validId: {
-        'type': resolvedValidIdType,
-        'photoUrl': _validIdPhotoPath,
-      },
+      validId: {'type': resolvedValidIdType, 'photoUrl': _validIdPhotoPath},
       isVoter: _isVoter,
       isPWD: _isPWD,
       isSeniorCitizen: _isSeniorCitizen,
@@ -799,7 +797,7 @@ class _ProfileCompletionScreenState extends State<ProfileCompletionScreen> {
   );
 
   Widget _idPhotoField() {
-    final hasImage = _validIdPhotoFile != null;
+    final hasImage = _validIdPhotoBytes != null;
     return Padding(
       padding: const EdgeInsets.only(top: 4, bottom: 4),
       child: Column(
@@ -822,7 +820,7 @@ class _ProfileCompletionScreenState extends State<ProfileCompletionScreen> {
             ),
             clipBehavior: Clip.antiAlias,
             child: hasImage
-                ? Image.file(_validIdPhotoFile!, fit: BoxFit.cover)
+                ? Image.memory(_validIdPhotoBytes!, fit: BoxFit.cover)
                 : Center(
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
