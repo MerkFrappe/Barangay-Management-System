@@ -13,10 +13,6 @@ import '../models/resident_profile.dart';
 import '../theme/app_colors.dart';
 import '../widgets/resident_sidebar.dart';
 
-void main() {
-  runApp(const MaterialApp(home: DocumentRequest()));
-}
-
 class DocumentRequest extends StatelessWidget {
   const DocumentRequest({super.key});
 

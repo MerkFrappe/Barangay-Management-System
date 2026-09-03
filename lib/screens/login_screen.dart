@@ -20,7 +20,9 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _obscurePassword = true;
   bool _rememberMe = false;
   bool _isSubmitting = false;
-  bool _isAdmin = true;
+  // Default to Resident — this is the primary audience for the app.
+  // Admins can switch over via the small "Login as Admin" link.
+  bool _isAdmin = false;
 
   @override
   void dispose() {
@@ -468,6 +470,36 @@ class _LoginForm extends StatelessWidget {
             ),
             const SizedBox(height: 20),
           ],
+
+          // Small role-switch link, top-right of the form. Residents land
+          // here by default; admins tap through to the admin-flavored form.
+          Align(
+            alignment: Alignment.centerRight,
+            child: TextButton.icon(
+              onPressed: () => onSelectRole(!isAdmin),
+              style: TextButton.styleFrom(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 8,
+                  vertical: 4,
+                ),
+                minimumSize: Size.zero,
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                foregroundColor: AppColors.primary,
+              ),
+              icon: Icon(
+                isAdmin ? Icons.person_outline : Icons.shield_outlined,
+                size: 15,
+              ),
+              label: Text(
+                isAdmin ? 'Login as Resident' : 'Login as Admin',
+                style: AppTextStyles.labelSm.copyWith(
+                  color: AppColors.primary,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
 
           Text(
             isAdmin ? 'Welcome back, Chairman' : 'Welcome, Resident',

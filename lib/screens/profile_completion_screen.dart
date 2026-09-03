@@ -1,10 +1,125 @@
+import 'dart:io';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../models/resident_profile.dart';
 import '../theme/app_colors.dart';
 import 'resident_dashboard_screen.dart';
+
+// This system currently only serves Barangay Apokon, so Barangay is fixed
+// rather than user-editable.
+const String _kFixedBarangay = 'Apokon';
+
+const List<String> _kSuffixOptions = [
+  'None',
+  'Jr.',
+  'Sr.',
+  'II',
+  'III',
+  'IV',
+  'V',
+];
+
+const List<String> _kSexOptions = ['Male', 'Female'];
+
+const List<String> _kCivilStatusOptions = [
+  'Single',
+  'Married',
+  'Widowed',
+  'Separated',
+  'Divorced',
+  'Annulled',
+];
+
+// Puroks of Barangay Apokon.
+const List<String> _kApokonPuroks = [
+  'Purok',
+  '1-Pagaran',
+  '1-B',
+  '1-C',
+  '1-D',
+  '1-E',
+  '2-Durian',
+  '2-A',
+  '3-Unit 1',
+  '3-Unit 2',
+  '3-Unit 3',
+  '3-Unit 4',
+  '3-Unit 5',
+  '3-Unit 6',
+  '3-Unit 7',
+  '3-A',
+  '3-B',
+  '3-C',
+  '3-D',
+  '3-E',
+  '3-F',
+  '3-G',
+  '3-H',
+  '4',
+  '4-A',
+  '4-B',
+  '4-C',
+  '4-D',
+  '4-E',
+  '4-F',
+  '4-G',
+  '4-H',
+  '5',
+  '5A',
+  '6',
+  '6-A',
+  '6-B',
+  '7',
+  'Purok 1',
+  'Purok 10',
+];
+
+// Primary valid IDs, shown individually. "Others" reveals a second dropdown
+// of commonly-accepted secondary IDs.
+const List<String> _kPrimaryValidIds = [
+  'Philippine National ID (PhilID)',
+  'Philippine Passport',
+  "Driver's License",
+  'UMID / SSS ID / GSIS e-Card',
+  'PRC ID',
+  'Postal ID',
+  "Seafarer's ID Record Book (SIRB)",
+  'ACR I-Card',
+  'Others',
+];
+
+const List<String> _kSecondaryValidIds = [
+  "Voter's ID / COMELEC Certification",
+  'TIN Card',
+  'PhilHealth ID',
+  'Pag-IBIG / HDMF Loyalty Card',
+  'Senior Citizen ID',
+  'PWD ID',
+  'Solo Parent ID',
+  'NBI / Police Clearance',
+  'Barangay ID / Clearance',
+  'OWWA / OFW ID',
+  'School ID / Company ID',
+];
+
+const List<String> _kMonthNames = [
+  'January',
+  'February',
+  'March',
+  'April',
+  'May',
+  'June',
+  'July',
+  'August',
+  'September',
+  'October',
+  'November',
+  'December',
+];
 
 class ProfileCompletionScreen extends StatefulWidget {
   final bool launchedAfterSignUp;
@@ -21,22 +136,23 @@ class _ProfileCompletionScreenState extends State<ProfileCompletionScreen> {
   final _firstNameController = TextEditingController();
   final _middleNameController = TextEditingController();
   final _lastNameController = TextEditingController();
-  final _suffixController = TextEditingController();
-  final _sexController = TextEditingController();
-  final _civilStatusController = TextEditingController();
-  final _dateOfBirthController = TextEditingController();
   final _citizenshipController = TextEditingController();
   final _contactNumberController = TextEditingController();
   final _houseNoController = TextEditingController();
   final _streetSubdivisionController = TextEditingController();
-  final _purokController = TextEditingController();
-  final _barangayController = TextEditingController();
   final _occupationController = TextEditingController();
   final _employmentStatusController = TextEditingController();
-  final _validIdTypeController = TextEditingController();
-  final _validIdNumberController = TextEditingController();
-  final _validIdPhotoUrlController = TextEditingController();
-  final _residencyStartDateController = TextEditingController();
+
+  String? _suffix;
+  String? _sex;
+  String? _civilStatus;
+  DateTime? _dateOfBirth;
+  String? _purok;
+  String? _validIdType; // one of _kPrimaryValidIds
+  String? _validIdSecondaryType; // one of _kSecondaryValidIds, if "Others"
+
+  File? _validIdPhotoFile;
+  String? _validIdPhotoPath; // existing (saved) path/url, if any
 
   bool _isVoter = false;
   bool _isPWD = false;
@@ -45,6 +161,8 @@ class _ProfileCompletionScreenState extends State<ProfileCompletionScreen> {
   bool _isSoloParent = false;
   bool _isLoading = true;
   bool _isSaving = false;
+
+  final _imagePicker = ImagePicker();
 
   @override
   void initState() {
@@ -61,28 +179,38 @@ class _ProfileCompletionScreenState extends State<ProfileCompletionScreen> {
           .doc(uid)
           .get();
       final profile = ResidentProfile.fromMap(doc.data());
+
       _firstNameController.text = profile.firstName ?? '';
       _middleNameController.text = profile.middleName ?? '';
       _lastNameController.text = profile.lastName ?? '';
-      _suffixController.text = profile.suffix ?? '';
-      _sexController.text = profile.sex ?? '';
-      _civilStatusController.text = profile.civilStatus ?? '';
-      _dateOfBirthController.text = profile.dateOfBirth ?? '';
       _citizenshipController.text = profile.citizenship ?? '';
       _contactNumberController.text = profile.contactNumber ?? '';
+
+      _suffix = _matchOption(profile.suffix, _kSuffixOptions);
+      _sex = _matchOption(profile.sex, _kSexOptions);
+      _civilStatus = _matchOption(profile.civilStatus, _kCivilStatusOptions);
+      _dateOfBirth = _parseIsoDate(profile.dateOfBirth);
+
       final address = profile.address ?? const <String, dynamic>{};
       _houseNoController.text = address['houseNo']?.toString() ?? '';
       _streetSubdivisionController.text =
           address['streetSubdivision']?.toString() ?? '';
-      _purokController.text = address['purok']?.toString() ?? '';
-      _barangayController.text = address['barangay']?.toString() ?? '';
+      _purok = _matchOption(address['purok']?.toString(), _kApokonPuroks);
+
       _occupationController.text = profile.occupation ?? '';
       _employmentStatusController.text = profile.employmentStatus ?? '';
+
       final validId = profile.validId ?? const <String, dynamic>{};
-      _validIdTypeController.text = validId['type']?.toString() ?? '';
-      _validIdNumberController.text = validId['number']?.toString() ?? '';
-      _validIdPhotoUrlController.text = validId['photoUrl']?.toString() ?? '';
-      _residencyStartDateController.text = profile.residencyStartDate ?? '';
+      final storedType = validId['type']?.toString();
+      if (storedType != null && _kPrimaryValidIds.contains(storedType)) {
+        _validIdType = storedType;
+      } else if (storedType != null &&
+          _kSecondaryValidIds.contains(storedType)) {
+        _validIdType = 'Others';
+        _validIdSecondaryType = storedType;
+      }
+      _validIdPhotoPath = validId['photoUrl']?.toString();
+
       _isVoter = profile.isVoter ?? false;
       _isPWD = profile.isPWD ?? false;
       _isSeniorCitizen = profile.isSeniorCitizen ?? false;
@@ -95,6 +223,60 @@ class _ProfileCompletionScreenState extends State<ProfileCompletionScreen> {
     }
   }
 
+  String? _matchOption(String? value, List<String> options) {
+    if (value == null || value.trim().isEmpty) return null;
+    final trimmed = value.trim();
+    for (final option in options) {
+      if (option.toLowerCase() == trimmed.toLowerCase()) return option;
+    }
+    return null;
+  }
+
+  DateTime? _parseIsoDate(String? value) {
+    if (value == null || value.trim().isEmpty) return null;
+    return DateTime.tryParse(value.trim());
+  }
+
+  String _isoDate(DateTime d) =>
+      '${d.year.toString().padLeft(4, '0')}-'
+      '${d.month.toString().padLeft(2, '0')}-'
+      '${d.day.toString().padLeft(2, '0')}';
+
+  String _displayDate(DateTime d) =>
+      '${_kMonthNames[d.month - 1]} ${d.day}, ${d.year}';
+
+  Future<void> _pickDateOfBirth() async {
+    final now = DateTime.now();
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _dateOfBirth ?? DateTime(now.year - 25),
+      firstDate: DateTime(1900),
+      lastDate: now,
+      helpText: 'Select date of birth',
+    );
+    if (picked != null) setState(() => _dateOfBirth = picked);
+  }
+
+  Future<void> _pickIdPhoto(ImageSource source) async {
+    try {
+      final picked = await _imagePicker.pickImage(
+        source: source,
+        imageQuality: 85,
+      );
+      if (picked == null) return;
+      setState(() {
+        _validIdPhotoFile = File(picked.path);
+        _validIdPhotoPath = picked.path;
+      });
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Unable to get photo: $error')),
+        );
+      }
+    }
+  }
+
   String? _required(String? value, String label) =>
       value == null || value.trim().isEmpty ? '$label is required.' : null;
 
@@ -104,35 +286,37 @@ class _ProfileCompletionScreenState extends State<ProfileCompletionScreen> {
     if (uid == null) return;
     setState(() => _isSaving = true);
 
+    final resolvedValidIdType = _validIdType == 'Others'
+        ? _validIdSecondaryType
+        : _validIdType;
+
     final profile = ResidentProfile(
       firstName: _firstNameController.text.trim(),
       middleName: _emptyToNull(_middleNameController.text),
       lastName: _lastNameController.text.trim(),
-      suffix: _emptyToNull(_suffixController.text),
-      sex: _emptyToNull(_sexController.text),
-      civilStatus: _emptyToNull(_civilStatusController.text),
-      dateOfBirth: _emptyToNull(_dateOfBirthController.text),
+      suffix: (_suffix == null || _suffix == 'None') ? null : _suffix,
+      sex: _sex,
+      civilStatus: _civilStatus,
+      dateOfBirth: _dateOfBirth == null ? null : _isoDate(_dateOfBirth!),
       citizenship: _emptyToNull(_citizenshipController.text),
       contactNumber: _contactNumberController.text.trim(),
       address: {
         'houseNo': _emptyToNull(_houseNoController.text),
         'streetSubdivision': _emptyToNull(_streetSubdivisionController.text),
-        'purok': _emptyToNull(_purokController.text),
-        'barangay': _barangayController.text.trim(),
+        'purok': _purok,
+        'barangay': _kFixedBarangay,
       },
       occupation: _emptyToNull(_occupationController.text),
       employmentStatus: _emptyToNull(_employmentStatusController.text),
       validId: {
-        'type': _emptyToNull(_validIdTypeController.text),
-        'number': _emptyToNull(_validIdNumberController.text),
-        'photoUrl': _emptyToNull(_validIdPhotoUrlController.text),
+        'type': resolvedValidIdType,
+        'photoUrl': _validIdPhotoPath,
       },
       isVoter: _isVoter,
       isPWD: _isPWD,
       isSeniorCitizen: _isSeniorCitizen,
       is4PsBeneficiary: _is4PsBeneficiary,
       isSoloParent: _isSoloParent,
-      residencyStartDate: _emptyToNull(_residencyStartDateController.text),
     );
 
     try {
@@ -181,35 +365,18 @@ class _ProfileCompletionScreenState extends State<ProfileCompletionScreen> {
   String? _emptyToNull(String value) =>
       value.trim().isEmpty ? null : value.trim();
 
-  String? _isoDate(String? value) {
-    if (value == null || value.trim().isEmpty) return null;
-    return RegExp(r'^\d{4}-\d{2}-\d{2}$').hasMatch(value.trim())
-        ? null
-        : 'Use YYYY-MM-DD.';
-  }
-
   @override
   void dispose() {
     for (final controller in [
       _firstNameController,
       _middleNameController,
       _lastNameController,
-      _suffixController,
-      _sexController,
-      _civilStatusController,
-      _dateOfBirthController,
       _citizenshipController,
       _contactNumberController,
       _houseNoController,
       _streetSubdivisionController,
-      _purokController,
-      _barangayController,
       _occupationController,
       _employmentStatusController,
-      _validIdTypeController,
-      _validIdNumberController,
-      _validIdPhotoUrlController,
-      _residencyStartDateController,
     ]) {
       controller.dispose();
     }
@@ -271,28 +438,29 @@ class _ProfileCompletionScreenState extends State<ProfileCompletionScreen> {
                               icon: Icons.person_outline,
                               required: true,
                             ),
-                            _field(
-                              _suffixController,
-                              'Suffix',
+                            _dropdown(
+                              value: _suffix,
+                              label: 'Suffix',
                               icon: Icons.badge_outlined,
+                              options: _kSuffixOptions,
+                              onChanged: (v) => setState(() => _suffix = v),
                             ),
-                            _field(
-                              _sexController,
-                              'Sex',
+                            _dropdown(
+                              value: _sex,
+                              label: 'Sex',
                               icon: Icons.person_outline,
+                              options: _kSexOptions,
+                              onChanged: (v) => setState(() => _sex = v),
                             ),
-                            _field(
-                              _civilStatusController,
-                              'Civil status',
+                            _dropdown(
+                              value: _civilStatus,
+                              label: 'Civil status',
                               icon: Icons.favorite_border,
+                              options: _kCivilStatusOptions,
+                              onChanged: (v) =>
+                                  setState(() => _civilStatus = v),
                             ),
-                            _field(
-                              _dateOfBirthController,
-                              'Date of birth',
-                              icon: Icons.cake_outlined,
-                              hint: 'YYYY-MM-DD',
-                              isIsoDate: true,
-                            ),
+                            _dateField(),
                             _field(
                               _citizenshipController,
                               'Citizenship',
@@ -318,16 +486,18 @@ class _ProfileCompletionScreenState extends State<ProfileCompletionScreen> {
                               'Street / subdivision',
                               icon: Icons.signpost_outlined,
                             ),
-                            _field(
-                              _purokController,
-                              'Purok',
+                            _dropdown(
+                              value: _purok,
+                              label: 'Purok',
                               icon: Icons.location_on_outlined,
+                              options: _kApokonPuroks,
+                              onChanged: (v) => setState(() => _purok = v),
                             ),
-                            _field(
-                              _barangayController,
-                              'Barangay',
+                            _fixedField(
+                              label: 'Barangay',
+                              value: _kFixedBarangay,
                               icon: Icons.location_city_outlined,
-                              required: true,
+                              note: 'This system currently serves Apokon only.',
                             ),
                           ]),
                           const SizedBox(height: 20),
@@ -342,28 +512,28 @@ class _ProfileCompletionScreenState extends State<ProfileCompletionScreen> {
                               'Employment status',
                               icon: Icons.business_center_outlined,
                             ),
-                            _field(
-                              _validIdTypeController,
-                              'Valid ID type',
+                            _dropdown(
+                              value: _validIdType,
+                              label: 'Valid ID type',
                               icon: Icons.badge_outlined,
+                              options: _kPrimaryValidIds,
+                              onChanged: (v) => setState(() {
+                                _validIdType = v;
+                                if (v != 'Others') {
+                                  _validIdSecondaryType = null;
+                                }
+                              }),
                             ),
-                            _field(
-                              _validIdNumberController,
-                              'Valid ID number',
-                              icon: Icons.numbers_outlined,
-                            ),
-                            _field(
-                              _validIdPhotoUrlController,
-                              'Valid ID photo URL',
-                              icon: Icons.image_outlined,
-                            ),
-                            _field(
-                              _residencyStartDateController,
-                              'Residency start date',
-                              icon: Icons.calendar_today_outlined,
-                              hint: 'YYYY-MM-DD',
-                              isIsoDate: true,
-                            ),
+                            if (_validIdType == 'Others')
+                              _dropdown(
+                                value: _validIdSecondaryType,
+                                label: 'Specify ID (Others)',
+                                icon: Icons.list_alt_outlined,
+                                options: _kSecondaryValidIds,
+                                onChanged: (v) =>
+                                    setState(() => _validIdSecondaryType = v),
+                              ),
+                            _idPhotoField(),
                           ]),
                           const SizedBox(height: 20),
                           _section('Resident indicators', [
@@ -469,7 +639,6 @@ class _ProfileCompletionScreenState extends State<ProfileCompletionScreen> {
     bool required = false,
     String? hint,
     TextInputType? keyboardType,
-    bool isIsoDate = false,
   }) => Padding(
     padding: const EdgeInsets.only(bottom: 14),
     child: TextFormField(
@@ -495,12 +664,221 @@ class _ProfileCompletionScreenState extends State<ProfileCompletionScreen> {
         errorBorder: _inputBorder(AppColors.error),
         focusedErrorBorder: _inputBorder(AppColors.error, width: 1.6),
       ),
-      validator: (value) {
-        final requiredError = required ? _required(value, label) : null;
-        return requiredError ?? (isIsoDate ? _isoDate(value) : null);
-      },
+      validator: required ? (value) => _required(value, label) : null,
     ),
   );
+
+  Widget _dropdown({
+    required String? value,
+    required String label,
+    required IconData icon,
+    required List<String> options,
+    required ValueChanged<String?> onChanged,
+    bool required = false,
+  }) => Padding(
+    padding: const EdgeInsets.only(bottom: 14),
+    child: DropdownButtonFormField<String>(
+      value: value,
+      isExpanded: true,
+      decoration: InputDecoration(
+        labelText: label,
+        labelStyle: AppTextStyles.bodySm.copyWith(
+          color: AppColors.onSurfaceVariant,
+        ),
+        prefixIcon: Icon(icon, color: AppColors.outline, size: 20),
+        filled: true,
+        fillColor: AppColors.surfaceContainer,
+        contentPadding: const EdgeInsets.symmetric(
+          vertical: 14,
+          horizontal: 12,
+        ),
+        border: _inputBorder(Colors.transparent),
+        enabledBorder: _inputBorder(Colors.transparent),
+        focusedBorder: _inputBorder(AppColors.primary, width: 1.6),
+      ),
+      hint: Text(
+        'Select $label',
+        style: AppTextStyles.bodySm.copyWith(color: AppColors.outline),
+      ),
+      items: options
+          .map(
+            (option) => DropdownMenuItem(
+              value: option,
+              child: Text(option, style: AppTextStyles.bodyMd),
+            ),
+          )
+          .toList(),
+      onChanged: onChanged,
+      validator: required
+          ? (v) => (v == null || v.isEmpty) ? '$label is required.' : null
+          : null,
+    ),
+  );
+
+  Widget _dateField() => Padding(
+    padding: const EdgeInsets.only(bottom: 14),
+    child: InkWell(
+      borderRadius: BorderRadius.circular(10),
+      onTap: _pickDateOfBirth,
+      child: InputDecorator(
+        decoration: InputDecoration(
+          labelText: 'Date of birth',
+          labelStyle: AppTextStyles.bodySm.copyWith(
+            color: AppColors.onSurfaceVariant,
+          ),
+          prefixIcon: const Icon(
+            Icons.cake_outlined,
+            color: AppColors.outline,
+            size: 20,
+          ),
+          suffixIcon: const Icon(
+            Icons.calendar_today_outlined,
+            color: AppColors.outline,
+            size: 18,
+          ),
+          filled: true,
+          fillColor: AppColors.surfaceContainer,
+          contentPadding: const EdgeInsets.symmetric(
+            vertical: 14,
+            horizontal: 12,
+          ),
+          border: _inputBorder(Colors.transparent),
+          enabledBorder: _inputBorder(Colors.transparent),
+        ),
+        child: Text(
+          _dateOfBirth == null
+              ? 'Select date of birth'
+              : _displayDate(_dateOfBirth!),
+          style: AppTextStyles.bodyMd.copyWith(
+            color: _dateOfBirth == null
+                ? AppColors.outline
+                : AppColors.onSurface,
+          ),
+        ),
+      ),
+    ),
+  );
+
+  Widget _fixedField({
+    required String label,
+    required String value,
+    required IconData icon,
+    String? note,
+  }) => Padding(
+    padding: const EdgeInsets.only(bottom: 14),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        InputDecorator(
+          decoration: InputDecoration(
+            labelText: label,
+            labelStyle: AppTextStyles.bodySm.copyWith(
+              color: AppColors.onSurfaceVariant,
+            ),
+            prefixIcon: Icon(icon, color: AppColors.outline, size: 20),
+            filled: true,
+            fillColor: AppColors.surfaceContainerLow,
+            contentPadding: const EdgeInsets.symmetric(
+              vertical: 14,
+              horizontal: 12,
+            ),
+            border: _inputBorder(Colors.transparent),
+            enabledBorder: _inputBorder(Colors.transparent),
+          ),
+          child: Text(value, style: AppTextStyles.bodyMd),
+        ),
+        if (note != null) ...[
+          const SizedBox(height: 4),
+          Text(
+            note,
+            style: AppTextStyles.bodySm.copyWith(color: AppColors.outline),
+          ),
+        ],
+      ],
+    ),
+  );
+
+  Widget _idPhotoField() {
+    final hasImage = _validIdPhotoFile != null;
+    return Padding(
+      padding: const EdgeInsets.only(top: 4, bottom: 4),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Valid ID photo',
+            style: AppTextStyles.bodySm.copyWith(
+              color: AppColors.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Container(
+            height: 150,
+            width: double.infinity,
+            decoration: BoxDecoration(
+              color: AppColors.surfaceContainer,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: AppColors.outlineVariant),
+            ),
+            clipBehavior: Clip.antiAlias,
+            child: hasImage
+                ? Image.file(_validIdPhotoFile!, fit: BoxFit.cover)
+                : Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.badge_outlined,
+                          color: AppColors.outline,
+                          size: 32,
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          'No photo added yet',
+                          style: AppTextStyles.bodySm.copyWith(
+                            color: AppColors.outline,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: () => _pickIdPhoto(ImageSource.camera),
+                  icon: const Icon(Icons.photo_camera_outlined, size: 18),
+                  label: const Text('Take photo'),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: () => _pickIdPhoto(ImageSource.gallery),
+                  icon: const Icon(Icons.folder_open_outlined, size: 18),
+                  label: const Text('Choose file'),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
 
   Widget _toggle(String label, bool value, ValueChanged<bool> onChanged) =>
       SwitchListTile(

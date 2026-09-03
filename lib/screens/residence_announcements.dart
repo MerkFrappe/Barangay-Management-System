@@ -5,10 +5,6 @@ import '../theme/app_colors.dart';
 import '../widgets/resident_sidebar.dart';
 import '../widgets/top_navigation_bar.dart';
 
-void main() {
-  runApp(const CivicHorizonApp());
-}
-
 class CivicHorizonApp extends StatelessWidget {
   const CivicHorizonApp({super.key});
 

@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 
 import '../theme/app_colors.dart';
-import '../screens/login_screen.dart';
 import '../screens/dashboard_screen.dart';
 import '../screens/resident_dashboard_screen.dart';
 import '../screens/resident_request_code.dart';
 import '../screens/residence_announcements.dart' as announcements;
 import '../screens/community_polls_screen.dart';
-import '../screens/settings_screen.dart';
 import '../screens/health_center_screen.dart';
+import '../screens/barangay_officials_screen.dart';
+import 'resident_settings_popup.dart';
 
 class ResidentSidebar extends StatelessWidget {
   final String selectedItem;
@@ -286,6 +286,19 @@ class ResidentSidebar extends StatelessWidget {
                 ),
 
                 _NavItem(
+                  icon: Icons.groups_outlined,
+                  title: "Barangay Officials",
+                  selected: selectedItem == 'Barangay Officials',
+                  onTap: () {
+                    Navigator.of(context).pushReplacement(
+                      MaterialPageRoute(
+                        builder: (_) => const BarangayOfficialsScreen(),
+                      ),
+                    );
+                  },
+                ),
+
+                _NavItem(
                   icon: Icons.help_outline,
                   title: "Help Center",
                   onTap: () => _showHelpCenterModal(context),
@@ -327,24 +340,13 @@ class ResidentSidebar extends StatelessWidget {
 
                 Divider(color: AppColors.outlineVariant),
 
+                // Settings now opens a small account popup (Edit profile +
+                // Log out) instead of pushing the admin SettingsScreen.
+                // The old standalone "Logout" item lives inside that popup.
                 _NavItem(
                   icon: Icons.settings_outlined,
                   title: "Settings",
-                  onTap: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(builder: (_) => const SettingsScreen()),
-                    );
-                  },
-                ),
-
-                _NavItem(
-                  icon: Icons.logout,
-                  title: "Logout",
-                  onTap: () {
-                    Navigator.of(context).pushReplacement(
-                      MaterialPageRoute(builder: (_) => const LoginScreen()),
-                    );
-                  },
+                  onTap: () => showResidentSettingsPopup(context),
                 ),
               ],
             ),
