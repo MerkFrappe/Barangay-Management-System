@@ -724,7 +724,7 @@ class _StatCard extends StatelessWidget {
                   color:
                       accentColor ??
                       (dark
-                          ? Colors.white.withOpacity(0.4)
+                          ? Colors.white.withValues(alpha: 0.4)
                           : const Color(0xFFFECC00)),
                 ),
               ],
@@ -840,7 +840,7 @@ class _AddEventFormState extends State<_AddEventForm> {
         border: Border.all(color: const Color(0xFFC4C5D5)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -934,7 +934,7 @@ class _AddEventFormState extends State<_AddEventForm> {
                   _FormLabel('Category'),
                   const SizedBox(height: 6),
                   DropdownButtonFormField<AnnouncementCategory>(
-                    value: _category,
+                    initialValue: _category,
                     decoration: InputDecoration(
                       contentPadding: const EdgeInsets.symmetric(
                         horizontal: 14,

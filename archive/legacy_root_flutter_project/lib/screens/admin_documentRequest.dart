@@ -1489,7 +1489,7 @@ class _MobileRequestList extends StatelessWidget {
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
         itemCount: requests.length,
-        separatorBuilder: (_, __) => const Divider(
+        separatorBuilder: (_, _) => const Divider(
           height: 1,
           color: AppColors.outlineVariant,
         ),

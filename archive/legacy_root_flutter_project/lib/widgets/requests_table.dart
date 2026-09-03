@@ -88,7 +88,7 @@ class RequestsTable extends StatelessWidget {
             scrollDirection: Axis.horizontal,
             child: DataTable(
               headingRowColor:
-                  MaterialStateProperty.all(AppColors.surfaceContainerLow),
+                  WidgetStateProperty.all(AppColors.surfaceContainerLow),
               dividerThickness: 1,
               columns: [
                 DataColumn(label: _header('Resident Name')),

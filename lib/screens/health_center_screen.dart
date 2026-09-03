@@ -48,7 +48,7 @@ class _HealthCenterScreenState extends State<HealthCenterScreen> {
                 ),
                 const SizedBox(height: 12),
                 DropdownButtonFormField<String>(
-                  value: _serviceType,
+                  initialValue: _serviceType,
                   decoration: const InputDecoration(labelText: 'Service Needed'),
                   items: [
                     'General Medical Consultation',
@@ -61,7 +61,7 @@ class _HealthCenterScreenState extends State<HealthCenterScreen> {
                 ),
                 const SizedBox(height: 12),
                 DropdownButtonFormField<String>(
-                  value: _preferredDate,
+                  initialValue: _preferredDate,
                   decoration: const InputDecoration(labelText: 'Preferred Time Slot'),
                   items: [
                     'Tomorrow Morning (8:00 AM - 12:00 PM)',
@@ -259,7 +259,7 @@ class _HealthCenterScreenState extends State<HealthCenterScreen> {
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
                   itemCount: docs.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 12),
+                  separatorBuilder: (_, _) => const SizedBox(height: 12),
                   itemBuilder: (context, index) {
                     final data = docs[index].data() as Map<String, dynamic>;
                     return Container(

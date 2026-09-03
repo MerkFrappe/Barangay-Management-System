@@ -58,7 +58,7 @@ class ResidentSidebar extends StatelessWidget {
               ),
               const SizedBox(height: 12),
               DropdownButtonFormField<String>(
-                value: type,
+                initialValue: type,
                 decoration: const InputDecoration(
                   labelText: 'Emergency Category',
                 ),

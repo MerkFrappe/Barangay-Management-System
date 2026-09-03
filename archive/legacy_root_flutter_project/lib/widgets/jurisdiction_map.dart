@@ -58,7 +58,7 @@ class JurisdictionMap extends StatelessWidget {
                     child: Center(
                       child: Icon(Icons.terrain,
                           size: 48,
-                          color: AppColors.onSurfaceVariant.withOpacity(0.3)),
+                          color: AppColors.onSurfaceVariant.withValues(alpha: 0.3)),
                     ),
                   ),
                   Positioned(
@@ -67,7 +67,7 @@ class JurisdictionMap extends StatelessWidget {
                     child: Container(
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.9),
+                        color: Colors.white.withValues(alpha: 0.9),
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(color: AppColors.outlineVariant),
                         boxShadow: const [

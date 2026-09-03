@@ -41,10 +41,10 @@ class _admin_announcementsState
   ViewMode _viewMode = ViewMode.auto;
 
 String _searchQuery = '';
-String _selectedTab = 'All Requests';
-String _selectedStatusFilter = 'All Statuses';
+final String _selectedTab = 'All Requests';
+final String _selectedStatusFilter = 'All Statuses';
 String? _selectedRowId;
-int _currentPage = 1;
+final int _currentPage = 1;
 
 
 

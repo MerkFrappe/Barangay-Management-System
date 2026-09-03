@@ -577,7 +577,7 @@ class _ProfileCompletionScreenState extends State<ProfileCompletionScreen> {
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               disabledBackgroundColor: AppColors.primary
-                                  .withOpacity(0.6),
+                                  .withValues(alpha: 0.6),
                             ),
                             child: _isSaving
                                 ? const SizedBox(
@@ -678,7 +678,7 @@ class _ProfileCompletionScreenState extends State<ProfileCompletionScreen> {
   }) => Padding(
     padding: const EdgeInsets.only(bottom: 14),
     child: DropdownButtonFormField<String>(
-      value: value,
+      initialValue: value,
       isExpanded: true,
       decoration: InputDecoration(
         labelText: label,

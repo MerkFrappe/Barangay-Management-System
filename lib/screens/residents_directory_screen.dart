@@ -60,7 +60,7 @@ class _ResidentsDirectoryScreenState extends State<ResidentsDirectoryScreen> {
                 ),
                 const SizedBox(height: 12),
                 DropdownButtonFormField<String>(
-                  value: role,
+                  initialValue: role,
                   decoration: const InputDecoration(labelText: 'Role / Designation'),
                   items: ['Resident', 'Barangay Official', 'Senior Citizen', 'Youth Leader']
                       .map((r) => DropdownMenuItem(value: r, child: Text(r)))

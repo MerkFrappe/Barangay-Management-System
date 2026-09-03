@@ -382,7 +382,7 @@ class _BrandPanel extends StatelessWidget {
                       : 'Official community portal for residents —\nrequest certificates, check announcements & file reports.',
                   textAlign: TextAlign.center,
                   style: AppTextStyles.bodyMd.copyWith(
-                    color: AppColors.onPrimary.withOpacity(0.85),
+                    color: AppColors.onPrimary.withValues(alpha: 0.85),
                   ),
                 ),
               ],
@@ -406,7 +406,7 @@ class _GhostCircle extends StatelessWidget {
       height: size,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        color: Colors.white.withOpacity(opacity),
+        color: Colors.white.withValues(alpha: opacity),
       ),
     );
   }
@@ -616,7 +616,7 @@ class _LoginForm extends StatelessWidget {
                   borderRadius: BorderRadius.circular(12),
                 ),
                 elevation: 4,
-                disabledBackgroundColor: AppColors.primary.withOpacity(0.6),
+                disabledBackgroundColor: AppColors.primary.withValues(alpha: 0.6),
               ),
               child: isSubmitting
                   ? const SizedBox(

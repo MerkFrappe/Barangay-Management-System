@@ -251,21 +251,21 @@ class _RequestTile extends StatelessWidget {
       case 'completed':
         return _StatusStyle(
           label: 'Approved',
-          background: Colors.green.withOpacity(0.12),
+          background: Colors.green.withValues(alpha: 0.12),
           foreground: Colors.green[800]!,
         );
       case 'rejected':
       case 'denied':
         return _StatusStyle(
           label: 'Rejected',
-          background: Colors.red.withOpacity(0.12),
+          background: Colors.red.withValues(alpha: 0.12),
           foreground: Colors.red[800]!,
         );
       case 'pending':
       default:
         return _StatusStyle(
           label: 'Pending',
-          background: Colors.amber.withOpacity(0.18),
+          background: Colors.amber.withValues(alpha: 0.18),
           foreground: Colors.amber[900]!,
         );
     }

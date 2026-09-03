@@ -48,7 +48,7 @@ class _PeaceAndOrderScreenState extends State<PeaceAndOrderScreen> {
                 ),
                 const SizedBox(height: 12),
                 DropdownButtonFormField<String>(
-                  value: category,
+                  initialValue: category,
                   decoration: const InputDecoration(labelText: 'Incident Category'),
                   items: ['Noise Disturbance', 'Boundary Dispute', 'Physical Altercation', 'Property Damage', 'Theft', 'Other']
                       .map((c) => DropdownMenuItem(value: c, child: Text(c)))

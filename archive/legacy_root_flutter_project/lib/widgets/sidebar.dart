@@ -81,7 +81,7 @@ class _SidebarNavState extends State<SidebarNav> {
           Expanded(
             child: ListView.separated(
               itemCount: _items.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 4),
+              separatorBuilder: (_, _) => const SizedBox(height: 4),
               itemBuilder: (context, index) {
                 final item = _items[index];
                 final selected = index == _selectedIndex;

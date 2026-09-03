@@ -138,7 +138,7 @@ class _ReportIncidentScreenState extends State<ReportIncidentScreen> {
                           Container(
                             padding: const EdgeInsets.all(16),
                             decoration: BoxDecoration(
-                              color: AppColors.errorContainer.withOpacity(0.3),
+                              color: AppColors.errorContainer.withValues(alpha: 0.3),
                               borderRadius: BorderRadius.circular(12),
                               border: Border.all(
                                 color: AppColors.errorContainer,
@@ -169,7 +169,7 @@ class _ReportIncidentScreenState extends State<ReportIncidentScreen> {
                           ),
                           const SizedBox(height: 16),
                           DropdownButtonFormField<String>(
-                            value: _incidentType,
+                            initialValue: _incidentType,
                             isExpanded: true,
                             decoration: _decoration(
                               'Incident type',
@@ -235,7 +235,7 @@ class _ReportIncidentScreenState extends State<ReportIncidentScreen> {
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               disabledBackgroundColor: AppColors.primary
-                                  .withOpacity(0.6),
+                                  .withValues(alpha: 0.6),
                             ),
                             child: _isSubmitting
                                 ? const SizedBox(

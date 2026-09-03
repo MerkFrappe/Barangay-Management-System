@@ -219,7 +219,7 @@ class _ProfileCompletionBannerState extends State<_ProfileCompletionBanner> {
         return Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: AppColors.secondaryContainer.withOpacity(0.2),
+            color: AppColors.secondaryContainer.withValues(alpha: 0.2),
             borderRadius: BorderRadius.circular(12),
             border: Border.all(color: AppColors.secondaryContainer),
           ),

@@ -30,7 +30,7 @@ class HeroBanner extends StatelessWidget {
               height: 220,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: Colors.white.withOpacity(.06),
+                color: Colors.white.withValues(alpha: .06),
               ),
             ),
           ),
@@ -43,7 +43,7 @@ class HeroBanner extends StatelessWidget {
               height: 160,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: Colors.white.withOpacity(.04),
+                color: Colors.white.withValues(alpha: .04),
               ),
             ),
           ),
@@ -77,7 +77,7 @@ class HeroBanner extends StatelessWidget {
                   "Your digital bridge to Barangay services and community updates. "
                   "How can we help improve our neighborhood today?",
                   style: AppTextStyles.bodyLg.copyWith(
-                    color: Colors.white.withOpacity(.90),
+                    color: Colors.white.withValues(alpha: .90),
                   ),
                 ),
               ),
@@ -110,7 +110,7 @@ class HeroBanner extends StatelessWidget {
                   OutlinedButton(
                     style: OutlinedButton.styleFrom(
                       foregroundColor: Colors.white,
-                      side: BorderSide(color: Colors.white.withOpacity(.35)),
+                      side: BorderSide(color: Colors.white.withValues(alpha: .35)),
                       padding: const EdgeInsets.symmetric(
                         horizontal: 24,
                         vertical: 18,

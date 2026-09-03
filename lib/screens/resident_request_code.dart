@@ -508,7 +508,7 @@ class _DashboardPageState extends State<DashboardPage> {
                       vertical: 4,
                     ),
                     decoration: BoxDecoration(
-                      color: catColor.withOpacity(0.1),
+                      color: catColor.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: Text(
@@ -564,7 +564,7 @@ class _DashboardPageState extends State<DashboardPage> {
                 const SizedBox(height: 16),
                 _buildFieldLabel('Document Type'),
                 DropdownButtonFormField<String>(
-                  value: _selectedDocumentType,
+                  initialValue: _selectedDocumentType,
                   decoration: const InputDecoration(
                     border: OutlineInputBorder(),
                     contentPadding: EdgeInsets.symmetric(
@@ -852,7 +852,7 @@ class _DashboardPageState extends State<DashboardPage> {
         children: [
           Text(
             title,
-            style: TextStyle(color: textColor.withOpacity(0.7), fontSize: 12),
+            style: TextStyle(color: textColor.withValues(alpha: 0.7), fontSize: 12),
           ),
           const SizedBox(height: 8),
           Row(
@@ -866,7 +866,7 @@ class _DashboardPageState extends State<DashboardPage> {
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              Icon(icon, color: textColor.withOpacity(0.5), size: 32),
+              Icon(icon, color: textColor.withValues(alpha: 0.5), size: 32),
             ],
           ),
         ],

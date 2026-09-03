@@ -208,7 +208,7 @@ class _EmergencyBroadcastScreenState extends State<EmergencyBroadcastScreen> {
             ),
             const SizedBox(height: 16),
             DropdownButtonFormField<String>(
-              value: _alertLevel,
+              initialValue: _alertLevel,
               decoration: const InputDecoration(labelText: 'Severity Level'),
               items: ['Critical (Immediate Evacuation)', 'High (Warning)', 'Moderate (Advisory)', 'Low (Info)']
                   .map((l) => DropdownMenuItem(value: l, child: Text(l)))
@@ -275,7 +275,7 @@ class _EmergencyBroadcastScreenState extends State<EmergencyBroadcastScreen> {
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
                   itemCount: docs.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 12),
+                  separatorBuilder: (_, _) => const SizedBox(height: 12),
                   itemBuilder: (context, index) {
                     final data = docs[index].data() as Map<String, dynamic>;
                     return Container(
