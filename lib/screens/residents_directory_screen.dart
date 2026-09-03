@@ -164,6 +164,71 @@ class _ResidentsDirectoryScreenState extends State<ResidentsDirectoryScreen> {
     );
   }
 
+  Future<void> _editResident(DocumentSnapshot doc) async {
+    final data = doc.data() as Map<String, dynamic>;
+    final nameCtrl = TextEditingController(
+      text: data['displayName']?.toString() ?? '',
+    );
+    final addressCtrl = TextEditingController(
+      text: data['address']?.toString() ?? '',
+    );
+    final phoneCtrl = TextEditingController(
+      text:
+          data['phone']?.toString() ?? data['contactNumber']?.toString() ?? '',
+    );
+    final saved = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Edit Resident Profile'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: nameCtrl,
+                decoration: const InputDecoration(labelText: 'Full Name'),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: addressCtrl,
+                decoration: const InputDecoration(
+                  labelText: 'Complete Address / Purok',
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: phoneCtrl,
+                decoration: const InputDecoration(labelText: 'Contact Number'),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Save Changes'),
+          ),
+        ],
+      ),
+    );
+    if (saved != true) return;
+    await doc.reference.update({
+      'displayName': nameCtrl.text.trim(),
+      'accountName': nameCtrl.text.trim(),
+      'address': addressCtrl.text.trim(),
+      'phone': phoneCtrl.text.trim(),
+      'contactNumber': phoneCtrl.text.trim(),
+    });
+    if (!mounted) return;
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Resident profile updated.')));
+  }
+
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(
@@ -397,13 +462,7 @@ class _ResidentsDirectoryScreenState extends State<ResidentsDirectoryScreen> {
                           children: [
                             IconButton(
                               icon: const Icon(Icons.edit, size: 18),
-                              onPressed: () {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text('Editing profile for $name'),
-                                  ),
-                                );
-                              },
+                              onPressed: () => _editResident(doc),
                             ),
                             IconButton(
                               icon: const Icon(

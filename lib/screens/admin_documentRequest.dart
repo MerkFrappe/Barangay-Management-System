@@ -30,6 +30,10 @@ class _admin_documentRequestState extends State<admin_documentRequest> {
         return 'Approved';
       case 'rejected':
         return 'Rejected';
+      case 'finished':
+      case 'done':
+      case 'released':
+        return 'Finished';
       default:
         return 'Pending';
     }
@@ -96,28 +100,36 @@ class _admin_documentRequestState extends State<admin_documentRequest> {
               const SizedBox(height: 8),
               Wrap(
                 spacing: 8,
-                children: ['Pending', 'In Review', 'Approved', 'Rejected'].map((
-                  status,
-                ) {
-                  return ChoiceChip(
-                    label: Text(status),
-                    selected: currentStatus == status,
-                    onSelected: (selected) {
-                      if (selected) {
-                        _collection.doc(docId).update({'status': status}).then((
-                          _,
-                        ) {
-                          Navigator.pop(ctx);
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text('Status updated to $status'),
-                            ),
-                          );
-                        });
-                      }
-                    },
-                  );
-                }).toList(),
+                children:
+                    [
+                      'Pending',
+                      'In Review',
+                      'Approved',
+                      'Rejected',
+                      'Finished',
+                    ].map((status) {
+                      return ChoiceChip(
+                        label: Text(status),
+                        selected: currentStatus == status,
+                        onSelected: (selected) {
+                          if (selected) {
+                            _collection
+                                .doc(docId)
+                                .update({'status': status})
+                                .then((_) {
+                                  Navigator.pop(ctx);
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(
+                                        'Status updated to $status',
+                                      ),
+                                    ),
+                                  );
+                                });
+                          }
+                        },
+                      );
+                    }).toList(),
               ),
             ],
           ),
@@ -201,6 +213,7 @@ class _admin_documentRequestState extends State<admin_documentRequest> {
                                         'In Review',
                                         'Approved',
                                         'Rejected',
+                                        'Finished',
                                       ]
                                       .map(
                                         (s) => DropdownMenuItem(
@@ -319,6 +332,9 @@ class _admin_documentRequestState extends State<admin_documentRequest> {
                                       } else if (status == 'Pending') {
                                         statusBg = AppColors.secondaryContainer;
                                         statusText = AppColors.secondary;
+                                      } else if (status == 'Finished') {
+                                        statusBg = AppColors.successGreenBg;
+                                        statusText = AppColors.successGreen;
                                       }
 
                                       return DataRow(

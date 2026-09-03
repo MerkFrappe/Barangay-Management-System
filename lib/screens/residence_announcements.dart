@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 import '../theme/app_colors.dart';
 import '../widgets/resident_sidebar.dart';
@@ -143,6 +144,7 @@ class _CommunityEventsScreenState extends State<CommunityEventsScreen> {
     }
 
     return _EventData(
+      id: doc.id,
       imageUrl: imageUrl,
       category: catLabel,
       categoryIcon: catIcon,
@@ -152,10 +154,26 @@ class _CommunityEventsScreenState extends State<CommunityEventsScreen> {
       date: date,
       time: desc.length > 80 ? '${desc.substring(0, 80)}...' : desc,
       fullDescription: desc,
+      viewerIds: List<String>.from(data['viewerIds'] ?? const []),
+      likerIds: List<String>.from(data['likerIds'] ?? const []),
     );
   }
 
-  void _showEventDetailsModal(BuildContext context, _EventData event) {
+  Future<void> _showEventDetailsModal(
+    BuildContext context,
+    _EventData event,
+  ) async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid != null && !event.viewerIds.contains(uid)) {
+      await FirebaseFirestore.instance
+          .collection('announcements')
+          .doc(event.id)
+          .update({
+            'viewerIds': FieldValue.arrayUnion([uid]),
+          });
+    }
+    if (!context.mounted) return;
+    var liked = uid != null && event.likerIds.contains(uid);
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -218,6 +236,27 @@ class _CommunityEventsScreenState extends State<CommunityEventsScreen> {
               Text(
                 event.fullDescription,
                 style: const TextStyle(fontSize: 14, height: 1.5),
+              ),
+              const SizedBox(height: 16),
+              StatefulBuilder(
+                builder: (context, setDialogState) => OutlinedButton.icon(
+                  onPressed: uid == null
+                      ? null
+                      : () async {
+                          final ref = FirebaseFirestore.instance
+                              .collection('announcements')
+                              .doc(event.id);
+                          await ref.update({
+                            'likerIds': liked
+                                ? FieldValue.arrayRemove([uid])
+                                : FieldValue.arrayUnion([uid]),
+                          });
+                          liked = !liked;
+                          setDialogState(() {});
+                        },
+                  icon: Icon(liked ? Icons.thumb_up : Icons.thumb_up_outlined),
+                  label: Text(liked ? 'Liked' : 'Like announcement'),
+                ),
               ),
             ],
           ),
@@ -772,6 +811,7 @@ class _CommunityEventsScreenState extends State<CommunityEventsScreen> {
 // Event data + card widget
 // ---------------------------------------------------------------------------
 class _EventData {
+  final String id;
   final String imageUrl;
   final String category;
   final IconData categoryIcon;
@@ -781,8 +821,11 @@ class _EventData {
   final String date;
   final String time;
   final String fullDescription;
+  final List<String> viewerIds;
+  final List<String> likerIds;
 
   const _EventData({
+    required this.id,
     required this.imageUrl,
     required this.category,
     required this.categoryIcon,
@@ -792,6 +835,8 @@ class _EventData {
     required this.date,
     required this.time,
     required this.fullDescription,
+    required this.viewerIds,
+    required this.likerIds,
   });
 }
 

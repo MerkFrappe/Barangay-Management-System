@@ -139,12 +139,7 @@ class _TrackerBody extends StatelessWidget {
 
               return Column(
                 children: docs
-                    .map(
-                      (doc) => _RequestTile(
-                        data: doc.data(),
-                        docId: doc.id,
-                      ),
-                    )
+                    .map((doc) => _RequestTile(data: doc.data(), docId: doc.id))
                     .toList(),
               );
             },
@@ -246,6 +241,14 @@ class _RequestTile extends StatelessWidget {
 
   _StatusStyle _statusStyle(String status) {
     switch (status) {
+      case 'finished':
+      case 'done':
+      case 'released':
+        return _StatusStyle(
+          label: 'Finished - Ready for Release',
+          background: Colors.blue.withValues(alpha: 0.12),
+          foreground: Colors.blue[800]!,
+        );
       case 'approved':
       case 'ready':
       case 'completed':

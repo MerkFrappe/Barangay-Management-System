@@ -17,6 +17,9 @@ class Announcement {
   final String date;
   final AnnouncementCategory category;
   final AnnouncementStatus status;
+  final int reach;
+  final int likes;
+  final List<String> viewerIds;
 
   Announcement({
     required this.id,
@@ -25,6 +28,9 @@ class Announcement {
     required this.date,
     required this.category,
     required this.status,
+    this.reach = 0,
+    this.likes = 0,
+    this.viewerIds = const [],
   });
 }
 
@@ -66,6 +72,9 @@ class AnnouncementService {
           date: data['date'] ?? '',
           category: _parseCategory(data['category'] ?? 'news'),
           status: _parseStatus(data['status'] ?? 'published'),
+          reach: (data['viewerIds'] as List?)?.length ?? 0,
+          likes: (data['likerIds'] as List?)?.length ?? 0,
+          viewerIds: List<String>.from(data['viewerIds'] ?? const []),
         );
       }).toList();
     });
@@ -85,6 +94,9 @@ class AnnouncementService {
           date: data['date'] ?? '',
           category: _parseCategory(data['category'] ?? 'news'),
           status: _parseStatus(data['status'] ?? 'published'),
+          reach: (data['viewerIds'] as List?)?.length ?? 0,
+          likes: (data['likerIds'] as List?)?.length ?? 0,
+          viewerIds: List<String>.from(data['viewerIds'] ?? const []),
         );
       }).toList();
     } catch (e) {
@@ -103,6 +115,8 @@ class AnnouncementService {
           'category': a.category.name,
           'status': a.status.name,
           'createdAt': FieldValue.serverTimestamp(),
+          'viewerIds': <String>[],
+          'likerIds': <String>[],
         });
         return Announcement(
           id: docRef.id,
@@ -120,6 +134,8 @@ class AnnouncementService {
           'category': a.category.name,
           'status': a.status.name,
           'createdAt': FieldValue.serverTimestamp(),
+          'viewerIds': FieldValue.arrayUnion([]),
+          'likerIds': FieldValue.arrayUnion([]),
         }, SetOptions(merge: true));
         return a;
       }
@@ -391,28 +407,42 @@ class _LeftColumnState extends State<_LeftColumn> {
             ),
           ),
           const SizedBox(height: 20),
-          Row(
-            children: [
-              _StatCard(
-                label: 'Total Published',
-                value: '128',
-                icon: Icons.campaign_outlined,
-                dark: true,
-              ),
-              const SizedBox(width: 12),
-              _StatCard(
-                label: 'Total Reach',
-                value: '4.2k',
-                icon: Icons.visibility_outlined,
-              ),
-              const SizedBox(width: 12),
-              _StatCard(
-                label: 'Avg. Engagement',
-                value: '82%',
-                icon: Icons.trending_up,
-                accentColor: Colors.green,
-              ),
-            ],
+          StreamBuilder<List<Announcement>>(
+            stream: _stream,
+            builder: (context, snapshot) {
+              final announcements = snapshot.data ?? const <Announcement>[];
+              final published = announcements
+                  .where((a) => a.status == AnnouncementStatus.published)
+                  .toList();
+              final reach = published.expand((a) => a.viewerIds).toSet().length;
+              final likes = published.fold<int>(0, (total, a) => total + a.likes);
+              final engagement = reach == 0
+                  ? 0
+                  : ((likes / reach) * 100).round();
+              return Row(
+                children: [
+                  _StatCard(
+                    label: 'Total Published',
+                    value: '${published.length}',
+                    icon: Icons.campaign_outlined,
+                    dark: true,
+                  ),
+                  const SizedBox(width: 12),
+                  _StatCard(
+                    label: 'Total Reach',
+                    value: '$reach',
+                    icon: Icons.visibility_outlined,
+                  ),
+                  const SizedBox(width: 12),
+                  _StatCard(
+                    label: 'Users Liked',
+                    value: '$likes ($engagement%)',
+                    icon: Icons.thumb_up_alt_outlined,
+                    accentColor: Colors.green,
+                  ),
+                ],
+              );
+            },
           ),
         ],
       ),

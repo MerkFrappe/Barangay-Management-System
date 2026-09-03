@@ -13,6 +13,7 @@ class PeaceAndOrderScreen extends StatefulWidget {
 
 class _PeaceAndOrderScreenState extends State<PeaceAndOrderScreen> {
   String _selectedStatus = 'All Statuses';
+  String _searchQuery = '';
 
   void _showFileBlotterDialog() {
     final complainantCtrl = TextEditingController();
@@ -25,7 +26,9 @@ class _PeaceAndOrderScreenState extends State<PeaceAndOrderScreen> {
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
           title: Row(
             children: [
               Icon(Icons.gavel, color: AppColors.tertiary),
@@ -39,62 +42,106 @@ class _PeaceAndOrderScreenState extends State<PeaceAndOrderScreen> {
               children: [
                 TextField(
                   controller: complainantCtrl,
-                  decoration: const InputDecoration(labelText: 'Complainant Name', prefixIcon: Icon(Icons.person)),
+                  decoration: const InputDecoration(
+                    labelText: 'Complainant Name',
+                    prefixIcon: Icon(Icons.person),
+                  ),
                 ),
                 const SizedBox(height: 12),
                 TextField(
                   controller: respondentCtrl,
-                  decoration: const InputDecoration(labelText: 'Respondent Name / Party', prefixIcon: Icon(Icons.person_off)),
+                  decoration: const InputDecoration(
+                    labelText: 'Respondent Name / Party',
+                    prefixIcon: Icon(Icons.person_off),
+                  ),
                 ),
                 const SizedBox(height: 12),
                 DropdownButtonFormField<String>(
                   initialValue: category,
-                  decoration: const InputDecoration(labelText: 'Incident Category'),
-                  items: ['Noise Disturbance', 'Boundary Dispute', 'Physical Altercation', 'Property Damage', 'Theft', 'Other']
-                      .map((c) => DropdownMenuItem(value: c, child: Text(c)))
-                      .toList(),
+                  decoration: const InputDecoration(
+                    labelText: 'Incident Category',
+                  ),
+                  items:
+                      [
+                            'Noise Disturbance',
+                            'Boundary Dispute',
+                            'Physical Altercation',
+                            'Property Damage',
+                            'Theft',
+                            'Other',
+                          ]
+                          .map(
+                            (c) => DropdownMenuItem(value: c, child: Text(c)),
+                          )
+                          .toList(),
                   onChanged: (val) => setDialogState(() => category = val!),
                 ),
                 const SizedBox(height: 12),
                 TextField(
                   controller: detailsCtrl,
                   maxLines: 3,
-                  decoration: const InputDecoration(labelText: 'Incident Summary / Details', alignLabelWithHint: true),
+                  decoration: const InputDecoration(
+                    labelText: 'Incident Summary / Details',
+                    alignLabelWithHint: true,
+                  ),
                 ),
               ],
             ),
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Cancel'),
+            ),
             ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: AppColors.tertiary, foregroundColor: AppColors.onTertiary),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.tertiary,
+                foregroundColor: AppColors.onTertiary,
+              ),
               onPressed: isSaving
                   ? null
                   : () async {
                       if (complainantCtrl.text.isEmpty) return;
                       setDialogState(() => isSaving = true);
                       try {
-                        final newDoc = FirebaseFirestore.instance.collection('incidents').doc();
+                        final newDoc = FirebaseFirestore.instance
+                            .collection('incidents')
+                            .doc();
                         await newDoc.set({
                           'id': newDoc.id,
                           'complainant': complainantCtrl.text.trim(),
-                          'respondent': respondentCtrl.text.trim().isEmpty ? 'Unknown Party' : respondentCtrl.text.trim(),
+                          'respondent': respondentCtrl.text.trim().isEmpty
+                              ? 'Unknown Party'
+                              : respondentCtrl.text.trim(),
                           'category': category,
                           'details': detailsCtrl.text.trim(),
                           'status': 'Open',
-                          'dateLogged': DateTime.now().toString().substring(0, 10),
+                          'dateLogged': DateTime.now().toString().substring(
+                            0,
+                            10,
+                          ),
                           'createdAt': FieldValue.serverTimestamp(),
                         });
                         if (!mounted) return;
                         Navigator.pop(ctx);
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Incident Blotter recorded successfully!')),
+                          const SnackBar(
+                            content: Text(
+                              'Incident Blotter recorded successfully!',
+                            ),
+                          ),
                         );
                       } catch (e) {
                         setDialogState(() => isSaving = false);
                       }
                     },
-              child: isSaving ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : const Text('File Report'),
+              child: isSaving
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Text('File Report'),
             ),
           ],
         ),
@@ -104,56 +151,69 @@ class _PeaceAndOrderScreenState extends State<PeaceAndOrderScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(builder: (context, constraints) {
-      final isWide = constraints.maxWidth >= 900;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isWide = constraints.maxWidth >= 900;
 
-      final body = SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 1440),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              _buildHeader(context),
-              const SizedBox(height: 24),
-              _buildStatOverview(isWide),
-              const SizedBox(height: 24),
-              _buildBlotterTableCard(),
-            ],
-          ),
-        ),
-      );
-
-      if (isWide) {
-        return Scaffold(
-          body: Row(
-            children: [
-              const SidebarNav(selectedIndex: 3),
-              Expanded(
-                child: Column(
-                  children: [
-                    const TopHeader(),
-                    Expanded(child: body),
-                  ],
-                ),
-              ),
-            ],
+        final body = SingleChildScrollView(
+          padding: const EdgeInsets.all(24),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 1440),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _buildHeader(context),
+                const SizedBox(height: 24),
+                _buildStatOverview(isWide),
+                const SizedBox(height: 24),
+                _buildBlotterTableCard(),
+              ],
+            ),
           ),
         );
-      }
 
-      return Scaffold(
-        backgroundColor: AppColors.background,
-        appBar: AppBar(
-          backgroundColor: AppColors.surface,
-          foregroundColor: AppColors.onSurface,
-          elevation: 0,
-          title: Text('Peace & Order Log', style: AppTextStyles.headlineSm.copyWith(color: AppColors.primary)),
-        ),
-        drawer: const Drawer(child: SidebarNav(selectedIndex: 3)),
-        body: body,
-      );
-    });
+        if (isWide) {
+          return Scaffold(
+            body: Row(
+              children: [
+                const SidebarNav(selectedIndex: 3),
+                Expanded(
+                  child: Column(
+                    children: [
+                      TopHeader(
+                        onSearchChanged: (value) {
+                          setState(
+                            () => _searchQuery = value.trim().toLowerCase(),
+                          );
+                        },
+                      ),
+                      Expanded(child: body),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+
+        return Scaffold(
+          backgroundColor: AppColors.background,
+          appBar: AppBar(
+            backgroundColor: AppColors.surface,
+            foregroundColor: AppColors.onSurface,
+            elevation: 0,
+            title: Text(
+              'Peace & Order Log',
+              style: AppTextStyles.headlineSm.copyWith(
+                color: AppColors.primary,
+              ),
+            ),
+          ),
+          drawer: const Drawer(child: SidebarNav(selectedIndex: 3)),
+          body: body,
+        );
+      },
+    );
   }
 
   Widget _buildHeader(BuildContext context) {
@@ -163,11 +223,18 @@ class _PeaceAndOrderScreenState extends State<PeaceAndOrderScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Peace & Order Blotter', style: AppTextStyles.headlineLg.copyWith(color: AppColors.primary)),
+              Text(
+                'Peace & Order Blotter',
+                style: AppTextStyles.headlineLg.copyWith(
+                  color: AppColors.primary,
+                ),
+              ),
               const SizedBox(height: 4),
               Text(
                 'Log, track, and resolve community complaints, barangay conciliations, and security incidents.',
-                style: AppTextStyles.bodyMd.copyWith(color: AppColors.onSurfaceVariant),
+                style: AppTextStyles.bodyMd.copyWith(
+                  color: AppColors.onSurfaceVariant,
+                ),
               ),
             ],
           ),
@@ -180,7 +247,9 @@ class _PeaceAndOrderScreenState extends State<PeaceAndOrderScreen> {
             backgroundColor: AppColors.tertiary,
             foregroundColor: AppColors.onTertiary,
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
           ),
         ),
       ],
@@ -188,15 +257,73 @@ class _PeaceAndOrderScreenState extends State<PeaceAndOrderScreen> {
   }
 
   Widget _buildStatOverview(bool isWide) {
-    final stats = [
-      _StatBox('Active Blotters', '5', AppColors.errorContainer, AppColors.error),
-      _StatBox('Under Mediation', '3', AppColors.secondaryContainer, AppColors.secondary),
-      _StatBox('Settled This Month', '14', AppColors.primaryContainer, AppColors.onPrimary),
-    ];
-    if (isWide) {
-      return Row(children: stats.map((s) => Expanded(child: Padding(padding: const EdgeInsets.symmetric(horizontal: 6), child: s))).toList());
-    }
-    return Column(children: stats.map((s) => Padding(padding: const EdgeInsets.only(bottom: 12), child: s)).toList());
+    return StreamBuilder<QuerySnapshot>(
+      stream: FirebaseFirestore.instance.collection('incidents').snapshots(),
+      builder: (context, snapshot) {
+        final docs = snapshot.data?.docs ?? [];
+        final active = docs
+            .where((doc) => (doc.data() as Map)['status'] == 'Open')
+            .length;
+        final mediation = docs
+            .where(
+              (doc) =>
+                  (doc.data() as Map)['status'] == 'Under Mediation' ||
+                  (doc.data() as Map)['status'] == 'Under Investigation',
+            )
+            .length;
+        final settled = docs
+            .where(
+              (doc) =>
+                  (doc.data() as Map)['status'] == 'Settled' ||
+                  (doc.data() as Map)['status'] == 'Resolved',
+            )
+            .length;
+        final stats = [
+          _StatBox(
+            'Active Blotters',
+            '$active',
+            AppColors.errorContainer,
+            AppColors.error,
+          ),
+          _StatBox(
+            'Under Mediation',
+            '$mediation',
+            AppColors.secondaryContainer,
+            AppColors.secondary,
+          ),
+          _StatBox(
+            'Settled Blotters',
+            '$settled',
+            AppColors.primaryContainer,
+            AppColors.onPrimary,
+          ),
+        ];
+        if (isWide) {
+          return Row(
+            children: stats
+                .map(
+                  (s) => Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 6),
+                      child: s,
+                    ),
+                  ),
+                )
+                .toList(),
+          );
+        }
+        return Column(
+          children: stats
+              .map(
+                (s) => Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: s,
+                ),
+              )
+              .toList(),
+        );
+      },
+    );
   }
 
   Widget _buildBlotterTableCard() {
@@ -210,7 +337,9 @@ class _PeaceAndOrderScreenState extends State<PeaceAndOrderScreen> {
       child: Padding(
         padding: const EdgeInsets.all(24),
         child: StreamBuilder<QuerySnapshot>(
-          stream: FirebaseFirestore.instance.collection('incidents').snapshots(),
+          stream: FirebaseFirestore.instance
+              .collection('incidents')
+              .snapshots(),
           builder: (context, snapshot) {
             final docs = snapshot.data?.docs ?? [];
             return Column(
@@ -219,13 +348,30 @@ class _PeaceAndOrderScreenState extends State<PeaceAndOrderScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text('Incident Blotter Registry (${docs.length})', style: AppTextStyles.titleLg.copyWith(fontWeight: FontWeight.bold)),
+                    Text(
+                      'Incident Blotter Registry (${docs.length})',
+                      style: AppTextStyles.titleLg.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                     DropdownButton<String>(
                       value: _selectedStatus,
-                      items: ['All Statuses', 'Open', 'Under Investigation', 'Resolved']
-                          .map((s) => DropdownMenuItem(value: s, child: Text(s)))
-                          .toList(),
-                      onChanged: (val) => setState(() => _selectedStatus = val!),
+                      items:
+                          [
+                                'All Statuses',
+                                'Open',
+                                'Under Mediation',
+                                'Under Investigation',
+                                'Resolved',
+                                'Settled',
+                              ]
+                              .map(
+                                (s) =>
+                                    DropdownMenuItem(value: s, child: Text(s)),
+                              )
+                              .toList(),
+                      onChanged: (val) =>
+                          setState(() => _selectedStatus = val!),
                     ),
                   ],
                 ),
@@ -242,35 +388,88 @@ class _PeaceAndOrderScreenState extends State<PeaceAndOrderScreen> {
                       DataColumn(label: Text('Date Logged')),
                       DataColumn(label: Text('Action')),
                     ],
-                    rows: docs.map((doc) {
-                      final data = doc.data() as Map<String, dynamic>;
-                      final status = data['status'] ?? 'Open';
-                      return DataRow(cells: [
-                        DataCell(Text('BLT-${doc.id.substring(0, doc.id.length < 4 ? doc.id.length : 4).toUpperCase()}')),
-                        DataCell(Text(data['complainant'] ?? 'N/A')),
-                        DataCell(Text(data['respondent'] ?? 'N/A')),
-                        DataCell(Text(data['category'] ?? 'General')),
-                        DataCell(
-                          Chip(
-                            label: Text(status),
-                            backgroundColor: status == 'Resolved' ? AppColors.primaryContainer : AppColors.errorContainer,
-                          ),
-                        ),
-                        DataCell(Text(data['dateLogged'] ?? '2026-08-12')),
-                        DataCell(
-                          PopupMenuButton<String>(
-                            onSelected: (newStatus) async {
-                              await doc.reference.update({'status': newStatus});
-                            },
-                            itemBuilder: (context) => [
-                              const PopupMenuItem(value: 'Open', child: Text('Mark as Open')),
-                              const PopupMenuItem(value: 'Under Investigation', child: Text('Mark Under Investigation')),
-                              const PopupMenuItem(value: 'Resolved', child: Text('Mark as Resolved')),
+                    rows: docs
+                        .where((doc) {
+                          final data = doc.data() as Map<String, dynamic>;
+                          final status = data['status'] ?? 'Open';
+                          final search = _searchQuery;
+                          final matchesStatus =
+                              _selectedStatus == 'All Statuses' ||
+                              status == _selectedStatus;
+                          final matchesSearch =
+                              search.isEmpty ||
+                              [
+                                data['complainant'],
+                                data['respondent'],
+                                data['category'],
+                                doc.id,
+                              ].any(
+                                (value) => value
+                                    .toString()
+                                    .toLowerCase()
+                                    .contains(search),
+                              );
+                          return matchesStatus && matchesSearch;
+                        })
+                        .map((doc) {
+                          final data = doc.data() as Map<String, dynamic>;
+                          final status = data['status'] ?? 'Open';
+                          return DataRow(
+                            cells: [
+                              DataCell(
+                                Text(
+                                  'BLT-${doc.id.substring(0, doc.id.length < 4 ? doc.id.length : 4).toUpperCase()}',
+                                ),
+                              ),
+                              DataCell(Text(data['complainant'] ?? 'N/A')),
+                              DataCell(Text(data['respondent'] ?? 'N/A')),
+                              DataCell(Text(data['category'] ?? 'General')),
+                              DataCell(
+                                Chip(
+                                  label: Text(status),
+                                  backgroundColor: status == 'Resolved'
+                                      ? AppColors.primaryContainer
+                                      : AppColors.errorContainer,
+                                ),
+                              ),
+                              DataCell(
+                                Text(data['dateLogged'] ?? '2026-08-12'),
+                              ),
+                              DataCell(
+                                PopupMenuButton<String>(
+                                  onSelected: (newStatus) async {
+                                    await doc.reference.update({
+                                      'status': newStatus,
+                                    });
+                                  },
+                                  itemBuilder: (context) => [
+                                    const PopupMenuItem(
+                                      value: 'Open',
+                                      child: Text('Mark as Open'),
+                                    ),
+                                    const PopupMenuItem(
+                                      value: 'Under Mediation',
+                                      child: Text('Mark Under Mediation'),
+                                    ),
+                                    const PopupMenuItem(
+                                      value: 'Under Investigation',
+                                      child: Text('Mark Under Investigation'),
+                                    ),
+                                    const PopupMenuItem(
+                                      value: 'Resolved',
+                                      child: Text('Mark as Resolved'),
+                                    ),
+                                    const PopupMenuItem(
+                                      value: 'Settled',
+                                      child: Text('Mark as Settled'),
+                                    ),
+                                  ],
+                                ),
+                              ),
                             ],
-                          ),
-                        ),
-                      ]);
-                    }).toList(),
+                          );
+                        })
+                        .toList(),
                   ),
                 ),
               ],
@@ -293,13 +492,27 @@ class _StatBox extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(16)),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(16),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(val, style: AppTextStyles.headlineLg.copyWith(color: textCol, fontWeight: FontWeight.bold)),
+          Text(
+            val,
+            style: AppTextStyles.headlineLg.copyWith(
+              color: textCol,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
           const SizedBox(height: 4),
-          Text(label, style: AppTextStyles.labelMd.copyWith(color: textCol.withValues(alpha: 0.8))),
+          Text(
+            label,
+            style: AppTextStyles.labelMd.copyWith(
+              color: textCol.withValues(alpha: 0.8),
+            ),
+          ),
         ],
       ),
     );
