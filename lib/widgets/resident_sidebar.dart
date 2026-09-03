@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
+import '../models/resident_profile.dart';
 import '../theme/app_colors.dart';
 import '../screens/dashboard_screen.dart';
 import '../screens/resident_dashboard_screen.dart';
@@ -15,8 +18,35 @@ class ResidentSidebar extends StatelessWidget {
 
   const ResidentSidebar({super.key, this.selectedItem = 'My Dashboard'});
 
-  void _showReportEmergencyModal(BuildContext context) {
-    final nameCtrl = TextEditingController();
+  Future<void> _showReportEmergencyModal(BuildContext context) async {
+    final user = FirebaseAuth.instance.currentUser;
+    var reporterName = user?.displayName ?? '';
+    var contactNumber = '';
+
+    if (user != null) {
+      try {
+        final profileDoc = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(user.uid)
+            .get();
+        final profile = ResidentProfile.fromMap(profileDoc.data());
+        if (profile.fullName.isNotEmpty) reporterName = profile.fullName;
+        contactNumber = profile.contactNumber ?? '';
+      } catch (_) {
+        // Keep the Firebase Auth identity if the profile cannot be loaded.
+      }
+    }
+
+    if (!context.mounted) return;
+
+    reporterName = reporterName.isEmpty
+        ? (user?.email ?? 'Resident')
+        : reporterName;
+    final reporterCtrl = TextEditingController(
+      text: contactNumber.isEmpty
+          ? reporterName
+          : '$reporterName / $contactNumber',
+    );
     final locCtrl = TextEditingController();
     final detailsCtrl = TextEditingController();
     String type = 'Fire Emergency';
@@ -42,7 +72,8 @@ class ResidentSidebar extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               TextField(
-                controller: nameCtrl,
+                  controller: reporterCtrl,
+                  readOnly: true,
                 decoration: const InputDecoration(
                   labelText: 'Your Name / Contact',
                   prefixIcon: Icon(Icons.person),
@@ -97,6 +128,16 @@ class ResidentSidebar extends StatelessWidget {
             ),
             onPressed: () {
               Navigator.pop(ctx);
+              FirebaseFirestore.instance.collection('emergency_reports').add({
+                'residentId': user?.uid,
+                'residentName': reporterName,
+                'contactNumber': contactNumber,
+                'type': type,
+                'location': locCtrl.text.trim(),
+                'details': detailsCtrl.text.trim(),
+                'status': 'submitted',
+                'createdAt': FieldValue.serverTimestamp(),
+              });
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
                   content: Text(
@@ -252,6 +293,7 @@ class ResidentSidebar extends StatelessWidget {
                 _NavItem(
                   icon: Icons.emergency_outlined,
                   title: "Emergency Alerts",
+                  selected: selectedItem == 'Emergency Alerts',
                   onTap: () {
                     Navigator.of(context).pushReplacement(
                       MaterialPageRoute(
@@ -264,6 +306,7 @@ class ResidentSidebar extends StatelessWidget {
                 _NavItem(
                   icon: Icons.local_hospital_outlined,
                   title: "Health Center & Services",
+                  selected: selectedItem == 'Health Center & Services',
                   onTap: () {
                     Navigator.of(context).pushReplacement(
                       MaterialPageRoute(
@@ -276,6 +319,7 @@ class ResidentSidebar extends StatelessWidget {
                 _NavItem(
                   icon: Icons.poll_outlined,
                   title: "Community Polls",
+                  selected: selectedItem == 'Community Polls',
                   onTap: () {
                     Navigator.of(context).pushReplacement(
                       MaterialPageRoute(

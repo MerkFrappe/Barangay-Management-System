@@ -16,7 +16,9 @@ class _CommunityPollsScreenState extends State<CommunityPollsScreen> {
   void _vote(String pollId, int optionIndex) async {
     setState(() => _userVotes[pollId] = optionIndex);
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Your vote has been submitted successfully!')),
+      const SnackBar(
+        content: Text('Your vote has been submitted successfully!'),
+      ),
     );
   }
 
@@ -33,15 +35,29 @@ class _CommunityPollsScreenState extends State<CommunityPollsScreen> {
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            TextField(controller: titleCtrl, decoration: const InputDecoration(labelText: 'Poll Question / Title')),
+            TextField(
+              controller: titleCtrl,
+              decoration: const InputDecoration(
+                labelText: 'Poll Question / Title',
+              ),
+            ),
             const SizedBox(height: 12),
-            TextField(controller: opt1Ctrl, decoration: const InputDecoration(labelText: 'Option 1')),
+            TextField(
+              controller: opt1Ctrl,
+              decoration: const InputDecoration(labelText: 'Option 1'),
+            ),
             const SizedBox(height: 12),
-            TextField(controller: opt2Ctrl, decoration: const InputDecoration(labelText: 'Option 2')),
+            TextField(
+              controller: opt2Ctrl,
+              decoration: const InputDecoration(labelText: 'Option 2'),
+            ),
           ],
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
           ElevatedButton(
             onPressed: () async {
               if (titleCtrl.text.isEmpty) return;
@@ -49,8 +65,12 @@ class _CommunityPollsScreenState extends State<CommunityPollsScreen> {
               await doc.set({
                 'id': doc.id,
                 'title': titleCtrl.text.trim(),
-                'option1': opt1Ctrl.text.trim().isEmpty ? 'Yes' : opt1Ctrl.text.trim(),
-                'option2': opt2Ctrl.text.trim().isEmpty ? 'No' : opt2Ctrl.text.trim(),
+                'option1': opt1Ctrl.text.trim().isEmpty
+                    ? 'Yes'
+                    : opt1Ctrl.text.trim(),
+                'option2': opt2Ctrl.text.trim().isEmpty
+                    ? 'No'
+                    : opt2Ctrl.text.trim(),
                 'votes1': 12,
                 'votes2': 5,
                 'createdAt': FieldValue.serverTimestamp(),
@@ -67,59 +87,76 @@ class _CommunityPollsScreenState extends State<CommunityPollsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(builder: (context, constraints) {
-      final isWide = constraints.maxWidth >= 900;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isWide = constraints.maxWidth >= 900;
 
-      final body = SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 1000),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('Community Polls & Feedback', style: AppTextStyles.headlineLg.copyWith(color: AppColors.primary)),
-                      const SizedBox(height: 4),
-                      Text('Voice your opinion on upcoming barangay projects and public initiatives.', style: AppTextStyles.bodyMd.copyWith(color: AppColors.onSurfaceVariant)),
-                    ],
-                  ),
-                  ElevatedButton.icon(
-                    onPressed: _showCreatePollDialog,
-                    icon: const Icon(Icons.add),
-                    label: const Text('Create Poll'),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 24),
-              _buildPollList(),
-            ],
-          ),
-        ),
-      );
-
-      if (isWide) {
-        return Scaffold(
-          body: Row(
-            children: [
-              const SizedBox(width: 256, child: ResidentSidebar()),
-              Expanded(child: body),
-            ],
+        final body = SingleChildScrollView(
+          padding: const EdgeInsets.all(24),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 1000),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Community Polls & Feedback',
+                          style: AppTextStyles.headlineLg.copyWith(
+                            color: AppColors.primary,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Voice your opinion on upcoming barangay projects and public initiatives.',
+                          style: AppTextStyles.bodyMd.copyWith(
+                            color: AppColors.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
+                    ),
+                    ElevatedButton.icon(
+                      onPressed: _showCreatePollDialog,
+                      icon: const Icon(Icons.add),
+                      label: const Text('Create Poll'),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 24),
+                _buildPollList(),
+              ],
+            ),
           ),
         );
-      }
 
-      return Scaffold(
-        backgroundColor: AppColors.background,
-        appBar: AppBar(title: const Text('Community Polls')),
-        drawer: const Drawer(child: ResidentSidebar()),
-        body: body,
-      );
-    });
+        if (isWide) {
+          return Scaffold(
+            body: Row(
+              children: [
+                const SizedBox(
+                  width: 256,
+                  child: ResidentSidebar(selectedItem: 'Community Polls'),
+                ),
+                Expanded(child: body),
+              ],
+            ),
+          );
+        }
+
+        return Scaffold(
+          backgroundColor: AppColors.background,
+          appBar: AppBar(title: const Text('Community Polls')),
+          drawer: const Drawer(
+            child: ResidentSidebar(selectedItem: 'Community Polls'),
+          ),
+          body: body,
+        );
+      },
+    );
   }
 
   Widget _buildPollList() {
@@ -132,19 +169,36 @@ class _CommunityPollsScreenState extends State<CommunityPollsScreen> {
           return Card(
             elevation: 0,
             color: AppColors.surfaceContainerLowest,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16), side: BorderSide(color: AppColors.outlineVariant)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+              side: BorderSide(color: AppColors.outlineVariant),
+            ),
             child: Padding(
               padding: const EdgeInsets.all(24),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Chip(label: const Text('Active Community Poll'), backgroundColor: AppColors.primaryContainer),
+                  Chip(
+                    label: const Text('Active Community Poll'),
+                    backgroundColor: AppColors.primaryContainer,
+                  ),
                   const SizedBox(height: 12),
-                  Text('Should the Barangay Covered Court schedule be extended until 10:00 PM on weekends?', style: AppTextStyles.titleLg.copyWith(fontWeight: FontWeight.bold)),
+                  Text(
+                    'Should the Barangay Covered Court schedule be extended until 10:00 PM on weekends?',
+                    style: AppTextStyles.titleLg.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                   const SizedBox(height: 20),
                   _buildOptionBar('Sample1', 0, 'Yes, extend hours', 68, 100),
                   const SizedBox(height: 12),
-                  _buildOptionBar('Sample1', 1, 'No, keep current 8:00 PM limit', 32, 100),
+                  _buildOptionBar(
+                    'Sample1',
+                    1,
+                    'No, keep current 8:00 PM limit',
+                    32,
+                    100,
+                  ),
                 ],
               ),
             ),
@@ -167,15 +221,26 @@ class _CommunityPollsScreenState extends State<CommunityPollsScreen> {
             return Card(
               elevation: 0,
               color: AppColors.surfaceContainerLowest,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16), side: BorderSide(color: AppColors.outlineVariant)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+                side: BorderSide(color: AppColors.outlineVariant),
+              ),
               child: Padding(
                 padding: const EdgeInsets.all(24),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Chip(label: const Text('Community Vote'), backgroundColor: AppColors.secondaryContainer),
+                    Chip(
+                      label: const Text('Community Vote'),
+                      backgroundColor: AppColors.secondaryContainer,
+                    ),
                     const SizedBox(height: 12),
-                    Text(data['title'] ?? 'Barangay Initiative Poll', style: AppTextStyles.titleLg.copyWith(fontWeight: FontWeight.bold)),
+                    Text(
+                      data['title'] ?? 'Barangay Initiative Poll',
+                      style: AppTextStyles.titleLg.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                     const SizedBox(height: 20),
                     _buildOptionBar(pollId, 0, opt1, v1, total),
                     const SizedBox(height: 12),
@@ -190,7 +255,13 @@ class _CommunityPollsScreenState extends State<CommunityPollsScreen> {
     );
   }
 
-  Widget _buildOptionBar(String pollId, int optIdx, String label, int votes, int total) {
+  Widget _buildOptionBar(
+    String pollId,
+    int optIdx,
+    String label,
+    int votes,
+    int total,
+  ) {
     final selected = _userVotes[pollId] == optIdx;
     final percent = total > 0 ? (votes / total) : 0.0;
 
@@ -200,21 +271,34 @@ class _CommunityPollsScreenState extends State<CommunityPollsScreen> {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: selected ? AppColors.primaryContainer : AppColors.surfaceContainerLow,
+          color: selected
+              ? AppColors.primaryContainer
+              : AppColors.surfaceContainerLow,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: selected ? AppColors.primary : AppColors.outlineVariant),
+          border: Border.all(
+            color: selected ? AppColors.primary : AppColors.outlineVariant,
+          ),
         ),
         child: Column(
           children: [
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(label, style: AppTextStyles.titleMd.copyWith(fontWeight: FontWeight.bold)),
+                Text(
+                  label,
+                  style: AppTextStyles.titleMd.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
                 Text('${(percent * 100).toStringAsFixed(0)}% ($votes votes)'),
               ],
             ),
             const SizedBox(height: 8),
-            LinearProgressIndicator(value: percent, backgroundColor: Colors.grey[300], color: AppColors.primary),
+            LinearProgressIndicator(
+              value: percent,
+              backgroundColor: Colors.grey[300],
+              color: AppColors.primary,
+            ),
           ],
         ),
       ),

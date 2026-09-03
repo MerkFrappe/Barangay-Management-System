@@ -168,7 +168,11 @@ class _CommunityEventsScreenState extends State<CommunityEventsScreen> {
                 color: event.categoryBg,
                 shape: BoxShape.circle,
               ),
-              child: Icon(event.categoryIcon, color: event.categoryFg, size: 20),
+              child: Icon(
+                event.categoryIcon,
+                color: event.categoryFg,
+                size: 20,
+              ),
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -190,15 +194,25 @@ class _CommunityEventsScreenState extends State<CommunityEventsScreen> {
             children: [
               Row(
                 children: [
-                  const Icon(Icons.calendar_today, size: 16, color: AppColors.onSurfaceVariant),
+                  const Icon(
+                    Icons.calendar_today,
+                    size: 16,
+                    color: AppColors.onSurfaceVariant,
+                  ),
                   const SizedBox(width: 8),
-                  Text(event.date, style: const TextStyle(fontWeight: FontWeight.w600)),
+                  Text(
+                    event.date,
+                    style: const TextStyle(fontWeight: FontWeight.w600),
+                  ),
                 ],
               ),
               const SizedBox(height: 16),
               const Text(
                 'Announcement Details:',
-                style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary),
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.primary,
+                ),
               ),
               const SizedBox(height: 6),
               Text(
@@ -225,14 +239,19 @@ class _CommunityEventsScreenState extends State<CommunityEventsScreen> {
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      drawer: desktop ? null : const Drawer(child: ResidentSidebar()),
+      drawer: desktop
+          ? null
+          : const Drawer(
+              child: ResidentSidebar(selectedItem: 'Emergency Alerts'),
+            ),
       body: SafeArea(
         child: Row(
           children: [
             //-----------------------------------
             // LEFT SIDEBAR (Desktop)
             //-----------------------------------
-            if (desktop) const ResidentSidebar(),
+            if (desktop)
+              const ResidentSidebar(selectedItem: 'Emergency Alerts'),
 
             //-----------------------------------
             // MAIN CONTENT
@@ -247,8 +266,11 @@ class _CommunityEventsScreenState extends State<CommunityEventsScreen> {
                           .collection('announcements')
                           .snapshots(),
                       builder: (context, snapshot) {
-                        if (snapshot.connectionState == ConnectionState.waiting) {
-                          return const Center(child: CircularProgressIndicator());
+                        if (snapshot.connectionState ==
+                            ConnectionState.waiting) {
+                          return const Center(
+                            child: CircularProgressIndicator(),
+                          );
                         }
                         if (snapshot.hasError) {
                           return const Center(
@@ -261,8 +283,11 @@ class _CommunityEventsScreenState extends State<CommunityEventsScreen> {
                             ),
                           );
                         }
-                        final docs = snapshot.data?.docs
-                                .where((doc) => doc.data()['status'] == 'published')
+                        final docs =
+                            snapshot.data?.docs
+                                .where(
+                                  (doc) => doc.data()['status'] == 'published',
+                                )
                                 .toList() ??
                             [];
                         docs.sort((a, b) {
@@ -276,8 +301,9 @@ class _CommunityEventsScreenState extends State<CommunityEventsScreen> {
                               : 0;
                           return bMillis.compareTo(aMillis);
                         });
-                        final eventsList =
-                            docs.map((doc) => _mapAnnouncementToEvent(doc)).toList();
+                        final eventsList = docs
+                            .map((doc) => _mapAnnouncementToEvent(doc))
+                            .toList();
 
                         return SingleChildScrollView(
                           padding: EdgeInsets.all(desktop ? 32 : 16),
@@ -611,19 +637,17 @@ class _CommunityEventsScreenState extends State<CommunityEventsScreen> {
               decoration: BoxDecoration(
                 color: isSelected ? AppColors.primary : Colors.transparent,
                 shape: BoxShape.circle,
-                border:
-                    (isToday && !isSelected)
-                        ? Border.all(color: AppColors.primary, width: 1.5)
-                        : null,
+                border: (isToday && !isSelected)
+                    ? Border.all(color: AppColors.primary, width: 1.5)
+                    : null,
               ),
               child: Text(
                 '$day',
                 style: TextStyle(
                   fontSize: 12,
-                  fontWeight:
-                      (isSelected || isToday)
-                          ? FontWeight.bold
-                          : FontWeight.normal,
+                  fontWeight: (isSelected || isToday)
+                      ? FontWeight.bold
+                      : FontWeight.normal,
                   color: isSelected ? AppColors.onPrimary : AppColors.onSurface,
                 ),
               ),
