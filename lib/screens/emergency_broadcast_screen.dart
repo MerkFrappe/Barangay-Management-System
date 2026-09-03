@@ -127,7 +127,7 @@ class _EmergencyBroadcastScreenState extends State<EmergencyBroadcastScreen> {
         return Scaffold(
           body: Row(
             children: [
-              const SidebarNav(selectedIndex: -1),
+              const SidebarNav(selectedIndex: -1, emergencySelected: true),
               Expanded(
                 child: Column(
                   children: [
@@ -149,7 +149,9 @@ class _EmergencyBroadcastScreenState extends State<EmergencyBroadcastScreen> {
           elevation: 0,
           title: Text('Emergency Dispatch', style: AppTextStyles.headlineSm.copyWith(color: AppColors.primary)),
         ),
-        drawer: const Drawer(child: SidebarNav(selectedIndex: -1)),
+        drawer: const Drawer(
+          child: SidebarNav(selectedIndex: -1, emergencySelected: true),
+        ),
         body: body,
       );
     });

@@ -18,66 +18,87 @@ import '../screens/admin_documentRequest.dart';
 /// original fixed 256px desktop sidebar). Below it, it becomes a Drawer.
 const double _wideBreakpoint = 900;
 
-class DashboardScreen extends StatelessWidget {
+class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
 
   @override
+  State<DashboardScreen> createState() => _DashboardScreenState();
+}
+
+class _DashboardScreenState extends State<DashboardScreen> {
+  void _searchResidents(String query) {
+    final trimmedQuery = query.trim();
+    if (trimmedQuery.isEmpty) return;
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) =>
+            ResidentsDirectoryScreen(initialSearchQuery: trimmedQuery),
+      ),
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(builder: (context, constraints) {
-      final isWide = constraints.maxWidth >= _wideBreakpoint;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isWide = constraints.maxWidth >= _wideBreakpoint;
 
-      final body = SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 1440),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              _WelcomeHeader(isWide: isWide),
-              const SizedBox(height: 32),
-              const OverviewCards(),
-              const SizedBox(height: 32),
-              isWide
-                  ? const _MiddleGridWide()
-                  : const _MiddleGridNarrow(),
-              const SizedBox(height: 32),
-              isWide ? const _FooterGridWide() : const _FooterGridNarrow(),
-            ],
-          ),
-        ),
-      );
-
-      if (isWide) {
-        return Scaffold(
-          body: Row(
-            children: [
-              const SidebarNav(selectedIndex: 0),
-              Expanded(
-                child: Column(
-                  children: [
-                    const TopHeader(),
-                    Expanded(child: body),
-                  ],
-                ),
-              ),
-            ],
+        final body = SingleChildScrollView(
+          padding: const EdgeInsets.all(24),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 1440),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _WelcomeHeader(isWide: isWide),
+                const SizedBox(height: 32),
+                const OverviewCards(),
+                const SizedBox(height: 32),
+                isWide ? const _MiddleGridWide() : const _MiddleGridNarrow(),
+                const SizedBox(height: 32),
+                isWide ? const _FooterGridWide() : const _FooterGridNarrow(),
+              ],
+            ),
           ),
         );
-      }
 
-      return Scaffold(
-        backgroundColor: AppColors.background,
-        appBar: AppBar(
-          backgroundColor: AppColors.surface,
-          foregroundColor: AppColors.onSurface,
-          elevation: 0,
-          title: Text('Barangay Admin',
-              style: AppTextStyles.headlineSm.copyWith(color: AppColors.primary)),
-        ),
-        drawer: const Drawer(child: SidebarNav(selectedIndex: 0)),
-        body: body,
-      );
-    });
+        if (isWide) {
+          return Scaffold(
+            body: Row(
+              children: [
+                const SidebarNav(selectedIndex: 0),
+                Expanded(
+                  child: Column(
+                    children: [
+                      TopHeader(onSearchSubmitted: _searchResidents),
+                      Expanded(child: body),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+
+        return Scaffold(
+          backgroundColor: AppColors.background,
+          appBar: AppBar(
+            backgroundColor: AppColors.surface,
+            foregroundColor: AppColors.onSurface,
+            elevation: 0,
+            title: Text(
+              'Barangay Admin',
+              style: AppTextStyles.headlineSm.copyWith(
+                color: AppColors.primary,
+              ),
+            ),
+          ),
+          drawer: const Drawer(child: SidebarNav(selectedIndex: 0)),
+          body: body,
+        );
+      },
+    );
   }
 }
 
@@ -106,7 +127,12 @@ class _WelcomeHeader extends StatelessWidget {
               subtitle: const Text('Add a new resident to the directory'),
               onTap: () {
                 Navigator.pop(ctx);
-                Navigator.push(context, MaterialPageRoute(builder: (_) => const ResidentsDirectoryScreen()));
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const ResidentsDirectoryScreen(),
+                  ),
+                );
               },
             ),
             const Divider(),
@@ -116,17 +142,29 @@ class _WelcomeHeader extends StatelessWidget {
               subtitle: const Text('Log a new blotter or community dispute'),
               onTap: () {
                 Navigator.pop(ctx);
-                Navigator.push(context, MaterialPageRoute(builder: (_) => const PeaceAndOrderScreen()));
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const PeaceAndOrderScreen(),
+                  ),
+                );
               },
             ),
             const Divider(),
             ListTile(
               leading: const Icon(Icons.assignment, color: AppColors.secondary),
               title: const Text('Issue Document Request'),
-              subtitle: const Text('Process clearance, residency, or indigency'),
+              subtitle: const Text(
+                'Process clearance, residency, or indigency',
+              ),
               onTap: () {
                 Navigator.pop(ctx);
-                Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminDocumentRequestScreen()));
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const AdminDocumentRequestScreen(),
+                  ),
+                );
               },
             ),
           ],
@@ -140,11 +178,17 @@ class _WelcomeHeader extends StatelessWidget {
     final title = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Dashboard Overview',
-            style: AppTextStyles.headlineLg.copyWith(color: AppColors.primary)),
+        Text(
+          'Dashboard Overview',
+          style: AppTextStyles.headlineLg.copyWith(color: AppColors.primary),
+        ),
         const SizedBox(height: 4),
-        Text("Good morning, Chairman. Here is what's happening in your Barangay today.",
-            style: AppTextStyles.bodyMd.copyWith(color: AppColors.onSurfaceVariant)),
+        Text(
+          "Good morning, Chairman. Here is what's happening in your Barangay today.",
+          style: AppTextStyles.bodyMd.copyWith(
+            color: AppColors.onSurfaceVariant,
+          ),
+        ),
       ],
     );
 
@@ -154,7 +198,10 @@ class _WelcomeHeader extends StatelessWidget {
       children: [
         OutlinedButton.icon(
           onPressed: () {
-            Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminReportsScreen()));
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const AdminReportsScreen()),
+            );
           },
           icon: const Icon(Icons.download, size: 18),
           label: const Text('Export Daily Report'),

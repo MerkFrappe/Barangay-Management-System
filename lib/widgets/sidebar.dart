@@ -13,7 +13,15 @@ import '../screens/admin_annoucements.dart';
 
 class SidebarNav extends StatefulWidget {
   final int selectedIndex;
-  const SidebarNav({super.key, this.selectedIndex = 0});
+  final bool emergencySelected;
+  final bool settingsSelected;
+
+  const SidebarNav({
+    super.key,
+    this.selectedIndex = 0,
+    this.emergencySelected = false,
+    this.settingsSelected = false,
+  });
 
   @override
   State<SidebarNav> createState() => _SidebarNavState();
@@ -38,7 +46,7 @@ class _SidebarNavState extends State<SidebarNav> {
     _NavItem(Icons.dashboard, 'Dashboard'),
     _NavItem(Icons.group, 'Residents'),
     _NavItem(Icons.pending_actions, 'Requests'),
-    _NavItem(Icons.announcement, 'Annoucements'),
+    _NavItem(Icons.gavel, 'Peace & Order'),
     _NavItem(Icons.assessment, 'Reports'),
     _NavItem(Icons.local_hospital, 'Health Center'),
     _NavItem(Icons.campaign, 'Announcements'),
@@ -72,9 +80,9 @@ class _SidebarNavState extends State<SidebarNav> {
       default:
         targetScreen = const DashboardScreen();
     }
-    Navigator.of(context).pushReplacement(
-      MaterialPageRoute(builder: (_) => targetScreen),
-    );
+    Navigator.of(
+      context,
+    ).pushReplacement(MaterialPageRoute(builder: (_) => targetScreen));
   }
 
   @override
@@ -156,13 +164,17 @@ class _SidebarNavState extends State<SidebarNav> {
           ElevatedButton.icon(
             onPressed: () {
               Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const EmergencyBroadcastScreen()),
+                MaterialPageRoute(
+                  builder: (_) => const EmergencyBroadcastScreen(),
+                ),
               );
             },
             icon: const Icon(Icons.campaign, size: 20),
             label: const Text('Emergency Broadcast'),
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.tertiary,
+              backgroundColor: widget.emergencySelected
+                  ? AppColors.primary
+                  : AppColors.tertiary,
               foregroundColor: AppColors.onTertiary,
               padding: const EdgeInsets.symmetric(vertical: 14),
               shape: RoundedRectangleBorder(
@@ -180,10 +192,11 @@ class _SidebarNavState extends State<SidebarNav> {
           _NavTile(
             icon: Icons.settings,
             label: 'Settings',
+            selected: widget.settingsSelected,
             onTap: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const SettingsScreen()),
-              );
+              Navigator.of(
+                context,
+              ).push(MaterialPageRoute(builder: (_) => const SettingsScreen()));
             },
           ),
           _NavTile(

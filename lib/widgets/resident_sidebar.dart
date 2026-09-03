@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:latlong2/latlong.dart';
 
 import '../models/resident_profile.dart';
 import '../theme/app_colors.dart';
@@ -39,119 +42,73 @@ class ResidentSidebar extends StatelessWidget {
 
     if (!context.mounted) return;
 
+    final location = await _getCurrentLocation(context);
+    if (!context.mounted) return;
+
     reporterName = reporterName.isEmpty
         ? (user?.email ?? 'Resident')
         : reporterName;
-    final reporterCtrl = TextEditingController(
-      text: contactNumber.isEmpty
-          ? reporterName
-          : '$reporterName / $contactNumber',
-    );
-    final locCtrl = TextEditingController();
-    final detailsCtrl = TextEditingController();
-    String type = 'Fire Emergency';
-
-    showDialog(
+    final draft = await showDialog<_EmergencyReportDraft>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Row(
-          children: [
-            const Icon(Icons.campaign, color: Colors.red, size: 28),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                'Report Emergency to HQ',
-                style: TextStyle(color: Colors.red[900]),
-              ),
-            ),
-          ],
-        ),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                  controller: reporterCtrl,
-                  readOnly: true,
-                decoration: const InputDecoration(
-                  labelText: 'Your Name / Contact',
-                  prefixIcon: Icon(Icons.person),
-                ),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: locCtrl,
-                decoration: const InputDecoration(
-                  labelText: 'Exact Incident Location',
-                  prefixIcon: Icon(Icons.location_on),
-                ),
-              ),
-              const SizedBox(height: 12),
-              DropdownButtonFormField<String>(
-                initialValue: type,
-                decoration: const InputDecoration(
-                  labelText: 'Emergency Category',
-                ),
-                items:
-                    [
-                          'Fire Emergency',
-                          'Medical Emergency',
-                          'Crime / Theft',
-                          'Flood / Disaster',
-                          'Accident',
-                        ]
-                        .map((e) => DropdownMenuItem(value: e, child: Text(e)))
-                        .toList(),
-                onChanged: (v) => type = v!,
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: detailsCtrl,
-                maxLines: 2,
-                decoration: const InputDecoration(
-                  labelText: 'Immediate Details',
-                ),
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-              foregroundColor: Colors.white,
-            ),
-            onPressed: () {
-              Navigator.pop(ctx);
-              FirebaseFirestore.instance.collection('emergency_reports').add({
-                'residentId': user?.uid,
-                'residentName': reporterName,
-                'contactNumber': contactNumber,
-                'type': type,
-                'location': locCtrl.text.trim(),
-                'details': detailsCtrl.text.trim(),
-                'status': 'submitted',
-                'createdAt': FieldValue.serverTimestamp(),
-              });
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text(
-                    'EMERGENCY REPORT DISPATCHED TO BARANGAY HQ! Officials have been notified.',
-                  ),
-                  backgroundColor: Colors.red,
-                ),
-              );
-            },
-            child: const Text('SUBMIT EMERGENCY ALERT'),
-          ),
-        ],
+      builder: (ctx) => _EmergencyLocationDialog(
+        initialLocation: location,
+        reporterName: reporterName,
+        contactNumber: contactNumber,
       ),
     );
+
+    if (!context.mounted || draft == null) return;
+    await FirebaseFirestore.instance.collection('emergency_reports').add({
+      'residentId': user?.uid,
+      'residentName': reporterName,
+      'contactNumber': contactNumber,
+      'type': draft.type,
+      'location': draft.locationText,
+      'latitude': draft.location.latitude,
+      'longitude': draft.location.longitude,
+      'details': draft.details,
+      'status': 'submitted',
+      'createdAt': FieldValue.serverTimestamp(),
+    });
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text(
+          'EMERGENCY REPORT DISPATCHED TO BARANGAY HQ! Officials have been notified.',
+        ),
+        backgroundColor: Colors.red,
+      ),
+    );
+  }
+
+  Future<LatLng> _getCurrentLocation(BuildContext context) async {
+    const fallback = LatLng(7.423816, 125.826013);
+    if (!await Geolocator.isLocationServiceEnabled()) return fallback;
+
+    var permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+    }
+    if (permission == LocationPermission.denied ||
+        permission == LocationPermission.deniedForever) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Location permission was not granted. You can choose a point on the map.',
+            ),
+          ),
+        );
+      }
+      return fallback;
+    }
+
+    try {
+      final position = await Geolocator.getCurrentPosition();
+      return LatLng(position.latitude, position.longitude);
+    } catch (_) {
+      return fallback;
+    }
   }
 
   void _showHelpCenterModal(BuildContext context) {
@@ -397,6 +354,197 @@ class ResidentSidebar extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _EmergencyReportDraft {
+  final LatLng location;
+  final String type;
+  final String details;
+
+  const _EmergencyReportDraft({
+    required this.location,
+    required this.type,
+    required this.details,
+  });
+
+  String get locationText =>
+      '${location.latitude.toStringAsFixed(6)}, ${location.longitude.toStringAsFixed(6)}';
+}
+
+class _EmergencyLocationDialog extends StatefulWidget {
+  final LatLng initialLocation;
+  final String reporterName;
+  final String contactNumber;
+
+  const _EmergencyLocationDialog({
+    required this.initialLocation,
+    required this.reporterName,
+    required this.contactNumber,
+  });
+
+  @override
+  State<_EmergencyLocationDialog> createState() =>
+      _EmergencyLocationDialogState();
+}
+
+class _EmergencyLocationDialogState extends State<_EmergencyLocationDialog> {
+  late LatLng _selectedLocation = widget.initialLocation;
+  final _detailsController = TextEditingController();
+  String _type = 'Fire Emergency';
+
+  @override
+  void dispose() {
+    _detailsController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final locationText =
+        '${_selectedLocation.latitude.toStringAsFixed(6)}, ${_selectedLocation.longitude.toStringAsFixed(6)}';
+
+    return AlertDialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      title: Row(
+        children: [
+          const Icon(Icons.campaign, color: Colors.red, size: 28),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              'Report Emergency to HQ',
+              style: TextStyle(color: Colors.red[900]),
+            ),
+          ),
+        ],
+      ),
+      content: SizedBox(
+        width: 520,
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                readOnly: true,
+                controller: TextEditingController(
+                  text: widget.contactNumber.isEmpty
+                      ? widget.reporterName
+                      : '${widget.reporterName} / ${widget.contactNumber}',
+                ),
+                decoration: const InputDecoration(
+                  labelText: 'Your Name / Contact',
+                  prefixIcon: Icon(Icons.person),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  'Tap the map to move the emergency pin',
+                  style: AppTextStyles.bodySm,
+                ),
+              ),
+              const SizedBox(height: 6),
+              SizedBox(
+                height: 240,
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: FlutterMap(
+                    options: MapOptions(
+                      initialCenter: _selectedLocation,
+                      initialZoom: 16,
+                      onTap: (_, point) =>
+                          setState(() => _selectedLocation = point),
+                    ),
+                    children: [
+                      TileLayer(
+                        urlTemplate:
+                            'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                        userAgentPackageName: 'com.barangay.bms',
+                      ),
+                      MarkerLayer(
+                        markers: [
+                          Marker(
+                            point: _selectedLocation,
+                            width: 48,
+                            height: 48,
+                            child: const Icon(
+                              Icons.location_pin,
+                              color: Colors.red,
+                              size: 48,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                readOnly: true,
+                controller: TextEditingController(text: locationText),
+                decoration: const InputDecoration(
+                  labelText: 'Exact Incident Location',
+                  prefixIcon: Icon(Icons.location_on),
+                ),
+              ),
+              const SizedBox(height: 12),
+              DropdownButtonFormField<String>(
+                initialValue: _type,
+                decoration: const InputDecoration(
+                  labelText: 'Emergency Category',
+                ),
+                items:
+                    const [
+                          'Fire Emergency',
+                          'Medical Emergency',
+                          'Crime / Theft',
+                          'Flood / Disaster',
+                          'Accident',
+                        ]
+                        .map(
+                          (type) =>
+                              DropdownMenuItem(value: type, child: Text(type)),
+                        )
+                        .toList(),
+                onChanged: (value) => setState(() => _type = value!),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: _detailsController,
+                maxLines: 2,
+                decoration: const InputDecoration(
+                  labelText: 'Immediate Details',
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
+        ElevatedButton.icon(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.red,
+            foregroundColor: Colors.white,
+          ),
+          onPressed: () => Navigator.pop(
+            context,
+            _EmergencyReportDraft(
+              location: _selectedLocation,
+              type: _type,
+              details: _detailsController.text.trim(),
+            ),
+          ),
+          icon: const Icon(Icons.check),
+          label: const Text('CONFIRM LOCATION & SUBMIT'),
+        ),
+      ],
     );
   }
 }
