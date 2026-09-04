@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import '../theme/app_colors.dart';
 import 'login_screen.dart';
 import 'dashboard_screen.dart';
@@ -159,6 +160,55 @@ class _SignUpScreenState extends State<SignUpScreen> {
     }
   }
 
+  Future<void> _handleGoogleSignUp() async {
+    if (!kIsWeb || _isAdmin) return;
+
+    setState(() => _isSubmitting = true);
+    try {
+      final provider = GoogleAuthProvider();
+      final credential = await FirebaseAuth.instance.signInWithPopup(provider);
+      final user = credential.user!;
+      final userRef = FirebaseFirestore.instance.collection('users').doc(user.uid);
+      final userDoc = await userRef.get();
+      var role = 'Resident';
+
+      if (!userDoc.exists) {
+        await userRef.set({
+          'accountName': user.displayName ?? user.email ?? 'Resident',
+          'email': user.email,
+          'role': role,
+          'createdAt': FieldValue.serverTimestamp(),
+          'lastLogin': FieldValue.serverTimestamp(),
+        });
+      } else {
+        final data = userDoc.data();
+        role = data?['role'] as String? ?? role;
+        await userRef.update({'lastLogin': FieldValue.serverTimestamp()});
+      }
+
+      if (!mounted) return;
+      if (role == 'Chairman' || role == 'Admin') {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (_) => const DashboardScreen()),
+        );
+      } else {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(
+            builder: (_) => const ProfileCompletionScreen(launchedAfterSignUp: true),
+          ),
+        );
+      }
+    } on FirebaseAuthException catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Google sign-up failed: ${e.message ?? e.code}')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isSubmitting = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -207,6 +257,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         onSelectAdminRole: (role) =>
                             setState(() => _adminRole = role),
                         onSubmit: _handleSignUp,
+                        onGoogleSignUp: _handleGoogleSignUp,
                       ),
                     ),
                   ),
@@ -324,6 +375,7 @@ class _SignUpForm extends StatelessWidget {
   final ValueChanged<bool> onSelectRole;
   final ValueChanged<AdminRole> onSelectAdminRole;
   final VoidCallback onSubmit;
+  final VoidCallback onGoogleSignUp;
 
   const _SignUpForm({
     required this.formKey,
@@ -344,6 +396,7 @@ class _SignUpForm extends StatelessWidget {
     required this.onSelectRole,
     required this.onSelectAdminRole,
     required this.onSubmit,
+    required this.onGoogleSignUp,
   });
 
   @override
@@ -601,6 +654,21 @@ class _SignUpForm extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 20),
+
+          if (kIsWeb && !isAdmin) ...[
+            OutlinedButton.icon(
+              onPressed: isSubmitting ? null : onGoogleSignUp,
+              icon: const Icon(Icons.account_circle_outlined),
+              label: const Text('Sign up with Google'),
+              style: OutlinedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
+          ],
 
           Center(
             child: TextButton(

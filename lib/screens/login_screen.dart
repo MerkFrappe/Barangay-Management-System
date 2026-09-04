@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import '../theme/app_colors.dart';
 import 'dashboard_screen.dart';
 import 'resident_dashboard_screen.dart';
@@ -113,6 +114,43 @@ class _LoginScreenState extends State<LoginScreen> {
         : 'resident@gmail.com';
     _passwordController.text = 'Password123';
     await _handleLogin();
+  }
+
+  Future<void> _handleGoogleLogin() async {
+    if (!kIsWeb) return;
+
+    setState(() => _isSubmitting = true);
+    try {
+      final provider = GoogleAuthProvider();
+      final credential = await FirebaseAuth.instance.signInWithPopup(provider);
+      final user = credential.user!;
+      final userRef = FirebaseFirestore.instance.collection('users').doc(user.uid);
+      final userDoc = await userRef.get();
+
+      if (!userDoc.exists) {
+        await userRef.set({
+          'accountName': user.displayName ?? user.email ?? 'Resident',
+          'email': user.email,
+          'role': 'Resident',
+          'lastLogin': FieldValue.serverTimestamp(),
+        });
+      } else {
+        await userRef.update({'lastLogin': FieldValue.serverTimestamp()});
+      }
+
+      if (!mounted) return;
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (_) => const ResidentDashboardScreen()),
+      );
+    } on FirebaseAuthException catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Google sign-in failed: ${e.message ?? e.code}')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isSubmitting = false);
+    }
   }
 
   Future<void> _seedDatabase() async {
@@ -312,6 +350,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         onSelectRole: (admin) =>
                             setState(() => _isAdmin = admin),
                         onSubmit: _handleLogin,
+                        onGoogleLogin: _handleGoogleLogin,
                         onDemoLogin: _handleQuickEntry,
                         onSeed: _seedDatabase,
                       ),
@@ -425,6 +464,7 @@ class _LoginForm extends StatelessWidget {
   final ValueChanged<bool?> onToggleRemember;
   final ValueChanged<bool> onSelectRole;
   final VoidCallback onSubmit;
+  final VoidCallback onGoogleLogin;
   final ValueChanged<bool> onDemoLogin;
   final VoidCallback onSeed;
 
@@ -441,6 +481,7 @@ class _LoginForm extends StatelessWidget {
     required this.onToggleRemember,
     required this.onSelectRole,
     required this.onSubmit,
+    required this.onGoogleLogin,
     required this.onDemoLogin,
     required this.onSeed,
   });
@@ -638,6 +679,21 @@ class _LoginForm extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 20),
+
+          if (kIsWeb) ...[
+            OutlinedButton.icon(
+              onPressed: isSubmitting ? null : onGoogleLogin,
+              icon: const Icon(Icons.account_circle_outlined),
+              label: const Text('Continue with Google'),
+              style: OutlinedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
+          ],
 
           // Quick Frontend Testing Direct Login Buttons
           Container(
