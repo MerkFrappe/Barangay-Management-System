@@ -254,6 +254,9 @@ class _HealthCenterScreenState extends State<HealthCenterScreen> {
                     selectedItem: 'Health Center & Services',
                   ),
           ),
+          bottomNavigationBar: widget.isAdmin
+              ? null
+              : const ResidentMobileNavigation(currentIndex: 1),
           body: body,
         );
       },

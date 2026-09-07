@@ -5,13 +5,13 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
-import 'package:cross_file/cross_file.dart';
-import 'package:desktop_drop/desktop_drop.dart';
 import 'package:file_picker/file_picker.dart' as file_picker;
 import '../models/document_request_record.dart';
 import '../models/resident_profile.dart';
 import '../theme/app_colors.dart';
+import '../screens/resident_dashboard_screen.dart';
 import '../widgets/resident_sidebar.dart';
+import '../widgets/motion.dart';
 
 class DocumentRequest extends StatelessWidget {
   const DocumentRequest({super.key});
@@ -33,7 +33,6 @@ class _DashboardPageState extends State<DashboardPage> {
   final _reasonController = TextEditingController();
   String _selectedDocumentType = 'Barangay Clearance';
   bool _isSaving = false;
-  bool _isDraggingId = false;
   Uint8List? _idFileBytes;
   String? _idFileName;
   ResidentProfile? _residentProfile;
@@ -132,18 +131,6 @@ class _DashboardPageState extends State<DashboardPage> {
         _idFileBytes = bytes;
         _idFileName = file.name;
       });
-    }
-  }
-
-  Future<void> _useDroppedIdFile(XFile file) async {
-    try {
-      final bytes = await file.readAsBytes();
-      setState(() {
-        _idFileBytes = bytes;
-        _idFileName = file.name;
-      });
-    } catch (e) {
-      debugPrint('Error reading dropped file: $e');
     }
   }
 
@@ -264,13 +251,20 @@ class _DashboardPageState extends State<DashboardPage> {
     bool isDesktop = MediaQuery.of(context).size.width > 1024;
 
     return Scaffold(
-      bottomNavigationBar: !isDesktop ? _buildMobileBottomNav() : null,
+      drawer: isDesktop
+          ? null
+          : const Drawer(
+              child: ResidentSidebar(selectedItem: 'Document Request'),
+            ),
+      bottomNavigationBar: isDesktop
+          ? null
+          : ResidentMobileNavigation(currentIndex: 1),
       body: Row(
         children: [
           if (isDesktop) _buildSidebar(),
           Expanded(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.all(24.0),
+              padding: EdgeInsets.all(isDesktop ? 24.0 : 12.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -309,23 +303,43 @@ class _DashboardPageState extends State<DashboardPage> {
 
   Widget _buildHeader(bool isDesktop) {
     return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Request Document',
-              style: Theme.of(context).textTheme.displayLarge?.copyWith(
-                fontSize: isDesktop ? 32 : 24,
-                color: const Color(0xFF002576),
+        if (!isDesktop) ...[
+          IconButton(
+            tooltip: 'Back to dashboard',
+            icon: const Icon(Icons.arrow_back),
+            color: const Color(0xFF002576),
+            onPressed: () => Navigator.of(
+              context,
+            ).pushReplacement(smoothPageRoute(const ResidentDashboardScreen())),
+          ),
+          Builder(
+            builder: (context) => IconButton(
+              tooltip: 'Open menu',
+              icon: const Icon(Icons.menu),
+              color: const Color(0xFF002576),
+              onPressed: () => Scaffold.of(context).openDrawer(),
+            ),
+          ),
+        ],
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Request Document',
+                style: Theme.of(context).textTheme.displayLarge?.copyWith(
+                  fontSize: isDesktop ? 32 : 24,
+                  color: const Color(0xFF002576),
+                ),
               ),
-            ),
-            const Text(
-              'Submit Documents for Barangay Certifactions and permits online.',
-              style: TextStyle(color: Color(0xFF444653)),
-            ),
-          ],
+              const Text(
+                'Submit documents for barangay certificates and permits online.',
+                style: TextStyle(color: Color(0xFF444653)),
+              ),
+            ],
+          ),
         ),
         if (isDesktop)
           OutlinedButton.icon(
@@ -767,76 +781,42 @@ class _DashboardPageState extends State<DashboardPage> {
   );
 
   Widget _buildUploadArea() {
-    return DropTarget(
-      onDragEntered: (_) => setState(() => _isDraggingId = true),
-      onDragExited: (_) => setState(() => _isDraggingId = false),
-      onDragDone: (details) async {
-        setState(() => _isDraggingId = false);
-        if (details.files.isNotEmpty) {
-          await _useDroppedIdFile(details.files.first);
-        }
-      },
-      child: GestureDetector(
-        onTap: _selectIdFile,
-        child: Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(32),
-          decoration: BoxDecoration(
-            border: Border.all(
-              color: _isDraggingId
-                  ? const Color(0xFF002576)
-                  : const Color(0xFFC4C5D5),
-              width: _isDraggingId ? 2 : 1,
+    final compact = MediaQuery.sizeOf(context).width < 600;
+    return GestureDetector(
+      onTap: _selectIdFile,
+      child: Container(
+        width: double.infinity,
+        padding: EdgeInsets.all(compact ? 20 : 32),
+        decoration: BoxDecoration(
+          border: Border.all(color: const Color(0xFFC4C5D5)),
+          color: const Color(0xFFEFF4FF),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Column(
+          children: [
+            Icon(
+              _idFileBytes == null
+                  ? Icons.cloud_upload_outlined
+                  : Icons.check_circle_outline,
+              size: 48,
+              color: const Color(0xFF747685),
             ),
-            color: _isDraggingId
-                ? const Color(0xFFDCE9FF)
-                : const Color(0xFFEFF4FF),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Column(
-            children: [
-              Icon(
-                _idFileBytes == null
-                    ? Icons.cloud_upload_outlined
-                    : Icons.check_circle_outline,
-                size: 48,
-                color: const Color(0xFF747685),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                _idFileName ?? 'Drop ID here or click to upload',
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const Text(
-                'JPG, PNG, or PDF',
-                style: TextStyle(fontSize: 10, color: Colors.grey),
-              ),
-            ],
-          ),
+            const SizedBox(height: 8),
+            Text(
+              _idFileName ??
+                  (compact
+                      ? 'Tap to choose an ID file'
+                      : 'Choose an ID file to upload'),
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+            ),
+            const Text(
+              'JPG, PNG, or PDF',
+              style: TextStyle(fontSize: 10, color: Colors.grey),
+            ),
+          ],
         ),
       ),
-    );
-  }
-
-  Widget _buildMobileBottomNav() {
-    return BottomNavigationBar(
-      type: BottomNavigationBarType.fixed,
-      currentIndex: 2,
-      selectedItemColor: const Color(0xFF735C00),
-      unselectedItemColor: const Color(0xFF444653),
-      items: const [
-        BottomNavigationBarItem(icon: Icon(Icons.home_outlined), label: 'Home'),
-        BottomNavigationBarItem(icon: Icon(Icons.apps), label: 'Services'),
-        BottomNavigationBarItem(icon: Icon(Icons.newspaper), label: 'News'),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.person_outline),
-          label: 'Profile',
-        ),
-      ],
     );
   }
 

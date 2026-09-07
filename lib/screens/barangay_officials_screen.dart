@@ -21,6 +21,9 @@ class BarangayOfficialsScreen extends StatelessWidget {
           : const Drawer(
               child: ResidentSidebar(selectedItem: 'Barangay Officials'),
             ),
+      bottomNavigationBar: desktop
+          ? null
+          : const ResidentMobileNavigation(currentIndex: 1),
       body: SafeArea(
         child: Row(
           children: [
@@ -95,15 +98,16 @@ class _OfficialsBody extends StatelessWidget {
               );
             }
 
-            final officials = snapshot.data!.docs
-                .map((doc) => BarangayOfficial.fromDoc(doc.id, doc.data()))
-                .toList()
-              ..sort((a, b) {
-                final rankCompare = a.sortRank.compareTo(b.sortRank);
-                return rankCompare != 0
-                    ? rankCompare
-                    : a.name.compareTo(b.name);
-              });
+            final officials =
+                snapshot.data!.docs
+                    .map((doc) => BarangayOfficial.fromDoc(doc.id, doc.data()))
+                    .toList()
+                  ..sort((a, b) {
+                    final rankCompare = a.sortRank.compareTo(b.sortRank);
+                    return rankCompare != 0
+                        ? rankCompare
+                        : a.name.compareTo(b.name);
+                  });
 
             if (officials.isEmpty) {
               return Padding(

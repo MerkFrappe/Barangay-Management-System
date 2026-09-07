@@ -29,10 +29,11 @@ class _TopNavigationBarState extends State<TopNavigationBar> {
   Widget build(BuildContext context) {
     final width = MediaQuery.of(context).size.width;
     final desktop = width >= 1100;
+    final compact = width < 600;
 
     return Container(
       height: 72,
-      padding: const EdgeInsets.symmetric(horizontal: 24),
+      padding: EdgeInsets.symmetric(horizontal: compact ? 8 : 24),
       decoration: BoxDecoration(
         color: AppColors.surfaceContainerLowest,
         border: Border(bottom: BorderSide(color: AppColors.outlineVariant)),
@@ -72,7 +73,9 @@ class _TopNavigationBarState extends State<TopNavigationBar> {
               ),
               child: TextField(
                 decoration: InputDecoration(
-                  hintText: "Search services, news, or guidelines...",
+                  hintText: compact
+                      ? 'Search services or news'
+                      : 'Search services, news, or guidelines...',
                   hintStyle: AppTextStyles.bodySm.copyWith(
                     color: AppColors.outline,
                   ),
@@ -84,7 +87,7 @@ class _TopNavigationBarState extends State<TopNavigationBar> {
             ),
           ),
 
-          const SizedBox(width: 16),
+          SizedBox(width: compact ? 4 : 16),
 
           //---------------------------------------
           // Notification Button
@@ -142,7 +145,7 @@ class _TopNavigationBarState extends State<TopNavigationBar> {
             },
           ),
 
-          const SizedBox(width: 12),
+          SizedBox(width: compact ? 2 : 12),
 
           //---------------------------------------
           // Divider
@@ -156,7 +159,7 @@ class _TopNavigationBarState extends State<TopNavigationBar> {
           // User Info + Avatar (live from the resident's own profile)
           //---------------------------------------
           _profileStream == null
-              ? _fallbackUserInfo(desktop)
+              ? _fallbackUserInfo(desktop, compact)
               : StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
                   stream: _profileStream,
                   builder: (context, snapshot) {
@@ -196,7 +199,7 @@ class _TopNavigationBarState extends State<TopNavigationBar> {
                           ),
                         if (desktop) const SizedBox(width: 14),
                         CircleAvatar(
-                          radius: 22,
+                          radius: compact ? 18 : 22,
                           backgroundColor: AppColors.primaryContainer,
                           child: Text(
                             initials,
@@ -215,7 +218,7 @@ class _TopNavigationBarState extends State<TopNavigationBar> {
     );
   }
 
-  Widget _fallbackUserInfo(bool desktop) {
+  Widget _fallbackUserInfo(bool desktop, bool compact) {
     return Row(
       children: [
         if (desktop)
@@ -228,7 +231,7 @@ class _TopNavigationBarState extends State<TopNavigationBar> {
           ),
         if (desktop) const SizedBox(width: 14),
         CircleAvatar(
-          radius: 22,
+          radius: compact ? 18 : 22,
           backgroundColor: AppColors.primaryContainer,
           child: Text(
             "R",

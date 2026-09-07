@@ -19,6 +19,9 @@ class DocumentTrackerScreen extends StatelessWidget {
       drawer: desktop
           ? null
           : const Drawer(child: ResidentSidebar(selectedItem: '')),
+      bottomNavigationBar: desktop
+          ? null
+          : const ResidentMobileNavigation(currentIndex: 1),
       body: SafeArea(
         child: Row(
           children: [

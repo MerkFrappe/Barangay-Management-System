@@ -117,14 +117,16 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _handleGoogleLogin() async {
-    if (!kIsWeb) return;
-
     setState(() => _isSubmitting = true);
     try {
       final provider = GoogleAuthProvider();
-      final credential = await FirebaseAuth.instance.signInWithPopup(provider);
+      final credential = kIsWeb
+          ? await FirebaseAuth.instance.signInWithPopup(provider)
+          : await FirebaseAuth.instance.signInWithProvider(provider);
       final user = credential.user!;
-      final userRef = FirebaseFirestore.instance.collection('users').doc(user.uid);
+      final userRef = FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid);
       final userDoc = await userRef.get();
 
       if (!userDoc.exists) {
@@ -145,7 +147,9 @@ class _LoginScreenState extends State<LoginScreen> {
     } on FirebaseAuthException catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Google sign-in failed: ${e.message ?? e.code}')),
+          SnackBar(
+            content: Text('Google sign-in failed: ${e.message ?? e.code}'),
+          ),
         );
       }
     } finally {
@@ -519,10 +523,7 @@ class _LoginForm extends StatelessWidget {
             child: TextButton.icon(
               onPressed: () => onSelectRole(!isAdmin),
               style: TextButton.styleFrom(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 8,
-                  vertical: 4,
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 minimumSize: Size.zero,
                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 foregroundColor: AppColors.primary,
@@ -657,7 +658,9 @@ class _LoginForm extends StatelessWidget {
                   borderRadius: BorderRadius.circular(12),
                 ),
                 elevation: 4,
-                disabledBackgroundColor: AppColors.primary.withValues(alpha: 0.6),
+                disabledBackgroundColor: AppColors.primary.withValues(
+                  alpha: 0.6,
+                ),
               ),
               child: isSubmitting
                   ? const SizedBox(
@@ -680,20 +683,18 @@ class _LoginForm extends StatelessWidget {
           ),
           const SizedBox(height: 20),
 
-          if (kIsWeb) ...[
-            OutlinedButton.icon(
-              onPressed: isSubmitting ? null : onGoogleLogin,
-              icon: const Icon(Icons.account_circle_outlined),
-              label: const Text('Continue with Google'),
-              style: OutlinedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
+          OutlinedButton.icon(
+            onPressed: isSubmitting ? null : onGoogleLogin,
+            icon: const Icon(Icons.account_circle_outlined),
+            label: const Text('Continue with Google'),
+            style: OutlinedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
               ),
             ),
-            const SizedBox(height: 20),
-          ],
+          ),
+          const SizedBox(height: 20),
 
           // Quick Frontend Testing Direct Login Buttons
           Container(

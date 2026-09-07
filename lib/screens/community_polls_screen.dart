@@ -153,6 +153,7 @@ class _CommunityPollsScreenState extends State<CommunityPollsScreen> {
           drawer: const Drawer(
             child: ResidentSidebar(selectedItem: 'Community Polls'),
           ),
+          bottomNavigationBar: const ResidentMobileNavigation(currentIndex: 1),
           body: body,
         );
       },

@@ -3,6 +3,7 @@ import '../theme/app_colors.dart';
 import '../screens/resident_request_code.dart';
 import '../screens/document_tracker_screen.dart';
 import '../screens/report_incident_screen.dart';
+import 'motion.dart';
 import 'service_card.dart';
 
 class ServicesGrid extends StatelessWidget {
@@ -13,9 +14,12 @@ class ServicesGrid extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Online Resident Services',
-          style: AppTextStyles.headlineMd.copyWith(color: AppColors.primary),
+        StaggeredReveal(
+          beginOffset: const Offset(0, 0.025),
+          child: Text(
+            'Online Resident Services',
+            style: AppTextStyles.headlineMd.copyWith(color: AppColors.primary),
+          ),
         ),
         const SizedBox(height: 16),
         LayoutBuilder(
@@ -36,61 +40,77 @@ class ServicesGrid extends StatelessWidget {
               childAspectRatio: twoColumns ? 1.15 : 1.3,
               children: [
                 // Barangay Clearance application.
-                ServiceCard(
-                  icon: Icons.verified_user_outlined,
-                  iconColor: AppColors.primary,
-                  iconBackground: AppColors.primaryFixed,
-                  title: 'E-Services',
-                  description:
-                      'Apply online for official barangay clearance certificate.',
-                  buttonText: 'Apply Now',
-                  onTap: () => Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => const DocumentRequest()),
+                StaggeredReveal(
+                  delay: const Duration(milliseconds: 80),
+                  child: ServiceCard(
+                    icon: Icons.verified_user_outlined,
+                    iconColor: AppColors.primary,
+                    iconBackground: AppColors.primaryFixed,
+                    title: 'E-Services',
+                    description:
+                        'Apply online for official barangay clearance certificate.',
+                    buttonText: 'Apply Now',
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => const DocumentRequest(),
+                      ),
+                    ),
                   ),
                 ),
                 // Was "Get an Event" — title didn't match its own
                 // description or icon, which were both about a residency
                 // document. Renamed to match what it actually does.
-                ServiceCard(
-                  icon: Icons.description_outlined,
-                  iconColor: AppColors.secondary,
-                  iconBackground: AppColors.secondaryFixed,
-                  title: 'Certificate of Residency',
-                  description:
-                      'Request an official proof-of-residency document.',
-                  buttonText: 'Request Document',
-                  onTap: () => Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => const DocumentRequest()),
+                StaggeredReveal(
+                  delay: const Duration(milliseconds: 140),
+                  child: ServiceCard(
+                    icon: Icons.description_outlined,
+                    iconColor: AppColors.secondary,
+                    iconBackground: AppColors.secondaryFixed,
+                    title: 'Certificate of Residency',
+                    description:
+                        'Request an official proof-of-residency document.',
+                    buttonText: 'Request Document',
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => const DocumentRequest(),
+                      ),
+                    ),
                   ),
                 ),
                 // Was described as social/financial aid — that's not what a
                 // tracker does. Now points to an actual status view of the
                 // resident's own submitted requests.
-                ServiceCard(
-                  icon: Icons.fact_check_outlined,
-                  iconColor: AppColors.tertiary,
-                  iconBackground: AppColors.tertiaryFixed,
-                  title: 'Document Tracker',
-                  description:
-                      'Check the status of documents you have already requested.',
-                  buttonText: 'View Status',
-                  onTap: () => Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => const DocumentTrackerScreen(),
+                StaggeredReveal(
+                  delay: const Duration(milliseconds: 200),
+                  child: ServiceCard(
+                    icon: Icons.fact_check_outlined,
+                    iconColor: AppColors.tertiary,
+                    iconBackground: AppColors.tertiaryFixed,
+                    title: 'Document Tracker',
+                    description:
+                        'Check the status of documents you have already requested.',
+                    buttonText: 'View Status',
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => const DocumentTrackerScreen(),
+                      ),
                     ),
                   ),
                 ),
-                ServiceCard(
-                  icon: Icons.report_problem_outlined,
-                  iconColor: AppColors.error,
-                  iconBackground: AppColors.errorContainer,
-                  title: 'File Incident / Complaint',
-                  description:
-                      'Submit blotter or community incident reports securely.',
-                  buttonText: 'Report Incident',
-                  onTap: () => Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => const ReportIncidentScreen(),
+                StaggeredReveal(
+                  delay: const Duration(milliseconds: 260),
+                  child: ServiceCard(
+                    icon: Icons.report_problem_outlined,
+                    iconColor: AppColors.error,
+                    iconBackground: AppColors.errorContainer,
+                    title: 'File Incident / Complaint',
+                    description:
+                        'Submit blotter or community incident reports securely.',
+                    buttonText: 'Report Incident',
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => const ReportIncidentScreen(),
+                      ),
                     ),
                   ),
                 ),

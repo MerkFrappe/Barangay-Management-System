@@ -25,11 +25,15 @@ class ResidentDashboardScreen extends StatelessWidget {
     // Keep the full desktop composition only when there is enough room for
     // both the 256px sidebar and the two-column dashboard content.
     final desktop = width >= 1100;
+    final contentPadding = width < 600 ? 12.0 : 32.0;
 
     return Scaffold(
       backgroundColor: AppColors.background,
 
       drawer: desktop ? null : const Drawer(child: ResidentSidebar()),
+      bottomNavigationBar: desktop
+          ? null
+          : const ResidentMobileNavigation(currentIndex: 0),
 
       body: SafeArea(
         child: Row(
@@ -49,7 +53,7 @@ class ResidentDashboardScreen extends StatelessWidget {
 
                   Expanded(
                     child: SingleChildScrollView(
-                      padding: const EdgeInsets.all(32),
+                      padding: EdgeInsets.all(contentPadding),
                       child: Center(
                         child: ConstrainedBox(
                           constraints: const BoxConstraints(maxWidth: 1400),

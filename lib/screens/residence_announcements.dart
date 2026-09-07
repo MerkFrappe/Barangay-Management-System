@@ -283,6 +283,9 @@ class _CommunityEventsScreenState extends State<CommunityEventsScreen> {
           : const Drawer(
               child: ResidentSidebar(selectedItem: 'Emergency Alerts'),
             ),
+      bottomNavigationBar: desktop
+          ? null
+          : const ResidentMobileNavigation(currentIndex: 2),
       body: SafeArea(
         child: Row(
           children: [

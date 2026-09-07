@@ -161,14 +161,18 @@ class _SignUpScreenState extends State<SignUpScreen> {
   }
 
   Future<void> _handleGoogleSignUp() async {
-    if (!kIsWeb || _isAdmin) return;
+    if (_isAdmin) return;
 
     setState(() => _isSubmitting = true);
     try {
       final provider = GoogleAuthProvider();
-      final credential = await FirebaseAuth.instance.signInWithPopup(provider);
+      final credential = kIsWeb
+          ? await FirebaseAuth.instance.signInWithPopup(provider)
+          : await FirebaseAuth.instance.signInWithProvider(provider);
       final user = credential.user!;
-      final userRef = FirebaseFirestore.instance.collection('users').doc(user.uid);
+      final userRef = FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid);
       final userDoc = await userRef.get();
       var role = 'Resident';
 
@@ -194,14 +198,17 @@ class _SignUpScreenState extends State<SignUpScreen> {
       } else {
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(
-            builder: (_) => const ProfileCompletionScreen(launchedAfterSignUp: true),
+            builder: (_) =>
+                const ProfileCompletionScreen(launchedAfterSignUp: true),
           ),
         );
       }
     } on FirebaseAuthException catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Google sign-up failed: ${e.message ?? e.code}')),
+          SnackBar(
+            content: Text('Google sign-up failed: ${e.message ?? e.code}'),
+          ),
         );
       }
     } finally {
@@ -632,7 +639,9 @@ class _SignUpForm extends StatelessWidget {
                   borderRadius: BorderRadius.circular(12),
                 ),
                 elevation: 4,
-                disabledBackgroundColor: AppColors.primary.withValues(alpha: 0.6),
+                disabledBackgroundColor: AppColors.primary.withValues(
+                  alpha: 0.6,
+                ),
               ),
               child: isSubmitting
                   ? const SizedBox(
@@ -655,7 +664,7 @@ class _SignUpForm extends StatelessWidget {
           ),
           const SizedBox(height: 20),
 
-          if (kIsWeb && !isAdmin) ...[
+          if (!isAdmin) ...[
             OutlinedButton.icon(
               onPressed: isSubmitting ? null : onGoogleSignUp,
               icon: const Icon(Icons.account_circle_outlined),

@@ -22,6 +22,8 @@ class NewsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final compact = MediaQuery.sizeOf(context).width < 600;
+
     return Card(
       color: AppColors.surfaceContainerLowest,
       elevation: 1,
@@ -39,8 +41,8 @@ class NewsCard extends StatelessWidget {
             // IMAGE PLACEHOLDER
             //------------------------------------------------
             Container(
-              width: 170,
-              height: 170,
+              width: compact ? 116 : 170,
+              height: compact ? 190 : 170,
               decoration: BoxDecoration(
                 color: AppColors.primaryContainer,
                 borderRadius: const BorderRadius.only(
@@ -56,11 +58,13 @@ class NewsCard extends StatelessWidget {
             //------------------------------------------------
             Expanded(
               child: Padding(
-                padding: const EdgeInsets.all(24),
+                padding: EdgeInsets.all(compact ? 16 : 24),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 4,
                       children: [
                         Container(
                           padding: const EdgeInsets.symmetric(
@@ -79,8 +83,6 @@ class NewsCard extends StatelessWidget {
                             ),
                           ),
                         ),
-
-                        const SizedBox(width: 12),
 
                         Text(
                           date,

@@ -15,11 +15,35 @@ import '../screens/community_polls_screen.dart';
 import '../screens/health_center_screen.dart';
 import '../screens/barangay_officials_screen.dart';
 import 'resident_settings_popup.dart';
+import 'motion.dart';
 
-class ResidentSidebar extends StatelessWidget {
+class ResidentSidebar extends StatefulWidget {
   final String selectedItem;
 
   const ResidentSidebar({super.key, this.selectedItem = 'My Dashboard'});
+
+  @override
+  State<ResidentSidebar> createState() => _ResidentSidebarState();
+}
+
+class _ResidentSidebarState extends State<ResidentSidebar> {
+  late String _activeItem;
+
+  @override
+  void initState() {
+    super.initState();
+    _activeItem = widget.selectedItem;
+  }
+
+  void _navigateTo(String item, Widget screen) {
+    setState(() => _activeItem = item);
+    final scaffold = Scaffold.maybeOf(context);
+    if (scaffold?.isDrawerOpen ?? false) {
+      Navigator.of(context).pop();
+    }
+    if (!mounted) return;
+    Navigator.of(context).pushReplacement(smoothPageRoute(screen));
+  }
 
   Future<void> _showReportEmergencyModal(BuildContext context) async {
     final user = FirebaseAuth.instance.currentUser;
@@ -224,79 +248,59 @@ class ResidentSidebar extends StatelessWidget {
                 _NavItem(
                   icon: Icons.dashboard_rounded,
                   title: "My Dashboard",
-                  selected: selectedItem == 'My Dashboard',
-                  onTap: () {
-                    Navigator.of(context).pushReplacement(
-                      MaterialPageRoute(
-                        builder: (_) => const ResidentDashboardScreen(),
-                      ),
-                    );
-                  },
+                  selected: _activeItem == 'My Dashboard',
+                  onTap: () => _navigateTo(
+                    'My Dashboard',
+                    const ResidentDashboardScreen(),
+                  ),
                 ),
 
                 _NavItem(
                   icon: Icons.assignment_outlined,
                   title: "Document Request",
-                  selected: selectedItem == 'Document Request',
-                  onTap: () {
-                    Navigator.of(context).pushReplacement(
-                      MaterialPageRoute(
-                        builder: (_) => const DocumentRequest(),
-                      ),
-                    );
-                  },
+                  selected: _activeItem == 'Document Request',
+                  onTap: () =>
+                      _navigateTo('Document Request', const DocumentRequest()),
                 ),
 
                 _NavItem(
                   icon: Icons.emergency_outlined,
                   title: "Emergency Alerts",
-                  selected: selectedItem == 'Emergency Alerts',
-                  onTap: () {
-                    Navigator.of(context).pushReplacement(
-                      MaterialPageRoute(
-                        builder: (_) => const announcements.CivicHorizonApp(),
-                      ),
-                    );
-                  },
+                  selected: _activeItem == 'Emergency Alerts',
+                  onTap: () => _navigateTo(
+                    'Emergency Alerts',
+                    const announcements.CivicHorizonApp(),
+                  ),
                 ),
 
                 _NavItem(
                   icon: Icons.local_hospital_outlined,
                   title: "Health Center & Services",
-                  selected: selectedItem == 'Health Center & Services',
-                  onTap: () {
-                    Navigator.of(context).pushReplacement(
-                      MaterialPageRoute(
-                        builder: (_) => const HealthCenterScreen(),
-                      ),
-                    );
-                  },
+                  selected: _activeItem == 'Health Center & Services',
+                  onTap: () => _navigateTo(
+                    'Health Center & Services',
+                    const HealthCenterScreen(),
+                  ),
                 ),
 
                 _NavItem(
                   icon: Icons.poll_outlined,
                   title: "Community Polls",
-                  selected: selectedItem == 'Community Polls',
-                  onTap: () {
-                    Navigator.of(context).pushReplacement(
-                      MaterialPageRoute(
-                        builder: (_) => const CommunityPollsScreen(),
-                      ),
-                    );
-                  },
+                  selected: _activeItem == 'Community Polls',
+                  onTap: () => _navigateTo(
+                    'Community Polls',
+                    const CommunityPollsScreen(),
+                  ),
                 ),
 
                 _NavItem(
                   icon: Icons.groups_outlined,
                   title: "Barangay Officials",
-                  selected: selectedItem == 'Barangay Officials',
-                  onTap: () {
-                    Navigator.of(context).pushReplacement(
-                      MaterialPageRoute(
-                        builder: (_) => const BarangayOfficialsScreen(),
-                      ),
-                    );
-                  },
+                  selected: _activeItem == 'Barangay Officials',
+                  onTap: () => _navigateTo(
+                    'Barangay Officials',
+                    const BarangayOfficialsScreen(),
+                  ),
                 ),
 
                 _NavItem(
@@ -308,11 +312,8 @@ class ResidentSidebar extends StatelessWidget {
                 _NavItem(
                   icon: Icons.admin_panel_settings_rounded,
                   title: "Switch to Admin",
-                  onTap: () {
-                    Navigator.of(context).pushReplacement(
-                      MaterialPageRoute(builder: (_) => DashboardScreen()),
-                    );
-                  },
+                  onTap: () =>
+                      _navigateTo('Switch to Admin', const DashboardScreen()),
                 ),
 
                 const SizedBox(height: 24),
@@ -371,6 +372,60 @@ class _EmergencyReportDraft {
 
   String get locationText =>
       '${location.latitude.toStringAsFixed(6)}, ${location.longitude.toStringAsFixed(6)}';
+}
+
+class ResidentMobileNavigation extends StatelessWidget {
+  final int currentIndex;
+
+  const ResidentMobileNavigation({super.key, required this.currentIndex});
+
+  void _goTo(BuildContext context, Widget screen) {
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute<void>(builder: (_) => screen),
+      (route) => false,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return NavigationBar(
+      selectedIndex: currentIndex,
+      onDestinationSelected: (index) {
+        switch (index) {
+          case 0:
+            _goTo(context, const ResidentDashboardScreen());
+          case 1:
+            _goTo(context, const DocumentRequest());
+          case 2:
+            _goTo(context, const announcements.CivicHorizonApp());
+          case 3:
+            showResidentSettingsPopup(context);
+        }
+      },
+      destinations: const [
+        NavigationDestination(
+          icon: Icon(Icons.dashboard_outlined),
+          selectedIcon: Icon(Icons.dashboard),
+          label: 'Dashboard',
+        ),
+        NavigationDestination(
+          icon: Icon(Icons.grid_view_outlined),
+          selectedIcon: Icon(Icons.grid_view),
+          label: 'Services',
+        ),
+        NavigationDestination(
+          icon: Icon(Icons.newspaper_outlined),
+          selectedIcon: Icon(Icons.newspaper),
+          label: 'News',
+        ),
+        NavigationDestination(
+          icon: Icon(Icons.person_outline),
+          selectedIcon: Icon(Icons.person),
+          label: 'Profile',
+        ),
+      ],
+    );
+  }
 }
 
 class _EmergencyLocationDialog extends StatefulWidget {
@@ -569,43 +624,57 @@ class _NavItem extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Material(
-        color: selected ? AppColors.primaryContainer : Colors.transparent,
+        color: Colors.transparent,
         borderRadius: BorderRadius.circular(12),
 
-        child: InkWell(
-          borderRadius: BorderRadius.circular(12),
-
-          onTap: onTap ?? () {},
-
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-
-            child: Row(
-              children: [
-                Icon(
-                  icon,
-                  size: 22,
-                  color: selected
-                      ? AppColors.onPrimary
-                      : AppColors.onSurfaceVariant,
-                ),
-
-                const SizedBox(width: 14),
-
-                Expanded(
-                  child: Text(
-                    title,
-                    style: AppTextStyles.labelMd.copyWith(
-                      color: selected
-                          ? AppColors.onPrimary
-                          : AppColors.onSurfaceVariant,
-                      fontWeight: FontWeight.w600,
+        child: Stack(
+          children: [
+            if (selected)
+              Positioned.fill(
+                child: Hero(
+                  tag: 'resident-sidebar-highlight',
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      color: AppColors.primaryContainer,
+                      borderRadius: BorderRadius.circular(12),
                     ),
                   ),
                 ),
-              ],
+              ),
+            InkWell(
+              borderRadius: BorderRadius.circular(12),
+              onTap: onTap ?? () {},
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 14,
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      icon,
+                      size: 22,
+                      color: selected
+                          ? AppColors.onPrimary
+                          : AppColors.onSurfaceVariant,
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Text(
+                        title,
+                        style: AppTextStyles.labelMd.copyWith(
+                          color: selected
+                              ? AppColors.onPrimary
+                              : AppColors.onSurfaceVariant,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ),
-          ),
+          ],
         ),
       ),
     );
