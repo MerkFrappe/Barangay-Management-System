@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../theme/app_colors.dart';
@@ -35,7 +37,48 @@ class Announcement {
 //   deleteAnnouncement() → replace with: http.delete(Uri.parse('$baseUrl/announcements/$id'))
 
 class AnnouncementService {
-  static final _collection = FirebaseFirestore.instance.collection('announcements');
+  static final _collection = FirebaseFirestore.instance.collection(
+    'announcements',
+  );
+
+  /// Creates an in-app notification for each resident account. These are
+  /// intentionally written per user so every resident has an independent
+  /// read/unread record in `users/{uid}/notifications`.
+  static Future<void> _notifyResidents(Announcement announcement) async {
+    try {
+      final residents =
+          await FirebaseFirestore.instance
+              .collection('users')
+              .where('role', isEqualTo: 'Resident')
+              .get();
+
+      // Firestore batches are limited to 500 writes.
+      for (var start = 0; start < residents.docs.length; start += 500) {
+        final batch = FirebaseFirestore.instance.batch();
+        final end =
+            (start + 500 < residents.docs.length)
+                ? start + 500
+                : residents.docs.length;
+        for (final resident in residents.docs.sublist(start, end)) {
+          batch.set(
+            resident.reference.collection('notifications').doc(announcement.id),
+            {
+              'type': 'announcement',
+              'title': announcement.title,
+              'message': announcement.description,
+              'announcementId': announcement.id,
+              'category': announcement.category.name,
+              'isRead': false,
+              'createdAt': FieldValue.serverTimestamp(),
+            },
+          );
+        }
+        await batch.commit();
+      }
+    } catch (e) {
+      debugPrint('Could not notify residents: $e');
+    }
+  }
 
   static AnnouncementCategory _parseCategory(String name) {
     return AnnouncementCategory.values.firstWhere(
@@ -52,7 +95,9 @@ class AnnouncementService {
   }
 
   static Stream<List<Announcement>> getAnnouncementsStream() {
-    return _collection.orderBy('createdAt', descending: true).snapshots().map((snap) {
+    return _collection.orderBy('createdAt', descending: true).snapshots().map((
+      snap,
+    ) {
       return snap.docs.map((doc) {
         final data = doc.data();
         return Announcement(
@@ -69,7 +114,8 @@ class AnnouncementService {
 
   static Future<List<Announcement>> fetchAnnouncements() async {
     try {
-      final snap = await _collection.orderBy('createdAt', descending: true).get();
+      final snap =
+          await _collection.orderBy('createdAt', descending: true).get();
       return snap.docs.map((doc) {
         final data = doc.data();
         return Announcement(
@@ -98,7 +144,7 @@ class AnnouncementService {
           'status': a.status.name,
           'createdAt': FieldValue.serverTimestamp(),
         });
-        return Announcement(
+        final announcement = Announcement(
           id: docRef.id,
           title: a.title,
           description: a.description,
@@ -106,6 +152,10 @@ class AnnouncementService {
           category: a.category,
           status: a.status,
         );
+        if (a.status == AnnouncementStatus.published) {
+          unawaited(_notifyResidents(announcement));
+        }
+        return announcement;
       } else {
         await _collection.doc(a.id).set({
           'title': a.title,
@@ -148,9 +198,9 @@ class _AnnouncementPageState extends State<AnnouncementPage> {
     return LayoutBuilder(
       builder: (context, constraints) {
         final isWide = constraints.maxWidth >= 1024;
-        
+
         final body = const _MainContent();
-        
+
         if (isWide) {
           return Scaffold(
             backgroundColor: AppColors.background,
@@ -159,17 +209,14 @@ class _AnnouncementPageState extends State<AnnouncementPage> {
                 const SidebarNav(selectedIndex: 6),
                 Expanded(
                   child: Column(
-                    children: [
-                      const TopHeader(),
-                      Expanded(child: body),
-                    ],
+                    children: [const TopHeader(), Expanded(child: body)],
                   ),
                 ),
               ],
             ),
           );
         }
-        
+
         return Scaffold(
           backgroundColor: AppColors.background,
           appBar: AppBar(
@@ -284,7 +331,9 @@ class _LeftColumnState extends State<_LeftColumn> {
       return all.where((a) => a.status == AnnouncementStatus.draft).toList();
     }
     if (_filter == 'Published') {
-      return all.where((a) => a.status == AnnouncementStatus.published).toList();
+      return all
+          .where((a) => a.status == AnnouncementStatus.published)
+          .toList();
     }
     return all;
   }
@@ -363,10 +412,7 @@ class _LeftColumnState extends State<_LeftColumn> {
                         ),
                       );
                     }
-                    return _AnnouncementsTable(
-                      items: items,
-                      onDeleted: () {},
-                    );
+                    return _AnnouncementsTable(items: items, onDeleted: () {});
                   },
                 ),
                 const SizedBox(height: 16),
@@ -474,22 +520,23 @@ class _AnnouncementsTable extends StatelessWidget {
           decoration: const BoxDecoration(
             border: Border(bottom: BorderSide(color: Color(0xFFC4C5D5))),
           ),
-          children: ['Title', 'Date', 'Category', 'Status', 'Actions']
-              .map(
-                (h) => Padding(
-                  padding: const EdgeInsets.only(bottom: 10),
-                  child: Text(
-                    h,
-                    style: const TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF444653),
-                      letterSpacing: 0.5,
+          children:
+              ['Title', 'Date', 'Category', 'Status', 'Actions']
+                  .map(
+                    (h) => Padding(
+                      padding: const EdgeInsets.only(bottom: 10),
+                      child: Text(
+                        h,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF444653),
+                          letterSpacing: 0.5,
+                        ),
+                      ),
                     ),
-                  ),
-                ),
-              )
-              .toList(),
+                  )
+                  .toList(),
         ),
         ...items.map((a) => _buildRow(context, a)),
       ],
@@ -562,13 +609,14 @@ class _AnnouncementsTable extends StatelessWidget {
                 }
               }
             },
-            itemBuilder: (_) => const [
-              PopupMenuItem(value: 'edit', child: Text('Edit')),
-              PopupMenuItem(
-                value: 'delete',
-                child: Text('Delete', style: TextStyle(color: Colors.red)),
-              ),
-            ],
+            itemBuilder:
+                (_) => const [
+                  PopupMenuItem(value: 'edit', child: Text('Edit')),
+                  PopupMenuItem(
+                    value: 'delete',
+                    child: Text('Delete', style: TextStyle(color: Colors.red)),
+                  ),
+                ],
           ),
         ),
       ],
@@ -761,12 +809,13 @@ class _AddEventFormState extends State<_AddEventForm> {
       initialDate: DateTime.now(),
       firstDate: DateTime(2020),
       lastDate: DateTime(2030),
-      builder: (context, child) => Theme(
-        data: Theme.of(context).copyWith(
-          colorScheme: const ColorScheme.light(primary: Color(0xFF002576)),
-        ),
-        child: child!,
-      ),
+      builder:
+          (context, child) => Theme(
+            data: Theme.of(context).copyWith(
+              colorScheme: const ColorScheme.light(primary: Color(0xFF002576)),
+            ),
+            child: child!,
+          ),
     );
     if (picked != null) setState(() => _selectedDate = picked);
   }
@@ -791,12 +840,14 @@ class _AddEventFormState extends State<_AddEventForm> {
     final a = Announcement(
       id: '',
       title: _titleController.text.trim(),
-      description: _descController.text.trim().isEmpty
-          ? 'No description provided.'
-          : _descController.text.trim(),
-      date: _selectedDate != null
-          ? '${_selectedDate!.month}/${_selectedDate!.day}/${_selectedDate!.year}'
-          : 'No date set',
+      description:
+          _descController.text.trim().isEmpty
+              ? 'No description provided.'
+              : _descController.text.trim(),
+      date:
+          _selectedDate != null
+              ? '${_selectedDate!.month}/${_selectedDate!.day}/${_selectedDate!.year}'
+              : 'No date set',
       category: _category,
       status: status,
     );
@@ -873,151 +924,153 @@ class _AddEventFormState extends State<_AddEventForm> {
             child: SingleChildScrollView(
               padding: const EdgeInsets.all(20),
               child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _FormLabel('Event Title'),
-                const SizedBox(height: 6),
-                _FormField(
-                  controller: _titleController,
-                  hint: 'e.g., Annual Sports Fest 2023',
-                ),
-                const SizedBox(height: 16),
-
-                Row(
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _FormLabel('Date'),
-                          const SizedBox(height: 6),
-                          GestureDetector(
-                            onTap: _pickDate,
-                            child: _PickerField(
-                              icon: Icons.calendar_today,
-                              label: _selectedDate != null
-                                  ? '${_selectedDate!.month}/${_selectedDate!.day}/${_selectedDate!.year}'
-                                  : 'Pick date',
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _FormLabel('Time'),
-                          const SizedBox(height: 6),
-                          GestureDetector(
-                            onTap: _pickTime,
-                            child: _PickerField(
-                              icon: Icons.access_time,
-                              label: _selectedTime != null
-                                  ? _selectedTime!.format(context)
-                                  : 'Pick time',
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-
-                _FormLabel('Category'),
-                const SizedBox(height: 6),
-                DropdownButtonFormField<AnnouncementCategory>(
-                  value: _category,
-                  decoration: InputDecoration(
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 14,
-                      vertical: 12,
-                    ),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      borderSide: const BorderSide(color: Color(0xFF747685)),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      borderSide: const BorderSide(
-                        color: Color(0xFF002576),
-                        width: 2,
-                      ),
-                    ),
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _FormLabel('Event Title'),
+                  const SizedBox(height: 6),
+                  _FormField(
+                    controller: _titleController,
+                    hint: 'e.g., Annual Sports Fest 2023',
                   ),
-                  items: const [
-                    DropdownMenuItem(
-                      value: AnnouncementCategory.news,
-                      child: Text('News'),
-                    ),
-                    DropdownMenuItem(
-                      value: AnnouncementCategory.emergency,
-                      child: Text('Emergency'),
-                    ),
-                    DropdownMenuItem(
-                      value: AnnouncementCategory.event,
-                      child: Text('Event'),
-                    ),
-                    DropdownMenuItem(
-                      value: AnnouncementCategory.officialMemo,
-                      child: Text('Official Memo'),
-                    ),
-                  ],
-                  onChanged: (v) => setState(() => _category = v!),
-                ),
-                const SizedBox(height: 16),
+                  const SizedBox(height: 16),
 
-                _FormLabel('Description'),
-                const SizedBox(height: 6),
-                _FormField(
-                  controller: _descController,
-                  hint: 'Describe the details of the announcement...',
-                  maxLines: 4,
-                ),
-                const SizedBox(height: 16),
-
-                _FormLabel('Cover Image'),
-                const SizedBox(height: 6),
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(vertical: 24),
-                  decoration: BoxDecoration(
-                    border: Border.all(
-                      color: const Color(0xFFC4C5D5),
-                      width: 2,
-                    ),
-                    borderRadius: BorderRadius.circular(12),
-                    color: const Color(0xFFF8F9FF),
-                  ),
-                  child: const Column(
+                  Row(
                     children: [
-                      Icon(
-                        Icons.cloud_upload_outlined,
-                        size: 36,
-                        color: Color(0xFF747685),
-                      ),
-                      SizedBox(height: 6),
-                      Text(
-                        'Drop image here or click to upload',
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: Color(0xFF444653),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _FormLabel('Date'),
+                            const SizedBox(height: 6),
+                            GestureDetector(
+                              onTap: _pickDate,
+                              child: _PickerField(
+                                icon: Icons.calendar_today,
+                                label:
+                                    _selectedDate != null
+                                        ? '${_selectedDate!.month}/${_selectedDate!.day}/${_selectedDate!.year}'
+                                        : 'Pick date',
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                      SizedBox(height: 2),
-                      Text(
-                        'Recommended: 1200x630px',
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: Color(0xFF747685),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _FormLabel('Time'),
+                            const SizedBox(height: 6),
+                            GestureDetector(
+                              onTap: _pickTime,
+                              child: _PickerField(
+                                icon: Icons.access_time,
+                                label:
+                                    _selectedTime != null
+                                        ? _selectedTime!.format(context)
+                                        : 'Pick time',
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ],
                   ),
-                ),
-              ],
+                  const SizedBox(height: 16),
+
+                  _FormLabel('Category'),
+                  const SizedBox(height: 6),
+                  DropdownButtonFormField<AnnouncementCategory>(
+                    value: _category,
+                    decoration: InputDecoration(
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 12,
+                      ),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: const BorderSide(color: Color(0xFF747685)),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: const BorderSide(
+                          color: Color(0xFF002576),
+                          width: 2,
+                        ),
+                      ),
+                    ),
+                    items: const [
+                      DropdownMenuItem(
+                        value: AnnouncementCategory.news,
+                        child: Text('News'),
+                      ),
+                      DropdownMenuItem(
+                        value: AnnouncementCategory.emergency,
+                        child: Text('Emergency'),
+                      ),
+                      DropdownMenuItem(
+                        value: AnnouncementCategory.event,
+                        child: Text('Event'),
+                      ),
+                      DropdownMenuItem(
+                        value: AnnouncementCategory.officialMemo,
+                        child: Text('Official Memo'),
+                      ),
+                    ],
+                    onChanged: (v) => setState(() => _category = v!),
+                  ),
+                  const SizedBox(height: 16),
+
+                  _FormLabel('Description'),
+                  const SizedBox(height: 6),
+                  _FormField(
+                    controller: _descController,
+                    hint: 'Describe the details of the announcement...',
+                    maxLines: 4,
+                  ),
+                  const SizedBox(height: 16),
+
+                  _FormLabel('Cover Image'),
+                  const SizedBox(height: 6),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(vertical: 24),
+                    decoration: BoxDecoration(
+                      border: Border.all(
+                        color: const Color(0xFFC4C5D5),
+                        width: 2,
+                      ),
+                      borderRadius: BorderRadius.circular(12),
+                      color: const Color(0xFFF8F9FF),
+                    ),
+                    child: const Column(
+                      children: [
+                        Icon(
+                          Icons.cloud_upload_outlined,
+                          size: 36,
+                          color: Color(0xFF747685),
+                        ),
+                        SizedBox(height: 6),
+                        Text(
+                          'Drop image here or click to upload',
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: Color(0xFF444653),
+                          ),
+                        ),
+                        SizedBox(height: 2),
+                        Text(
+                          'Recommended: 1200x630px',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: Color(0xFF747685),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
@@ -1034,9 +1087,10 @@ class _AddEventFormState extends State<_AddEventForm> {
               children: [
                 Expanded(
                   child: OutlinedButton(
-                    onPressed: _isSaving
-                        ? null
-                        : () => _submit(AnnouncementStatus.draft),
+                    onPressed:
+                        _isSaving
+                            ? null
+                            : () => _submit(AnnouncementStatus.draft),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: const Color(0xFF002576),
                       side: const BorderSide(color: Color(0xFF002576)),
@@ -1054,9 +1108,10 @@ class _AddEventFormState extends State<_AddEventForm> {
                 const SizedBox(width: 12),
                 Expanded(
                   child: ElevatedButton(
-                    onPressed: _isSaving
-                        ? null
-                        : () => _submit(AnnouncementStatus.published),
+                    onPressed:
+                        _isSaving
+                            ? null
+                            : () => _submit(AnnouncementStatus.published),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF002576),
                       foregroundColor: Colors.white,
@@ -1065,19 +1120,20 @@ class _AddEventFormState extends State<_AddEventForm> {
                         borderRadius: BorderRadius.circular(8),
                       ),
                     ),
-                    child: _isSaving
-                        ? const SizedBox(
-                            width: 16,
-                            height: 16,
-                            child: CircularProgressIndicator(
-                              color: Colors.white,
-                              strokeWidth: 2,
+                    child:
+                        _isSaving
+                            ? const SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(
+                                color: Colors.white,
+                                strokeWidth: 2,
+                              ),
+                            )
+                            : const Text(
+                              'Publish Now',
+                              style: TextStyle(fontWeight: FontWeight.w600),
                             ),
-                          )
-                        : const Text(
-                            'Publish Now',
-                            style: TextStyle(fontWeight: FontWeight.w600),
-                          ),
                   ),
                 ),
               ],

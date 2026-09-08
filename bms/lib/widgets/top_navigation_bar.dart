@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 import '../theme/app_colors.dart';
 
@@ -32,13 +34,14 @@ class TopNavigationBar extends StatelessWidget {
           //---------------------------------------
           if (!desktop)
             Builder(
-              builder: (context) => IconButton(
-                icon: const Icon(Icons.menu),
-                color: AppColors.primary,
-                onPressed: () {
-                  Scaffold.of(context).openDrawer();
-                },
-              ),
+              builder:
+                  (context) => IconButton(
+                    icon: const Icon(Icons.menu),
+                    color: AppColors.primary,
+                    onPressed: () {
+                      Scaffold.of(context).openDrawer();
+                    },
+                  ),
             ),
 
           //---------------------------------------
@@ -67,52 +70,10 @@ class TopNavigationBar extends StatelessWidget {
 
           const SizedBox(width: 16),
 
-
           //---------------------------------------
           // Notification Button
           //---------------------------------------
-          IconButton(
-            splashRadius: 22,
-            tooltip: "Notifications",
-            icon: Icon(
-              Icons.notifications_none_rounded,
-              color: AppColors.onSurfaceVariant,
-            ),
-            onPressed: () {
-              showDialog(
-                context: context,
-                builder: (ctx) => AlertDialog(
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                  title: const Row(
-                    children: [
-                      Icon(Icons.notifications_active, color: AppColors.primary),
-                      SizedBox(width: 12),
-                      Text('Resident Alerts'),
-                    ],
-                  ),
-                  content: const Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      ListTile(
-                        leading: Icon(Icons.check_circle, color: Colors.green),
-                        title: Text('Clearance Ready for Pickup'),
-                        subtitle: Text('Barangay Clearance #REQ-102 has been approved.'),
-                      ),
-                      Divider(),
-                      ListTile(
-                        leading: Icon(Icons.campaign, color: Colors.amber),
-                        title: Text('Barangay Assembly Notice'),
-                        subtitle: Text('Meeting on Aug 15 at 9:00 AM.'),
-                      ),
-                    ],
-                  ),
-                  actions: [
-                    TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('OK')),
-                  ],
-                ),
-              );
-            },
-          ),
+          const _ResidentNotificationButton(),
 
           const SizedBox(width: 12),
 
@@ -167,6 +128,102 @@ class TopNavigationBar extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _ResidentNotificationButton extends StatelessWidget {
+  const _ResidentNotificationButton();
+
+  @override
+  Widget build(BuildContext context) {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      return Icon(
+        Icons.notifications_none_rounded,
+        color: AppColors.onSurfaceVariant,
+      );
+    }
+
+    final stream =
+        FirebaseFirestore.instance
+            .collection('users')
+            .doc(user.uid)
+            .collection('notifications')
+            .snapshots();
+    return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+      stream: stream,
+      builder: (context, snapshot) {
+        final notifications = snapshot.data?.docs ?? [];
+        final unread =
+            notifications.where((doc) => doc.data()['isRead'] != true).length;
+        return Badge(
+          isLabelVisible: unread > 0,
+          label: Text('$unread'),
+          child: IconButton(
+            splashRadius: 22,
+            tooltip: 'Notifications',
+            icon: Icon(
+              Icons.notifications_none_rounded,
+              color: AppColors.onSurfaceVariant,
+            ),
+            onPressed: () => _showNotifications(context, notifications),
+          ),
+        );
+      },
+    );
+  }
+
+  void _showNotifications(
+    BuildContext context,
+    List<QueryDocumentSnapshot<Map<String, dynamic>>> notifications,
+  ) {
+    showDialog(
+      context: context,
+      builder:
+          (dialogContext) => AlertDialog(
+            title: const Row(
+              children: [
+                Icon(Icons.notifications_active, color: AppColors.primary),
+                SizedBox(width: 12),
+                Text('Resident Alerts'),
+              ],
+            ),
+            content: SizedBox(
+              width: 420,
+              child:
+                  notifications.isEmpty
+                      ? const Text('You have no notifications yet.')
+                      : ListView.separated(
+                        shrinkWrap: true,
+                        itemCount: notifications.length,
+                        separatorBuilder: (_, __) => const Divider(),
+                        itemBuilder: (_, index) {
+                          final notification = notifications[index];
+                          final data = notification.data();
+                          return ListTile(
+                            leading: const Icon(
+                              Icons.campaign,
+                              color: AppColors.primary,
+                            ),
+                            title: Text(
+                              data['title'] ?? 'Barangay announcement',
+                            ),
+                            subtitle: Text(data['message'] ?? ''),
+                            onTap: () {
+                              notification.reference.update({'isRead': true});
+                            },
+                          );
+                        },
+                      ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(dialogContext),
+                child: const Text('Close'),
+              ),
+            ],
+          ),
     );
   }
 }
