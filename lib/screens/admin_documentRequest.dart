@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../theme/app_colors.dart';
 import '../widgets/sidebar.dart';
 import '../widgets/top_header.dart';
+import '../services/notification_service.dart';
 
 typedef AdminDocumentRequestScreen = admin_documentRequest;
 
@@ -100,36 +101,42 @@ class _admin_documentRequestState extends State<admin_documentRequest> {
               const SizedBox(height: 8),
               Wrap(
                 spacing: 8,
-                children:
-                    [
-                      'Pending',
-                      'In Review',
-                      'Approved',
-                      'Rejected',
-                      'Finished',
-                    ].map((status) {
-                      return ChoiceChip(
-                        label: Text(status),
-                        selected: currentStatus == status,
-                        onSelected: (selected) {
-                          if (selected) {
-                            _collection
-                                .doc(docId)
-                                .update({'status': status})
-                                .then((_) {
-                                  Navigator.pop(ctx);
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text(
-                                        'Status updated to $status',
-                                      ),
-                                    ),
-                                  );
-                                });
+                children: ['Pending', 'In Review', 'Approved', 'Rejected', 'Finished'].map((
+                  status,
+                ) {
+                  return ChoiceChip(
+                    label: Text(status),
+                    selected: currentStatus == status,
+                    onSelected: (selected) {
+                      if (selected) {
+                        _collection.doc(docId).update({'status': status}).then((
+                          _,
+                        ) async {
+                            final residentId =
+                                data['residentId'] ?? data['requesterId'];
+                          if (residentId is String && residentId.isNotEmpty) {
+                              await NotificationService.notifyUser(
+                                uid: residentId,
+                                notificationId:
+                                    'document_status_${docId}_${status.toLowerCase().replaceAll(' ', '_')}',
+                                type: 'document_status',
+                                referenceId: docId,
+                                title: 'Document request updated',
+                                body:
+                                    '${data['documentType'] ?? 'Your document request'} is now $status.',
+                              );
                           }
-                        },
-                      );
-                    }).toList(),
+                          Navigator.pop(ctx);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('Status updated to $status'),
+                            ),
+                          );
+                        });
+                      }
+                    },
+                  );
+                }).toList(),
               ),
             ],
           ),

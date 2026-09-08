@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
+import 'notification_bell.dart';
 
 class TopHeader extends StatelessWidget implements PreferredSizeWidget {
   final VoidCallback? onSwitchPortal;
@@ -68,85 +69,7 @@ class TopHeader extends StatelessWidget implements PreferredSizeWidget {
               if (!compact) const Spacer() else const SizedBox(width: 8),
 
               // Notifications
-              IconButton(
-                icon: Stack(
-                  clipBehavior: Clip.none,
-                  children: [
-                    Icon(
-                      Icons.notifications_outlined,
-                      color: AppColors.onSurfaceVariant,
-                    ),
-                    Positioned(
-                      top: -1,
-                      right: -1,
-                      child: Container(
-                        width: 10,
-                        height: 10,
-                        decoration: BoxDecoration(
-                          color: AppColors.error,
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: AppColors.surface,
-                            width: 2,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                onPressed: () {
-                  showDialog(
-                    context: context,
-                    builder: (ctx) => AlertDialog(
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      title: const Row(
-                        children: [
-                          Icon(
-                            Icons.notifications_active,
-                            color: AppColors.primary,
-                          ),
-                          SizedBox(width: 12),
-                          Text('System Notifications'),
-                        ],
-                      ),
-                      content: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          ListTile(
-                            leading: const Icon(
-                              Icons.assignment_ind,
-                              color: AppColors.primary,
-                            ),
-                            title: const Text('New Document Request'),
-                            subtitle: const Text(
-                              'Juan Dela Cruz requested a Barangay Clearance',
-                            ),
-                          ),
-                          const Divider(),
-                          ListTile(
-                            leading: const Icon(
-                              Icons.gavel,
-                              color: AppColors.tertiary,
-                            ),
-                            title: const Text('Incident Blotter Update'),
-                            subtitle: const Text(
-                              'Mediation case #2023-442 logged',
-                            ),
-                          ),
-                        ],
-                      ),
-                      actions: [
-                        TextButton(
-                          onPressed: () => Navigator.pop(ctx),
-                          child: const Text('Close'),
-                        ),
-                      ],
-                    ),
-                  );
-                },
-              ),
+              const NotificationBell(isAdmin: true),
               if (!compact) const SizedBox(width: 8),
               if (!compact)
                 IconButton(

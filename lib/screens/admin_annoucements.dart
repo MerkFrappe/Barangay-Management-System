@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../theme/app_colors.dart';
 import '../widgets/sidebar.dart';
 import '../widgets/top_header.dart';
+import '../services/notification_service.dart';
 
 // ─── Model ───────────────────────────────────────────────────────────────────
 
@@ -107,17 +109,44 @@ class AnnouncementService {
 
   static Future<Announcement> saveAnnouncement(Announcement a) async {
     try {
+      final user = FirebaseAuth.instance.currentUser;
+      final userData = user == null
+          ? null
+          : (await FirebaseFirestore.instance
+                    .collection('users')
+                    .doc(user.uid)
+                    .get())
+                .data();
+      final metadata = {
+        'createdBy': user?.uid ?? '',
+        'createdByName': userData?['accountName'] ?? user?.displayName ?? '',
+        'createdByRole': userData?['role'] ?? 'Admin',
+        'priority': a.category == AnnouncementCategory.emergency
+            ? 'urgent'
+            : 'normal',
+      };
       if (a.id.isEmpty) {
         final docRef = await _collection.add({
           'title': a.title,
           'description': a.description,
+          'body': a.description,
           'date': a.date,
           'category': a.category.name,
           'status': a.status.name,
+          ...metadata,
           'createdAt': FieldValue.serverTimestamp(),
           'viewerIds': <String>[],
           'likerIds': <String>[],
         });
+        if (a.status == AnnouncementStatus.published) {
+          await NotificationService.notifyResidents(
+            notificationId: 'announcement_${docRef.id}',
+            type: 'announcement',
+            referenceId: docRef.id,
+            title: a.title,
+            body: a.description,
+          );
+        }
         return Announcement(
           id: docRef.id,
           title: a.title,
@@ -130,9 +159,11 @@ class AnnouncementService {
         await _collection.doc(a.id).set({
           'title': a.title,
           'description': a.description,
+          'body': a.description,
           'date': a.date,
           'category': a.category.name,
           'status': a.status.name,
+          ...metadata,
           'createdAt': FieldValue.serverTimestamp(),
           'viewerIds': FieldValue.arrayUnion([]),
           'likerIds': FieldValue.arrayUnion([]),
@@ -415,7 +446,10 @@ class _LeftColumnState extends State<_LeftColumn> {
                   .where((a) => a.status == AnnouncementStatus.published)
                   .toList();
               final reach = published.expand((a) => a.viewerIds).toSet().length;
-              final likes = published.fold<int>(0, (total, a) => total + a.likes);
+              final likes = published.fold<int>(
+                0,
+                (total, a) => total + a.likes,
+              );
               final engagement = reach == 0
                   ? 0
                   : ((likes / reach) * 100).round();

@@ -12,6 +12,7 @@ import '../theme/app_colors.dart';
 import '../screens/resident_dashboard_screen.dart';
 import '../widgets/resident_sidebar.dart';
 import '../widgets/motion.dart';
+import '../services/notification_service.dart';
 
 class DocumentRequest extends StatelessWidget {
   const DocumentRequest({super.key});
@@ -202,6 +203,13 @@ class _DashboardPageState extends State<DashboardPage> {
             : 'uploading',
         'createdAt': FieldValue.serverTimestamp(),
       });
+      await NotificationService.notifyAdmins(
+        notificationId: 'document_request_${requestRef.id}',
+        type: 'document_request',
+        referenceId: requestRef.id,
+        title: 'New document request',
+        body: '${profile.fullName} submitted a $_selectedDocumentType request.',
+      );
 
       // The request appears in the admin database immediately. Uploading an
       // optional ID must not keep the resident waiting on the submit button.

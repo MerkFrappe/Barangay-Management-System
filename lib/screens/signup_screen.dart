@@ -6,6 +6,7 @@ import 'dashboard_screen.dart';
 import 'profile_completion_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../models/user_roles.dart';
 
 /// The set of official positions an admin account can be registered under.
 /// `firestoreValue` is what gets written to the `role` field in Firestore —
@@ -14,7 +15,12 @@ enum AdminRole {
   chairman('Chairman', Icons.gavel_rounded),
   secretary('Secretary', Icons.description_outlined),
   treasurer('Treasurer', Icons.account_balance_wallet_outlined),
-  auditor('Auditor', Icons.fact_check_outlined);
+  auditor('Auditor', Icons.fact_check_outlined),
+  kagawad('Kagawad', Icons.groups_outlined),
+  skChairman('SK Chairman', Icons.sports_outlined),
+  tanod('Tanod', Icons.security_outlined),
+  bhw('BHW', Icons.health_and_safety_outlined),
+  adminStaff('Admin Staff', Icons.badge_outlined);
 
   final String label;
   final IconData icon;
@@ -191,7 +197,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
       }
 
       if (!mounted) return;
-      if (role == 'Chairman' || role == 'Admin') {
+      if (isAdminRole(role)) {
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(builder: (_) => const DashboardScreen()),
         );

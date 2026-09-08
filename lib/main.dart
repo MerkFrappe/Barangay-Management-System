@@ -7,6 +7,8 @@ import 'theme/app_colors.dart';
 import 'screens/login_screen.dart';
 import 'screens/dashboard_screen.dart';
 import 'screens/resident_dashboard_screen.dart';
+import 'services/notification_service.dart';
+import 'models/user_roles.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -17,6 +19,7 @@ void main() async {
   } catch (e) {
     debugPrint('Firebase init optional / bypassed: $e');
   }
+  await NotificationService.initialize();
   runApp(const BarangayAdminApp());
 }
 
@@ -26,6 +29,7 @@ class BarangayAdminApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      navigatorKey: appNavigatorKey,
       title: 'Barangay Digital Hub',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
@@ -88,7 +92,8 @@ class AuthWrapper extends StatelessWidget {
             if (roleSnapshot.hasData && roleSnapshot.data!.exists) {
               final data = roleSnapshot.data!.data() as Map<String, dynamic>;
               final role = data['role'] ?? 'Resident';
-              if (role == 'Chairman' || role == 'Admin') {
+              NotificationService.syncUser(snapshot.data!, role.toString());
+              if (isAdminRole(role.toString())) {
                 return const DashboardScreen();
               } else {
                 return const ResidentDashboardScreen();

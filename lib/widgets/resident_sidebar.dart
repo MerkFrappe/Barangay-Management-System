@@ -16,6 +16,7 @@ import '../screens/health_center_screen.dart';
 import '../screens/barangay_officials_screen.dart';
 import 'resident_settings_popup.dart';
 import 'motion.dart';
+import '../services/notification_service.dart';
 
 class ResidentSidebar extends StatefulWidget {
   final String selectedItem;
@@ -82,18 +83,27 @@ class _ResidentSidebarState extends State<ResidentSidebar> {
     );
 
     if (!context.mounted || draft == null) return;
-    await FirebaseFirestore.instance.collection('emergency_reports').add({
-      'residentId': user?.uid,
-      'residentName': reporterName,
-      'contactNumber': contactNumber,
-      'type': draft.type,
-      'location': draft.locationText,
-      'latitude': draft.location.latitude,
-      'longitude': draft.location.longitude,
-      'details': draft.details,
-      'status': 'submitted',
-      'createdAt': FieldValue.serverTimestamp(),
-    });
+    final reportRef = await FirebaseFirestore.instance
+        .collection('emergency_reports')
+        .add({
+          'residentId': user?.uid,
+          'residentName': reporterName,
+          'contactNumber': contactNumber,
+          'type': draft.type,
+          'location': draft.locationText,
+          'latitude': draft.location.latitude,
+          'longitude': draft.location.longitude,
+          'details': draft.details,
+          'status': 'submitted',
+          'createdAt': FieldValue.serverTimestamp(),
+        });
+    await NotificationService.notifyAdmins(
+      notificationId: 'emergency_report_${reportRef.id}',
+      type: 'emergency_report',
+      referenceId: reportRef.id,
+      title: 'Emergency report received',
+      body: '$reporterName submitted a ${draft.type}.',
+    );
     if (!context.mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
@@ -136,6 +146,7 @@ class _ResidentSidebarState extends State<ResidentSidebar> {
   }
 
   void _showHelpCenterModal(BuildContext context) {
+    setState(() => _activeItem = 'Help Center');
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -306,6 +317,7 @@ class _ResidentSidebarState extends State<ResidentSidebar> {
                 _NavItem(
                   icon: Icons.help_outline,
                   title: "Help Center",
+                  selected: _activeItem == 'Help Center',
                   onTap: () => _showHelpCenterModal(context),
                 ),
 
@@ -348,6 +360,7 @@ class _ResidentSidebarState extends State<ResidentSidebar> {
                 _NavItem(
                   icon: Icons.settings_outlined,
                   title: "Settings",
+                  selected: _activeItem == 'Settings',
                   onTap: () => showResidentSettingsPopup(context),
                 ),
               ],

@@ -6,6 +6,7 @@ import 'resident_dashboard_screen.dart';
 import 'signup_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../models/user_roles.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -77,7 +78,7 @@ class _LoginScreenState extends State<LoginScreen> {
       if (!mounted) return;
 
       // 3. Navigate based on real user role in Firestore
-      if (role == 'Chairman') {
+      if (isAdminRole(role)) {
         setState(() => _isAdmin = true);
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(builder: (_) => const DashboardScreen()),

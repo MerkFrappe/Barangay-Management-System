@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../models/resident_profile.dart';
 import '../theme/app_colors.dart';
+import 'notification_bell.dart';
 
 class TopNavigationBar extends StatefulWidget {
   final VoidCallback? onSwitchPortal;
@@ -92,58 +93,7 @@ class _TopNavigationBarState extends State<TopNavigationBar> {
           //---------------------------------------
           // Notification Button
           //---------------------------------------
-          IconButton(
-            splashRadius: 22,
-            tooltip: "Notifications",
-            icon: Icon(
-              Icons.notifications_none_rounded,
-              color: AppColors.onSurfaceVariant,
-            ),
-            onPressed: () {
-              showDialog(
-                context: context,
-                builder: (ctx) => AlertDialog(
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  title: const Row(
-                    children: [
-                      Icon(
-                        Icons.notifications_active,
-                        color: AppColors.primary,
-                      ),
-                      SizedBox(width: 12),
-                      Text('Resident Alerts'),
-                    ],
-                  ),
-                  content: const Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      ListTile(
-                        leading: Icon(Icons.check_circle, color: Colors.green),
-                        title: Text('Clearance Ready for Pickup'),
-                        subtitle: Text(
-                          'Barangay Clearance #REQ-102 has been approved.',
-                        ),
-                      ),
-                      Divider(),
-                      ListTile(
-                        leading: Icon(Icons.campaign, color: Colors.amber),
-                        title: Text('Barangay Assembly Notice'),
-                        subtitle: Text('Meeting on Aug 15 at 9:00 AM.'),
-                      ),
-                    ],
-                  ),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(ctx),
-                      child: const Text('OK'),
-                    ),
-                  ],
-                ),
-              );
-            },
-          ),
+          const NotificationBell(),
 
           SizedBox(width: compact ? 2 : 12),
 
