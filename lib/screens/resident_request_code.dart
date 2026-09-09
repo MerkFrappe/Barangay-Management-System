@@ -31,6 +31,27 @@ class DashboardPage extends StatefulWidget {
 }
 
 class _DashboardPageState extends State<DashboardPage> {
+  static const _requirements = <String, List<String>>{
+    'Barangay Clearance': [
+      'Purok Clearance or valid ID',
+      'Cedula',
+      'Clearance fee',
+    ],
+    'Certificate of Residency': [
+      'Purok Clearance or valid ID',
+      'Proof of address',
+    ],
+    'Indigency Certificate': [
+      'Purok Clearance or valid ID',
+      'Statement of purpose',
+    ],
+    'Business Permit': [
+      'Barangay Clearance',
+      'DTI/SEC registration',
+      'Proof of business location',
+      'Valid ID',
+    ],
+  };
   final _reasonController = TextEditingController();
   String _selectedDocumentType = 'Barangay Clearance';
   bool _isSaving = false;
@@ -136,6 +157,10 @@ class _DashboardPageState extends State<DashboardPage> {
   }
 
   Future<void> _submitRequest() async {
+    if (_selectedDocumentType == 'Business Permit') {
+      _showBusinessNotice();
+      return;
+    }
     final reason = _reasonController.text.trim();
     final profile = _residentProfile;
     final uid = FirebaseAuth.instance.currentUser?.uid;
@@ -253,6 +278,22 @@ class _DashboardPageState extends State<DashboardPage> {
       }
     }
   }
+
+  void _showBusinessNotice() => showDialog(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: const Text('Process Business Permit in person'),
+      content: const Text(
+        'Business Permit/Endorsement requests require an in-person Barangay Hall visit for site verification and document submission. Bring Barangay Clearance, DTI/SEC registration, proof of business location, and a valid ID.',
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('I understand'),
+        ),
+      ],
+    ),
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -608,10 +649,15 @@ class _DashboardPageState extends State<DashboardPage> {
                   onChanged: (val) {
                     if (val != null) {
                       setState(() => _selectedDocumentType = val);
+                      if (val == 'Business Permit') _showBusinessNotice();
                     }
                   },
                 ),
                 const SizedBox(height: 16),
+                if (_requirements.containsKey(_selectedDocumentType))
+                  _requirementsBox(),
+                if (_requirements.containsKey(_selectedDocumentType))
+                  const SizedBox(height: 16),
                 _buildFieldLabel('Reason for Request / Purpose'),
                 TextField(
                   controller: _reasonController,
@@ -694,6 +740,33 @@ class _DashboardPageState extends State<DashboardPage> {
       ),
     );
   }
+
+  Widget _requirementsBox() => Container(
+    width: double.infinity,
+    padding: const EdgeInsets.all(12),
+    decoration: BoxDecoration(
+      color: const Color(0xFFEFF4FF),
+      borderRadius: BorderRadius.circular(10),
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Requirements checklist',
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: Color(0xFF002576),
+          ),
+        ),
+        ..._requirements[_selectedDocumentType]!.map(
+          (r) => Padding(
+            padding: const EdgeInsets.only(top: 5),
+            child: Text('☐  $r'),
+          ),
+        ),
+      ],
+    ),
+  );
 
   Widget _buildResidentProfileFields() {
     if (_isProfileLoading) {

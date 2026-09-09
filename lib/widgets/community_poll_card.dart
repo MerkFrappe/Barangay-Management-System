@@ -1,47 +1,55 @@
 import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
+import '../screens/community_polls_screen.dart';
 
 class CommunityPollCard extends StatelessWidget {
   const CommunityPollCard({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: AppColors.surfaceContainerLowest,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.outlineVariant),
+    return InkWell(
+      borderRadius: BorderRadius.circular(16),
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const CommunityPollsScreen()),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(Icons.poll, color: AppColors.primary, size: 20),
-              const SizedBox(width: 8),
-              Text(
-                'Community Poll',
-                style: AppTextStyles.labelMd.copyWith(
-                  color: AppColors.primary,
-                  fontWeight: FontWeight.bold,
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: AppColors.surfaceContainerLowest,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppColors.outlineVariant),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.poll, color: AppColors.primary, size: 20),
+                const SizedBox(width: 8),
+                Text(
+                  'Community Poll',
+                  style: AppTextStyles.labelMd.copyWith(
+                    color: AppColors.primary,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Text(
-            'Should we schedule a monthly Barangay Cleanup Drive every 1st Saturday?',
-            style: AppTextStyles.bodySm.copyWith(
-              color: AppColors.onSurface,
-              fontWeight: FontWeight.w600,
+              ],
             ),
-          ),
-          const SizedBox(height: 16),
-          _PollOption(label: 'Yes, fully support', percentage: 0.82),
-          const SizedBox(height: 8),
-          _PollOption(label: 'Prefer Sundays', percentage: 0.18),
-        ],
+            const SizedBox(height: 12),
+            Text(
+              'Should we schedule a monthly Barangay Cleanup Drive every 1st Saturday?',
+              style: AppTextStyles.bodySm.copyWith(
+                color: AppColors.onSurface,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 16),
+            _PollOption(label: 'Yes, fully support', percentage: 0.82),
+            const SizedBox(height: 8),
+            _PollOption(label: 'Prefer Sundays', percentage: 0.18),
+          ],
+        ),
       ),
     );
   }

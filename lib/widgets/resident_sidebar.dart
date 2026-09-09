@@ -170,7 +170,7 @@ class _ResidentSidebarState extends State<ResidentSidebar> {
             ),
             const SizedBox(height: 8),
             const Text(
-              '• How long does a Barangay Clearance take?\n  Typically 1-2 business days.',
+              '• Barangay Clearance: Purok Clearance or valid ID, Cedula, and fee; typically 1–2 business days.\n\n• Certificate of Residency: Purok Clearance or valid ID plus proof of address.\n\n• Certificate of Indigency: state your purpose; the officer may confirm details in person.\n\n• Business Permit/Endorsement: visit Barangay Hall in person for site verification. Bring Barangay Clearance, DTI/SEC registration, proof of location, and valid ID.\n\n• Cedula: bring Purok Clearance or valid ID and declared annual income.',
             ),
             const SizedBox(height: 6),
             const Text(

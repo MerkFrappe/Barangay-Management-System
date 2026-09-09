@@ -16,7 +16,7 @@ class ResidentsDirectoryScreen extends StatefulWidget {
 
 class _ResidentsDirectoryScreenState extends State<ResidentsDirectoryScreen> {
   String _searchQuery = '';
-  String _selectedZone = 'All Zones';
+  String _selectedZone = 'All Puroks';
 
   @override
   void initState() {
@@ -362,12 +362,46 @@ class _ResidentsDirectoryScreenState extends State<ResidentsDirectoryScreen> {
             DropdownButton<String>(
               value: _selectedZone,
               items: [
-                'All Zones',
-                'Zone 1',
-                'Zone 2',
-                'Zone 3',
-                'Purok 4',
-                'Purok 5',
+                'All Puroks',
+                '1-Pagaran',
+                '1-B',
+                '1-C',
+                '1-D',
+                '1-E',
+                '2-Durian',
+                '2-A',
+                '3-Unit 1',
+                '3-Unit 2',
+                '3-Unit 3',
+                '3-Unit 4',
+                '3-Unit 5',
+                '3-Unit 6',
+                '3-Unit 7',
+                '3-A',
+                '3-B',
+                '3-C',
+                '3-D',
+                '3-E',
+                '3-F',
+                '3-G',
+                '3-H',
+                '4',
+                '4-A',
+                '4-B',
+                '4-C',
+                '4-D',
+                '4-E',
+                '4-F',
+                '4-G',
+                '4-H',
+                '5',
+                '5A',
+                '6',
+                '6-A',
+                '6-B',
+                '7',
+                'Purok 1',
+                'Purok 10',
               ].map((z) => DropdownMenuItem(value: z, child: Text(z))).toList(),
               onChanged: (val) => setState(() => _selectedZone = val!),
             ),
@@ -402,8 +436,9 @@ class _ResidentsDirectoryScreenState extends State<ResidentsDirectoryScreen> {
               final email = (data['email'] ?? '').toString().toLowerCase();
               final address = (data['address'] ?? '').toString().toLowerCase();
               final zoneMatches =
-                  _selectedZone == 'All Zones' ||
-                  address.contains(_selectedZone.toLowerCase());
+                  _selectedZone == 'All Puroks' ||
+                  (data['purok'] ?? '').toString().toLowerCase() ==
+                      _selectedZone.toLowerCase();
               return zoneMatches &&
                   (name.contains(_searchQuery) ||
                       email.contains(_searchQuery) ||

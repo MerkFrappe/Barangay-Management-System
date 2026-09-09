@@ -35,14 +35,23 @@ class OverviewCards extends StatelessWidget {
               builder: (context, requestSnapshot) {
                 final requests = requestSnapshot.data?.docs ?? [];
 
-                final pendingCount = requests
-                    .where((doc) => doc.data()['status'] == 'pending')
-                    .length;
+                final pendingCount = requests.where((doc) {
+                  final status = (doc.data()['status'] ?? 'pending')
+                      .toString()
+                      .trim()
+                      .toLowerCase();
+                  // Older records use title case while new requests use
+                  // lowercase. Both are active requests until resolved.
+                  return status == 'pending' ||
+                      status == 'submitted' ||
+                      status == 'under review' ||
+                      status == 'in review';
+                }).length;
                 final issuedClearancesCount = requests
                     .where(
-                      (doc) =>
-                          doc.data()['status'] == 'approved' &&
-                          doc.data()['documentType'] == 'Barangay Clearance',
+                      (doc) => ['approved', 'completed', 'finished'].contains(
+                        (doc.data()['status'] ?? '').toString().toLowerCase(),
+                      ),
                     )
                     .length;
 

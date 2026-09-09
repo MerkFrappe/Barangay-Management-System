@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../theme/app_colors.dart';
 import '../screens/admin_documentRequest.dart';
 
@@ -27,122 +28,195 @@ class RequestsTable extends StatelessWidget {
 
   static const _rows = [
     RequestRow(
-        initials: 'RM',
-        name: 'Ricardo Mercado',
-        type: 'Barangay Clearance',
-        date: 'Oct 24, 2023',
-        status: RequestStatus.pending,
-        actionLabel: 'Review'),
+      initials: 'RM',
+      name: 'Ricardo Mercado',
+      type: 'Barangay Clearance',
+      date: 'Oct 24, 2023',
+      status: RequestStatus.pending,
+      actionLabel: 'Review',
+    ),
     RequestRow(
-        initials: 'ES',
-        name: 'Elena Santos',
-        type: 'Business Permit',
-        date: 'Oct 23, 2023',
-        status: RequestStatus.approved,
-        actionLabel: 'Details'),
+      initials: 'ES',
+      name: 'Elena Santos',
+      type: 'Business Permit',
+      date: 'Oct 23, 2023',
+      status: RequestStatus.approved,
+      actionLabel: 'Details',
+    ),
     RequestRow(
-        initials: 'JD',
-        name: 'Jose Delos Reyes',
-        type: 'Indigency Certificate',
-        date: 'Oct 23, 2023',
-        status: RequestStatus.pending,
-        actionLabel: 'Review'),
+      initials: 'JD',
+      name: 'Jose Delos Reyes',
+      type: 'Indigency Certificate',
+      date: 'Oct 23, 2023',
+      status: RequestStatus.pending,
+      actionLabel: 'Review',
+    ),
     RequestRow(
-        initials: 'MC',
-        name: 'Maria Clara',
-        type: 'Barangay Clearance',
-        date: 'Oct 22, 2023',
-        status: RequestStatus.rejected,
-        actionLabel: 'Appeal'),
+      initials: 'MC',
+      name: 'Maria Clara',
+      type: 'Barangay Clearance',
+      date: 'Oct 22, 2023',
+      status: RequestStatus.rejected,
+      actionLabel: 'Appeal',
+    ),
   ];
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.surfaceContainerLowest,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.outlineVariant),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(20),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text('Recent Requests',
-                    style: AppTextStyles.headlineSm
-                        .copyWith(color: AppColors.onSurface)),
-                TextButton(
-                  onPressed: () {
-                    Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminDocumentRequestScreen()));
-                  },
-                  child: Text('View All Requests',
-                      style: AppTextStyles.labelMd
-                          .copyWith(color: AppColors.primary)),
+    return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+      stream: FirebaseFirestore.instance
+          .collection('document_requests')
+          .snapshots(),
+      builder: (context, snapshot) {
+        final liveRows = snapshot.data?.docs.toList() ?? [];
+        liveRows.sort((a, b) {
+          final ad =
+              (a.data()['createdAt'] as Timestamp?)?.millisecondsSinceEpoch ??
+              0;
+          final bd =
+              (b.data()['createdAt'] as Timestamp?)?.millisecondsSinceEpoch ??
+              0;
+          return bd.compareTo(ad);
+        });
+        final rows = liveRows.take(5).map((doc) {
+          final d = doc.data();
+          final status = (d['status'] ?? 'pending').toString().toLowerCase();
+          return RequestRow(
+            initials: (d['initials'] ?? 'R').toString(),
+            name:
+                (d['residentName'] ??
+                        d['requesterSnapshot']?['fullName'] ??
+                        'Resident')
+                    .toString(),
+            type: (d['documentType'] ?? 'Document').toString(),
+            date: (d['dateSubmitted'] ?? '').toString(),
+            status: status == 'approved' || status == 'completed'
+                ? RequestStatus.approved
+                : status == 'rejected'
+                ? RequestStatus.rejected
+                : RequestStatus.pending,
+            actionLabel: status == 'pending' ? 'Review' : 'Details',
+          );
+        }).toList();
+        return Container(
+          decoration: BoxDecoration(
+            color: AppColors.surfaceContainerLowest,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: AppColors.outlineVariant),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(20),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Recent Requests',
+                      style: AppTextStyles.headlineSm.copyWith(
+                        color: AppColors.onSurface,
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const AdminDocumentRequestScreen(),
+                          ),
+                        );
+                      },
+                      child: Text(
+                        'View All Requests',
+                        style: AppTextStyles.labelMd.copyWith(
+                          color: AppColors.primary,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
+              ),
+              Divider(height: 1, color: AppColors.outlineVariant),
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: DataTable(
+                  headingRowColor: WidgetStateProperty.all(
+                    AppColors.surfaceContainerLow,
+                  ),
+                  dividerThickness: 1,
+                  columns: [
+                    DataColumn(label: _header('Resident Name')),
+                    DataColumn(label: _header('Request Type')),
+                    DataColumn(label: _header('Date')),
+                    DataColumn(label: _header('Status')),
+                    DataColumn(label: _header('Action')),
+                  ],
+                  rows: rows.map((r) => _buildRow(context, r)).toList(),
+                ),
+              ),
+            ],
           ),
-          Divider(height: 1, color: AppColors.outlineVariant),
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: DataTable(
-              headingRowColor:
-                  WidgetStateProperty.all(AppColors.surfaceContainerLow),
-              dividerThickness: 1,
-              columns: [
-                DataColumn(label: _header('Resident Name')),
-                DataColumn(label: _header('Request Type')),
-                DataColumn(label: _header('Date')),
-                DataColumn(label: _header('Status')),
-                DataColumn(label: _header('Action')),
-              ],
-              rows: _rows.map((r) => _buildRow(context, r)).toList(),
-            ),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 
   Widget _header(String text) {
-    return Text(text,
-        style: AppTextStyles.labelMd.copyWith(color: AppColors.onSurfaceVariant));
+    return Text(
+      text,
+      style: AppTextStyles.labelMd.copyWith(color: AppColors.onSurfaceVariant),
+    );
   }
 
   DataRow _buildRow(BuildContext context, RequestRow r) {
-    return DataRow(cells: [
-      DataCell(Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          CircleAvatar(
-            radius: 16,
-            backgroundColor: AppColors.primaryFixed,
-            child: Text(r.initials,
-                style: TextStyle(
+    return DataRow(
+      cells: [
+        DataCell(
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CircleAvatar(
+                radius: 16,
+                backgroundColor: AppColors.primaryFixed,
+                child: Text(
+                  r.initials,
+                  style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.bold,
-                    color: AppColors.primary)),
+                    color: AppColors.primary,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Text(r.name, style: AppTextStyles.labelMd),
+            ],
           ),
-          const SizedBox(width: 12),
-          Text(r.name, style: AppTextStyles.labelMd),
-        ],
-      )),
-      DataCell(Text(r.type, style: AppTextStyles.bodySm)),
-      DataCell(Text(r.date, style: AppTextStyles.bodySm)),
-      DataCell(_StatusChip(status: r.status)),
-      DataCell(TextButton(
-        onPressed: () {
-          Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminDocumentRequestScreen()));
-        },
-        child: Text(r.actionLabel,
-            style: AppTextStyles.labelSm.copyWith(
-                color: AppColors.primary, fontWeight: FontWeight.bold)),
-      )),
-    ]);
+        ),
+        DataCell(Text(r.type, style: AppTextStyles.bodySm)),
+        DataCell(Text(r.date, style: AppTextStyles.bodySm)),
+        DataCell(_StatusChip(status: r.status)),
+        DataCell(
+          TextButton(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const AdminDocumentRequestScreen(),
+                ),
+              );
+            },
+            child: Text(
+              r.actionLabel,
+              style: AppTextStyles.labelSm.copyWith(
+                color: AppColors.primary,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
   }
 }
 
@@ -174,9 +248,14 @@ class _StatusChip extends StatelessWidget {
     }
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-      decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(999)),
-      child: Text(label,
-          style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: fg)),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: fg),
+      ),
     );
   }
 }

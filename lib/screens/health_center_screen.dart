@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../theme/app_colors.dart';
 import '../widgets/resident_sidebar.dart';
 import '../widgets/sidebar.dart';
@@ -286,19 +287,6 @@ class _HealthCenterScreenState extends State<HealthCenterScreen> {
             ],
           ),
         ),
-        ElevatedButton.icon(
-          onPressed: _showAppointmentDialog,
-          icon: const Icon(Icons.add_location_alt),
-          label: const Text('Book Appointment'),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.primary,
-            foregroundColor: AppColors.onPrimary,
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-          ),
-        ),
       ],
     );
   }
@@ -311,6 +299,7 @@ class _HealthCenterScreenState extends State<HealthCenterScreen> {
         Icons.medical_services,
         AppColors.primaryContainer,
         AppColors.primary,
+        'https://www.facebook.com/TagumCityOfficial/',
       ),
       _ServiceItem(
         'Child Immunization',
@@ -318,6 +307,7 @@ class _HealthCenterScreenState extends State<HealthCenterScreen> {
         Icons.child_care,
         AppColors.tertiaryContainer,
         AppColors.tertiary,
+        'https://www.facebook.com/TagumCityOfficial/',
       ),
       _ServiceItem(
         'Dental Clinic',
@@ -325,6 +315,7 @@ class _HealthCenterScreenState extends State<HealthCenterScreen> {
         Icons.clean_hands,
         AppColors.secondaryContainer,
         AppColors.secondary,
+        'https://www.facebook.com/TagumCityOfficial/',
       ),
       _ServiceItem(
         'Free Medicine Supply',
@@ -332,6 +323,7 @@ class _HealthCenterScreenState extends State<HealthCenterScreen> {
         Icons.medication,
         AppColors.surfaceContainerHighest,
         AppColors.onSurface,
+        'https://www.facebook.com/TagumCityOfficial/',
       ),
     ];
 
@@ -563,42 +555,52 @@ class _ServiceItem extends StatelessWidget {
   final IconData icon;
   final Color bg;
   final Color iconCol;
+  final String url;
   const _ServiceItem(
     this.name,
     this.schedule,
     this.icon,
     this.bg,
     this.iconCol,
+    this.url,
   );
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(icon, color: iconCol, size: 28),
-          const SizedBox(height: 12),
-          Text(
-            name,
-            style: AppTextStyles.titleMd.copyWith(
-              fontWeight: FontWeight.bold,
-              color: iconCol,
+    final textColor = bg.computeLuminance() < .45
+        ? Colors.white
+        : AppColors.onSurface;
+    return InkWell(
+      borderRadius: BorderRadius.circular(16),
+      onTap: () =>
+          launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication),
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: bg,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(icon, color: textColor, size: 28),
+            const SizedBox(height: 12),
+            Text(
+              name,
+              style: AppTextStyles.titleMd.copyWith(
+                fontWeight: FontWeight.bold,
+                color: textColor,
+              ),
             ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            schedule,
-            style: AppTextStyles.bodySm.copyWith(
-              color: iconCol.withValues(alpha: 0.8),
+            const SizedBox(height: 4),
+            Text(
+              schedule,
+              style: AppTextStyles.bodySm.copyWith(
+                color: textColor.withValues(alpha: 0.88),
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

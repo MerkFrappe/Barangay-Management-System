@@ -10,6 +10,7 @@ import '../screens/emergency_broadcast_screen.dart';
 import '../screens/settings_screen.dart';
 import '../screens/health_center_screen.dart';
 import '../screens/admin_annoucements.dart';
+import '../screens/community_polls_screen.dart';
 import 'motion.dart';
 
 class SidebarNav extends StatefulWidget {
@@ -51,6 +52,7 @@ class _SidebarNavState extends State<SidebarNav> {
     _NavItem(Icons.assessment, 'Reports'),
     _NavItem(Icons.local_hospital, 'Health Center'),
     _NavItem(Icons.campaign, 'Announcements'),
+    _NavItem(Icons.poll_outlined, 'Community Polls'),
   ];
 
   void _onSelect(int index) {
@@ -77,6 +79,9 @@ class _SidebarNavState extends State<SidebarNav> {
         break;
       case 6:
         targetScreen = const AnnouncementPage();
+        break;
+      case 7:
+        targetScreen = const CommunityPollsScreen(isAdmin: true);
         break;
       default:
         targetScreen = const DashboardScreen();
