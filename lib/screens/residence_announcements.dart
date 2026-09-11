@@ -280,9 +280,7 @@ class _CommunityEventsScreenState extends State<CommunityEventsScreen> {
       backgroundColor: AppColors.background,
       drawer: desktop
           ? null
-          : const Drawer(
-              child: ResidentSidebar(selectedItem: 'Emergency Alerts'),
-            ),
+          : const Drawer(child: ResidentSidebar(selectedItem: 'Announcements')),
       bottomNavigationBar: desktop
           ? null
           : const ResidentMobileNavigation(currentIndex: 2),
@@ -292,8 +290,7 @@ class _CommunityEventsScreenState extends State<CommunityEventsScreen> {
             //-----------------------------------
             // LEFT SIDEBAR (Desktop)
             //-----------------------------------
-            if (desktop)
-              const ResidentSidebar(selectedItem: 'Emergency Alerts'),
+            if (desktop) const ResidentSidebar(selectedItem: 'Announcements'),
 
             //-----------------------------------
             // MAIN CONTENT

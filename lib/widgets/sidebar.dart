@@ -8,7 +8,7 @@ import '../screens/peace_and_order_screen.dart';
 import '../screens/admin_reports_screen.dart';
 import '../screens/emergency_broadcast_screen.dart';
 import '../screens/settings_screen.dart';
-import '../screens/health_center_screen.dart';
+import '../screens/admin_emergency_reports_screen.dart';
 import '../screens/admin_annoucements.dart';
 import '../screens/community_polls_screen.dart';
 import 'motion.dart';
@@ -49,8 +49,8 @@ class _SidebarNavState extends State<SidebarNav> {
     _NavItem(Icons.group, 'Residents'),
     _NavItem(Icons.pending_actions, 'Requests'),
     _NavItem(Icons.gavel, 'Peace & Order'),
-    _NavItem(Icons.assessment, 'Reports'),
-    _NavItem(Icons.local_hospital, 'Health Center'),
+    _NavItem(Icons.assessment, 'Analytics'),
+    _NavItem(Icons.warning_amber_rounded, 'Emergency Reports'),
     _NavItem(Icons.campaign, 'Announcements'),
     _NavItem(Icons.poll_outlined, 'Community Polls'),
   ];
@@ -75,7 +75,7 @@ class _SidebarNavState extends State<SidebarNav> {
         targetScreen = const AdminReportsScreen();
         break;
       case 5:
-        targetScreen = const HealthCenterScreen(isAdmin: true);
+        targetScreen = const AdminEmergencyReportsScreen();
         break;
       case 6:
         targetScreen = const AnnouncementPage();

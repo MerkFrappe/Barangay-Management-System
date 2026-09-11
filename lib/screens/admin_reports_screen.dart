@@ -6,6 +6,7 @@ import 'package:printing/printing.dart';
 import '../theme/app_colors.dart';
 import '../widgets/sidebar.dart';
 import '../widgets/top_header.dart';
+import 'admin_emergency_reports_screen.dart';
 
 class AdminReportsScreen extends StatefulWidget {
   const AdminReportsScreen({super.key});
@@ -195,7 +196,7 @@ class _AdminReportsScreenState extends State<AdminReportsScreen> {
             foregroundColor: AppColors.onSurface,
             elevation: 0,
             title: Text(
-              'Barangay Reports',
+              'Barangay Analytics',
               style: AppTextStyles.headlineSm.copyWith(
                 color: AppColors.primary,
               ),
@@ -216,7 +217,7 @@ class _AdminReportsScreenState extends State<AdminReportsScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Reports & Analytics Hub',
+                'Analytics',
                 style: AppTextStyles.headlineLg.copyWith(
                   color: AppColors.primary,
                 ),
@@ -231,29 +232,47 @@ class _AdminReportsScreenState extends State<AdminReportsScreen> {
             ],
           ),
         ),
-        ElevatedButton.icon(
-          onPressed: _isExporting ? null : _exportReport,
-          icon: _isExporting
-              ? const SizedBox(
-                  width: 18,
-                  height: 18,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: Colors.white,
-                  ),
-                )
-              : const Icon(Icons.picture_as_pdf),
-          label: Text(
-            _isExporting ? 'Generating...' : 'Export Official Summary',
-          ),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.primary,
-            foregroundColor: AppColors.onPrimary,
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
+        Wrap(
+          spacing: 10,
+          runSpacing: 10,
+          children: [
+            OutlinedButton.icon(
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => const AdminEmergencyReportsScreen(),
+                ),
+              ),
+              icon: const Icon(Icons.warning_amber_rounded),
+              label: const Text('Emergency Reports'),
             ),
-          ),
+            ElevatedButton.icon(
+              onPressed: _isExporting ? null : _exportReport,
+              icon: _isExporting
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
+                  : const Icon(Icons.picture_as_pdf),
+              label: Text(
+                _isExporting ? 'Generating...' : 'Export Official Summary',
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: AppColors.onPrimary,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 16,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
+          ],
         ),
       ],
     );

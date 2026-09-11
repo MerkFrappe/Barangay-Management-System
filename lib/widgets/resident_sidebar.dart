@@ -14,6 +14,7 @@ import '../screens/residence_announcements.dart' as announcements;
 import '../screens/community_polls_screen.dart';
 import '../screens/health_center_screen.dart';
 import '../screens/barangay_officials_screen.dart';
+import '../screens/barangay_chatbot_screen.dart';
 import 'resident_settings_popup.dart';
 import 'motion.dart';
 import '../services/notification_service.dart';
@@ -83,36 +84,52 @@ class _ResidentSidebarState extends State<ResidentSidebar> {
     );
 
     if (!context.mounted || draft == null) return;
-    final reportRef = await FirebaseFirestore.instance
-        .collection('emergency_reports')
-        .add({
-          'residentId': user?.uid,
-          'residentName': reporterName,
-          'contactNumber': contactNumber,
-          'type': draft.type,
-          'location': draft.locationText,
-          'latitude': draft.location.latitude,
-          'longitude': draft.location.longitude,
-          'details': draft.details,
-          'status': 'submitted',
-          'createdAt': FieldValue.serverTimestamp(),
-        });
-    await NotificationService.notifyAdmins(
-      notificationId: 'emergency_report_${reportRef.id}',
-      type: 'emergency_report',
-      referenceId: reportRef.id,
-      title: 'Emergency report received',
-      body: '$reporterName submitted a ${draft.type}.',
-    );
-    if (!context.mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text(
-          'EMERGENCY REPORT DISPATCHED TO BARANGAY HQ! Officials have been notified.',
+    try {
+      final reportRef = await FirebaseFirestore.instance
+          .collection('emergency_reports')
+          .add({
+            'residentId': user?.uid,
+            'residentName': reporterName,
+            'contactNumber': contactNumber,
+            'type': draft.type,
+            'location': draft.locationText,
+            'latitude': draft.location.latitude,
+            'longitude': draft.location.longitude,
+            'details': draft.details,
+            'status': 'submitted',
+            'createdAt': FieldValue.serverTimestamp(),
+          });
+      try {
+        await NotificationService.notifyAdmins(
+          notificationId: 'emergency_report_${reportRef.id}',
+          type: 'emergency_report',
+          referenceId: reportRef.id,
+          title: 'Emergency report received',
+          body: '$reporterName submitted a ${draft.type}.',
+        );
+      } catch (_) {
+        // The report was saved successfully even if the optional alert fails.
+      }
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'EMERGENCY REPORT DISPATCHED TO BARANGAY HQ! Officials have been notified.',
+          ),
+          backgroundColor: Colors.red,
         ),
-        backgroundColor: Colors.red,
-      ),
-    );
+      );
+    } catch (_) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Unable to submit the emergency report. Please try again.',
+          ),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   Future<LatLng> _getCurrentLocation(BuildContext context) async {
@@ -143,59 +160,6 @@ class _ResidentSidebarState extends State<ResidentSidebar> {
     } catch (_) {
       return fallback;
     }
-  }
-
-  void _showHelpCenterModal(BuildContext context) {
-    setState(() => _activeItem = 'Help Center');
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Row(
-          children: [
-            Icon(Icons.help_outline, color: AppColors.primary),
-            SizedBox(width: 12),
-            Text('Barangay Help Center'),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Frequently Asked Questions:',
-              style: AppTextStyles.titleMd.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              '• Barangay Clearance: Purok Clearance or valid ID, Cedula, and fee; typically 1–2 business days.\n\n• Certificate of Residency: Purok Clearance or valid ID plus proof of address.\n\n• Certificate of Indigency: state your purpose; the officer may confirm details in person.\n\n• Business Permit/Endorsement: visit Barangay Hall in person for site verification. Bring Barangay Clearance, DTI/SEC registration, proof of location, and valid ID.\n\n• Cedula: bring Purok Clearance or valid ID and declared annual income.',
-            ),
-            const SizedBox(height: 6),
-            const Text(
-              '• What are the office hours?\n  Monday to Friday: 8:00 AM - 5:00 PM',
-            ),
-            const SizedBox(height: 12),
-            Text(
-              'Official Contact:',
-              style: AppTextStyles.titleMd.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const Text(
-              'Hotline: +63 917 123 4567 | Email: help@barangay.gov.ph',
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Close'),
-          ),
-        ],
-      ),
-    );
   }
 
   @override
@@ -275,11 +239,11 @@ class _ResidentSidebarState extends State<ResidentSidebar> {
                 ),
 
                 _NavItem(
-                  icon: Icons.emergency_outlined,
-                  title: "Emergency Alerts",
-                  selected: _activeItem == 'Emergency Alerts',
+                  icon: Icons.campaign_outlined,
+                  title: "Announcements",
+                  selected: _activeItem == 'Announcements',
                   onTap: () => _navigateTo(
-                    'Emergency Alerts',
+                    'Announcements',
                     const announcements.CivicHorizonApp(),
                   ),
                 ),
@@ -315,10 +279,13 @@ class _ResidentSidebarState extends State<ResidentSidebar> {
                 ),
 
                 _NavItem(
-                  icon: Icons.help_outline,
-                  title: "Help Center",
-                  selected: _activeItem == 'Help Center',
-                  onTap: () => _showHelpCenterModal(context),
+                  icon: Icons.smart_toy_outlined,
+                  title: "Barangay ChatBot",
+                  selected: _activeItem == 'Barangay ChatBot',
+                  onTap: () => _navigateTo(
+                    'Barangay ChatBot',
+                    const BarangayChatbotScreen(),
+                  ),
                 ),
 
                 _NavItem(
@@ -601,14 +568,26 @@ class _EmergencyLocationDialogState extends State<_EmergencyLocationDialog> {
             backgroundColor: Colors.red,
             foregroundColor: Colors.white,
           ),
-          onPressed: () => Navigator.pop(
-            context,
-            _EmergencyReportDraft(
-              location: _selectedLocation,
-              type: _type,
-              details: _detailsController.text.trim(),
-            ),
-          ),
+          onPressed: () {
+            if (_detailsController.text.trim().isEmpty) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text(
+                    'Please describe the emergency before submitting.',
+                  ),
+                ),
+              );
+              return;
+            }
+            Navigator.pop(
+              context,
+              _EmergencyReportDraft(
+                location: _selectedLocation,
+                type: _type,
+                details: _detailsController.text.trim(),
+              ),
+            );
+          },
           icon: const Icon(Icons.check),
           label: const Text('CONFIRM LOCATION & SUBMIT'),
         ),
