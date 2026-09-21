@@ -1,3 +1,7 @@
+import 'dart:convert';
+import 'dart:math' as math;
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -32,7 +36,7 @@ class _CommunityEventsScreenState extends State<CommunityEventsScreen> {
     DateTime.now().year,
     DateTime.now().month,
   );
-  DateTime? _selectedDate = DateTime.now();
+  DateTime? _selectedDate;
 
   static const List<String> _monthNames = [
     'January',
@@ -94,6 +98,66 @@ class _CommunityEventsScreenState extends State<CommunityEventsScreen> {
     });
   }
 
+  bool _isSameDay(DateTime? first, DateTime second) =>
+      first != null &&
+      first.year == second.year &&
+      first.month == second.month &&
+      first.day == second.day;
+
+  List<_EventData> _prioritized(List<_EventData> events) {
+    final today = DateTime.now();
+    final priority = events
+        .where(
+          (event) =>
+              event.category == 'Emergency' ||
+              _isSameDay(event.publishedAt, today),
+        )
+        .toList();
+    priority.sort((a, b) {
+      final emergencyCompare = (b.category == 'Emergency' ? 1 : 0).compareTo(
+        a.category == 'Emergency' ? 1 : 0,
+      );
+      if (emergencyCompare != 0) return emergencyCompare;
+      return (b.publishedAt?.millisecondsSinceEpoch ?? 0).compareTo(
+        a.publishedAt?.millisecondsSinceEpoch ?? 0,
+      );
+    });
+    return priority;
+  }
+
+  List<_EventData> _upcomingEvents(List<_EventData> events) {
+    final today = DateTime(
+      DateTime.now().year,
+      DateTime.now().month,
+      DateTime.now().day,
+    );
+    return events.where((event) {
+      final eventDate = _parseEventDate(event.date);
+      return event.category == 'Event' &&
+          eventDate != null &&
+          !eventDate.isBefore(today);
+    }).toList();
+  }
+
+  List<_EventData> _pastItems(List<_EventData> events) {
+    final cutoff = DateTime.now().subtract(const Duration(days: 7));
+    return events.where((event) {
+      final eventDate = _parseEventDate(event.date);
+      final relevantDate = event.category == 'Event' && eventDate != null
+          ? eventDate
+          : event.publishedAt;
+      return relevantDate != null && relevantDate.isBefore(cutoff);
+    }).toList();
+  }
+
+  List<_EventData> _excluding(
+    List<_EventData> events,
+    Iterable<_EventData> excluded,
+  ) {
+    final excludedIds = excluded.map((event) => event.id).toSet();
+    return events.where((event) => !excludedIds.contains(event.id)).toList();
+  }
+
   Future<void> _pickMonthYear(BuildContext context) async {
     final picked = await showDatePicker(
       context: context,
@@ -122,6 +186,13 @@ class _CommunityEventsScreenState extends State<CommunityEventsScreen> {
     Color catBg = AppColors.primaryContainer;
     Color catFg = AppColors.onPrimaryContainer;
     String imageUrl = 'assets/images/town_hall.jpg';
+    final imageValues = data['imageBase64List'];
+    final encodedImages = imageValues is List
+        ? imageValues.map((value) => value.toString()).toList()
+        : <String>[
+            if (data['coverImageBase64']?.toString().isNotEmpty == true)
+              data['coverImageBase64'].toString(),
+          ];
 
     if (categoryName == 'emergency') {
       catLabel = 'Emergency';
@@ -146,6 +217,10 @@ class _CommunityEventsScreenState extends State<CommunityEventsScreen> {
     return _EventData(
       id: doc.id,
       imageUrl: imageUrl,
+      imageBytesList: encodedImages
+          .map(_decodeCoverImage)
+          .whereType<Uint8List>()
+          .toList(),
       category: catLabel,
       categoryIcon: catIcon,
       categoryBg: catBg,
@@ -156,7 +231,18 @@ class _CommunityEventsScreenState extends State<CommunityEventsScreen> {
       fullDescription: desc,
       viewerIds: List<String>.from(data['viewerIds'] ?? const []),
       likerIds: List<String>.from(data['likerIds'] ?? const []),
+      publishedAt: data['createdAt'] is Timestamp
+          ? (data['createdAt'] as Timestamp).toDate()
+          : null,
     );
+  }
+
+  static Uint8List? _decodeCoverImage(String value) {
+    try {
+      return base64Decode(value);
+    } catch (_) {
+      return null;
+    }
   }
 
   Future<void> _showEventDetailsModal(
@@ -174,99 +260,201 @@ class _CommunityEventsScreenState extends State<CommunityEventsScreen> {
     }
     if (!context.mounted) return;
     var liked = uid != null && event.likerIds.contains(uid);
-    showDialog(
+    showDialog<void>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: event.categoryBg,
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                event.categoryIcon,
-                color: event.categoryFg,
-                size: 20,
+      builder: (ctx) {
+        final screen = MediaQuery.sizeOf(ctx);
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: SizedBox(
+            width: math.min(560.0, screen.width * 0.92),
+            height: math.min(620.0, screen.height * 0.82),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(24, 20, 24, 12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: event.categoryBg,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          event.categoryIcon,
+                          color: event.categoryFg,
+                          size: 20,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          event.title,
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.primary,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  Expanded(
+                    child: SingleChildScrollView(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          if (event.imageBytesList.isNotEmpty) ...[
+                            SizedBox(
+                              height: 180,
+                              child: ListView.separated(
+                                scrollDirection: Axis.horizontal,
+                                itemCount: event.imageBytesList.length,
+                                separatorBuilder: (_, _) =>
+                                    const SizedBox(width: 8),
+                                itemBuilder: (context, index) => InkWell(
+                                  onTap: () => _showImageViewer(
+                                    context,
+                                    event.imageBytesList,
+                                    index,
+                                  ),
+                                  child: ClipRRect(
+                                    borderRadius: BorderRadius.circular(10),
+                                    child: Image.memory(
+                                      event.imageBytesList[index],
+                                      width: 240,
+                                      fit: BoxFit.cover,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            const Text(
+                              'Tap an image to zoom.',
+                              style: TextStyle(
+                                color: AppColors.onSurfaceVariant,
+                                fontSize: 12,
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                          ],
+                          Row(
+                            children: [
+                              const Icon(
+                                Icons.calendar_today,
+                                size: 16,
+                                color: AppColors.onSurfaceVariant,
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                event.date,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+                          const Text(
+                            'Announcement Details:',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.primary,
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            event.fullDescription,
+                            style: const TextStyle(fontSize: 14, height: 1.5),
+                          ),
+                          const SizedBox(height: 16),
+                          StatefulBuilder(
+                            builder: (context, setDialogState) =>
+                                OutlinedButton.icon(
+                                  onPressed: uid == null
+                                      ? null
+                                      : () async {
+                                          final ref = FirebaseFirestore.instance
+                                              .collection('announcements')
+                                              .doc(event.id);
+                                          await ref.update({
+                                            'likerIds': liked
+                                                ? FieldValue.arrayRemove([uid])
+                                                : FieldValue.arrayUnion([uid]),
+                                          });
+                                          liked = !liked;
+                                          setDialogState(() {});
+                                        },
+                                  icon: Icon(
+                                    liked
+                                        ? Icons.thumb_up
+                                        : Icons.thumb_up_outlined,
+                                  ),
+                                  label: Text(
+                                    liked ? 'Liked' : 'Like announcement',
+                                  ),
+                                ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: TextButton(
+                      onPressed: () => Navigator.of(ctx).pop(),
+                      child: const Text('Close'),
+                    ),
+                  ),
+                ],
               ),
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                event.title,
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.primary,
+          ),
+        );
+      },
+    );
+  }
+
+  void _showImageViewer(
+    BuildContext context,
+    List<Uint8List> images,
+    int initialIndex,
+  ) {
+    final controller = PageController(initialPage: initialIndex);
+    showDialog<void>(
+      context: context,
+      builder: (dialogContext) => Dialog.fullscreen(
+        backgroundColor: Colors.black,
+        child: Stack(
+          children: [
+            PageView.builder(
+              controller: controller,
+              itemCount: images.length,
+              itemBuilder: (_, index) => InteractiveViewer(
+                minScale: 0.8,
+                maxScale: 4,
+                child: Center(
+                  child: Image.memory(images[index], fit: BoxFit.contain),
                 ),
+              ),
+            ),
+            Positioned(
+              right: 12,
+              top: 12,
+              child: IconButton.filled(
+                tooltip: 'Close image viewer',
+                onPressed: () => Navigator.of(dialogContext).pop(),
+                icon: const Icon(Icons.close),
               ),
             ),
           ],
         ),
-        content: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Row(
-                children: [
-                  const Icon(
-                    Icons.calendar_today,
-                    size: 16,
-                    color: AppColors.onSurfaceVariant,
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    event.date,
-                    style: const TextStyle(fontWeight: FontWeight.w600),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              const Text(
-                'Announcement Details:',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.primary,
-                ),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                event.fullDescription,
-                style: const TextStyle(fontSize: 14, height: 1.5),
-              ),
-              const SizedBox(height: 16),
-              StatefulBuilder(
-                builder: (context, setDialogState) => OutlinedButton.icon(
-                  onPressed: uid == null
-                      ? null
-                      : () async {
-                          final ref = FirebaseFirestore.instance
-                              .collection('announcements')
-                              .doc(event.id);
-                          await ref.update({
-                            'likerIds': liked
-                                ? FieldValue.arrayRemove([uid])
-                                : FieldValue.arrayUnion([uid]),
-                          });
-                          liked = !liked;
-                          setDialogState(() {});
-                        },
-                  icon: Icon(liked ? Icons.thumb_up : Icons.thumb_up_outlined),
-                  label: Text(liked ? 'Liked' : 'Like announcement'),
-                ),
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Close'),
-          ),
-        ],
       ),
     );
   }
@@ -371,6 +559,17 @@ class _CommunityEventsScreenState extends State<CommunityEventsScreen> {
   // Desktop Layout
   // -------------------------------------------------------------------------
   Widget _buildDesktopLayout(List<_EventData> eventsList) {
+    final selected = _selectedDate == null
+        ? null
+        : eventsList
+              .where((event) => _isSameDay(event.publishedAt, _selectedDate!))
+              .toList();
+    final priority = _prioritized(eventsList);
+    // An event published today may belong in Priority updates and still needs
+    // to remain visible in Upcoming events.
+    final upcoming = _upcomingEvents(eventsList);
+    final past = _excluding(_pastItems(eventsList), priority);
+    final recent = _excluding(eventsList, [...priority, ...upcoming, ...past]);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -385,54 +584,21 @@ class _CommunityEventsScreenState extends State<CommunityEventsScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildUpcomingEventsHeader(),
-                  const SizedBox(height: 16),
-                  if (eventsList.isEmpty)
-                    const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 40),
-                      child: Center(
-                        child: Text(
-                          'No announcements or events posted.',
-                          style: TextStyle(color: Colors.grey, fontSize: 16),
-                        ),
-                      ),
+                  if (selected != null)
+                    _buildFeedSection(
+                      'Published on ${_selectedDate!.month}/${_selectedDate!.day}/${_selectedDate!.year}',
+                      selected,
+                      onClearDate: () => setState(() => _selectedDate = null),
                     )
-                  else
-                    LayoutBuilder(
-                      builder: (context, constraints) {
-                        final useGrid = constraints.maxWidth >= 600;
-                        if (useGrid) {
-                          final itemWidth = (constraints.maxWidth - 16) / 2;
-                          return Wrap(
-                            spacing: 16,
-                            runSpacing: 16,
-                            children: eventsList.map((event) {
-                              return SizedBox(
-                                width: itemWidth,
-                                child: _EventCard(
-                                  data: event,
-                                  onViewDetails: () =>
-                                      _showEventDetailsModal(context, event),
-                                ),
-                              );
-                            }).toList(),
-                          );
-                        } else {
-                          return Column(
-                            children: eventsList.map((event) {
-                              return Padding(
-                                padding: const EdgeInsets.only(bottom: 16),
-                                child: _EventCard(
-                                  data: event,
-                                  onViewDetails: () =>
-                                      _showEventDetailsModal(context, event),
-                                ),
-                              );
-                            }).toList(),
-                          );
-                        }
-                      },
-                    ),
+                  else ...[
+                    _buildFeedSection('Priority updates', priority),
+                    const SizedBox(height: 28),
+                    _buildFeedSection('Upcoming events', upcoming),
+                    const SizedBox(height: 28),
+                    _buildFeedSection('Recent announcements', recent),
+                    const SizedBox(height: 28),
+                    _buildFeedSection('Past announcements & events', past),
+                  ],
                 ],
               ),
             ),
@@ -458,6 +624,15 @@ class _CommunityEventsScreenState extends State<CommunityEventsScreen> {
   // Mobile Layout
   // -------------------------------------------------------------------------
   Widget _buildMobileLayout(List<_EventData> eventsList) {
+    final selected = _selectedDate == null
+        ? null
+        : eventsList
+              .where((event) => _isSameDay(event.publishedAt, _selectedDate!))
+              .toList();
+    final priority = _prioritized(eventsList);
+    final upcoming = _upcomingEvents(eventsList);
+    final past = _excluding(_pastItems(eventsList), priority);
+    final recent = _excluding(eventsList, [...priority, ...upcoming, ...past]);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -465,32 +640,86 @@ class _CommunityEventsScreenState extends State<CommunityEventsScreen> {
         const SizedBox(height: 24),
         _buildCalendarCard(eventsList),
         const SizedBox(height: 24),
-        _buildUpcomingEventsHeader(),
-        const SizedBox(height: 16),
-        if (eventsList.isEmpty)
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 20),
-            child: Center(
-              child: Text(
-                'No announcements or events posted.',
-                style: TextStyle(color: Colors.grey),
-              ),
-            ),
+        if (selected != null)
+          _buildFeedSection(
+            'Published on ${_selectedDate!.month}/${_selectedDate!.day}/${_selectedDate!.year}',
+            selected,
+            onClearDate: () => setState(() => _selectedDate = null),
           )
-        else
-          Column(
-            children: eventsList.map((event) {
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 16),
-                child: _EventCard(
-                  data: event,
-                  onViewDetails: () => _showEventDetailsModal(context, event),
-                ),
-              );
-            }).toList(),
-          ),
+        else ...[
+          _buildFeedSection('Priority updates', priority),
+          const SizedBox(height: 24),
+          _buildFeedSection('Upcoming events', upcoming),
+          const SizedBox(height: 24),
+          _buildFeedSection('Recent announcements', recent),
+          const SizedBox(height: 24),
+          _buildFeedSection('Past announcements & events', past),
+        ],
         const SizedBox(height: 8),
         _buildAnnouncementsLink(),
+      ],
+    );
+  }
+
+  Widget _buildFeedSection(
+    String title,
+    List<_EventData> events, {
+    VoidCallback? onClearDate,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Expanded(
+              child: Text(
+                title.toUpperCase(),
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.onSurfaceVariant,
+                ),
+              ),
+            ),
+            if (onClearDate != null)
+              TextButton.icon(
+                onPressed: onClearDate,
+                icon: const Icon(Icons.clear, size: 16),
+                label: const Text('Show all'),
+              ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        if (events.isEmpty)
+          const Text(
+            'No announcements to display.',
+            style: TextStyle(color: AppColors.onSurfaceVariant),
+          )
+        else
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final cardWidth = constraints.maxWidth >= 600
+                  ? (constraints.maxWidth - 16) / 2
+                  : constraints.maxWidth;
+              return Wrap(
+                spacing: 16,
+                runSpacing: 16,
+                children: events
+                    .map(
+                      (event) => SizedBox(
+                        width: cardWidth,
+                        child: _EventCard(
+                          data: event,
+                          onViewDetails: () =>
+                              _showEventDetailsModal(context, event),
+                        ),
+                      ),
+                    )
+                    .toList(),
+              );
+            },
+          ),
       ],
     );
   }
@@ -538,9 +767,12 @@ class _CommunityEventsScreenState extends State<CommunityEventsScreen> {
       (i) => prevMonthLastDay - leadingBlanks + 1 + i,
     );
 
+    // Calendar filtering is based on the day an announcement was published,
+    // not an event's scheduled date. This keeps a selected date exact even
+    // when Firestore timestamps include different times of day.
     final eventDays = <int>{
       for (final event in events)
-        if (_parseEventDate(event.date) case final d?)
+        if (event.publishedAt case final d?)
           if (d.year == year && d.month == month) d.day,
     };
 
@@ -710,41 +942,6 @@ class _CommunityEventsScreenState extends State<CommunityEventsScreen> {
   }
 
   // -------------------------------------------------------------------------
-  // Upcoming events header
-  // -------------------------------------------------------------------------
-  Widget _buildUpcomingEventsHeader() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(
-          'UPCOMING EVENTS & ANNOUNCEMENTS',
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-            letterSpacing: 0.7,
-            color: AppColors.onSurfaceVariant,
-          ),
-        ),
-        TextButton(
-          onPressed: () {},
-          style: TextButton.styleFrom(
-            padding: EdgeInsets.zero,
-            minimumSize: Size.zero,
-          ),
-          child: const Text(
-            'See All',
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: AppColors.primary,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  // -------------------------------------------------------------------------
   // Announcements quick link
   // -------------------------------------------------------------------------
   Widget _buildAnnouncementsLink() {
@@ -813,6 +1010,7 @@ class _CommunityEventsScreenState extends State<CommunityEventsScreen> {
 class _EventData {
   final String id;
   final String imageUrl;
+  final List<Uint8List> imageBytesList;
   final String category;
   final IconData categoryIcon;
   final Color categoryBg;
@@ -823,10 +1021,12 @@ class _EventData {
   final String fullDescription;
   final List<String> viewerIds;
   final List<String> likerIds;
+  final DateTime? publishedAt;
 
   const _EventData({
     required this.id,
     required this.imageUrl,
+    this.imageBytesList = const [],
     required this.category,
     required this.categoryIcon,
     required this.categoryBg,
@@ -837,7 +1037,20 @@ class _EventData {
     required this.fullDescription,
     required this.viewerIds,
     required this.likerIds,
+    required this.publishedAt,
   });
+}
+
+class _AnnouncementImageFallback extends StatelessWidget {
+  const _AnnouncementImageFallback();
+
+  @override
+  Widget build(BuildContext context) => const ColoredBox(
+    color: AppColors.surfaceVariant,
+    child: Center(
+      child: Icon(Icons.campaign_outlined, size: 48, color: AppColors.primary),
+    ),
+  );
 }
 
 class _EventCard extends StatelessWidget {
@@ -863,19 +1076,17 @@ class _EventCard extends StatelessWidget {
         children: [
           Stack(
             children: [
-              const SizedBox(
+              SizedBox(
                 height: 160,
                 width: double.infinity,
-                child: ColoredBox(
-                  color: AppColors.surfaceVariant,
-                  child: Center(
-                    child: Icon(
-                      Icons.campaign_outlined,
-                      size: 48,
-                      color: AppColors.primary,
-                    ),
-                  ),
-                ),
+                child: data.imageBytesList.isNotEmpty
+                    ? Image.memory(
+                        data.imageBytesList.first,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, _, _) =>
+                            const _AnnouncementImageFallback(),
+                      )
+                    : const _AnnouncementImageFallback(),
               ),
               Positioned(
                 top: 12,

@@ -1,3 +1,6 @@
+import 'dart:convert';
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 
 import '../theme/app_colors.dart';
@@ -8,6 +11,7 @@ class NewsCard extends StatelessWidget {
   final String description;
   final String date;
   final IconData imageIcon;
+  final String? imageBase64;
   final VoidCallback? onTap;
 
   const NewsCard({
@@ -17,12 +21,19 @@ class NewsCard extends StatelessWidget {
     required this.description,
     required this.date,
     required this.imageIcon,
+    this.imageBase64,
     this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
     final compact = MediaQuery.sizeOf(context).width < 600;
+    Uint8List? imageBytes;
+    if (imageBase64 != null && imageBase64!.isNotEmpty) {
+      try {
+        imageBytes = base64Decode(imageBase64!);
+      } catch (_) {}
+    }
 
     return Card(
       color: AppColors.surfaceContainerLowest,
@@ -50,7 +61,10 @@ class NewsCard extends StatelessWidget {
                   bottomLeft: Radius.circular(22),
                 ),
               ),
-              child: Icon(imageIcon, size: 60, color: Colors.white),
+              clipBehavior: Clip.antiAlias,
+              child: imageBytes == null
+                  ? Icon(imageIcon, size: 60, color: Colors.white)
+                  : Image.memory(imageBytes, fit: BoxFit.cover),
             ),
 
             //------------------------------------------------
@@ -66,20 +80,27 @@ class NewsCard extends StatelessWidget {
                       spacing: 8,
                       runSpacing: 4,
                       children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 4,
+                        ConstrainedBox(
+                          constraints: BoxConstraints(
+                            maxWidth: compact ? 112 : 180,
                           ),
-                          decoration: BoxDecoration(
-                            color: AppColors.primaryFixed,
-                            borderRadius: BorderRadius.circular(30),
-                          ),
-                          child: Text(
-                            category.toUpperCase(),
-                            style: AppTextStyles.labelSm.copyWith(
-                              color: AppColors.primary,
-                              fontWeight: FontWeight.bold,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: AppColors.primaryFixed,
+                              borderRadius: BorderRadius.circular(30),
+                            ),
+                            child: Text(
+                              category.toUpperCase(),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: AppTextStyles.labelSm.copyWith(
+                                color: AppColors.primary,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                           ),
                         ),

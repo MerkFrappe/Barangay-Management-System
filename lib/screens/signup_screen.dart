@@ -4,6 +4,7 @@ import '../theme/app_colors.dart';
 import 'login_screen.dart';
 import 'dashboard_screen.dart';
 import 'profile_completion_screen.dart';
+import 'email_verification_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/user_roles.dart';
@@ -117,23 +118,17 @@ class _SignUpScreenState extends State<SignUpScreen> {
         'role': _isAdmin ? _adminRole.firestoreValue : 'Resident',
         'createdAt': FieldValue.serverTimestamp(),
         'lastLogin': FieldValue.serverTimestamp(),
+        'emailVerified': false,
       });
+
+      await userCredential.user!.sendEmailVerification();
 
       if (!mounted) return;
 
-      // 3. Navigate straight into the right dashboard
-      if (_isAdmin) {
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (_) => const DashboardScreen()),
-        );
-      } else {
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(
-            builder: (_) =>
-                const ProfileCompletionScreen(launchedAfterSignUp: true),
-          ),
-        );
-      }
+      // 3. Password accounts must verify their email before entering Civica.
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (_) => const EmailVerificationScreen()),
+      );
     } on FirebaseAuthException catch (e) {
       String message = 'Sign up failed. Please try again.';
       if (e.code == 'email-already-in-use') {

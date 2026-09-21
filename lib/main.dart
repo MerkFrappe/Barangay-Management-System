@@ -7,6 +7,7 @@ import 'theme/app_colors.dart';
 import 'screens/login_screen.dart';
 import 'screens/dashboard_screen.dart';
 import 'screens/resident_dashboard_screen.dart';
+import 'screens/email_verification_screen.dart';
 import 'services/notification_service.dart';
 import 'models/user_roles.dart';
 
@@ -30,7 +31,7 @@ class BarangayAdminApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       navigatorKey: appNavigatorKey,
-      title: 'Barangay Digital Hub',
+      title: 'Civica',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         useMaterial3: true,
@@ -77,11 +78,19 @@ class AuthWrapper extends StatelessWidget {
           return const LoginScreen();
         }
 
+        final user = snapshot.data!;
+        final usesPassword = user.providerData.any(
+          (provider) => provider.providerId == 'password',
+        );
+        if (usesPassword && !user.emailVerified) {
+          return const EmailVerificationScreen();
+        }
+
         // Logged in, fetch role from Firestore
         return FutureBuilder<DocumentSnapshot>(
           future: FirebaseFirestore.instance
               .collection('users')
-              .doc(snapshot.data!.uid)
+              .doc(user.uid)
               .get(),
           builder: (context, roleSnapshot) {
             if (roleSnapshot.connectionState == ConnectionState.waiting) {
@@ -92,7 +101,7 @@ class AuthWrapper extends StatelessWidget {
             if (roleSnapshot.hasData && roleSnapshot.data!.exists) {
               final data = roleSnapshot.data!.data() as Map<String, dynamic>;
               final role = data['role'] ?? 'Resident';
-              NotificationService.syncUser(snapshot.data!, role.toString());
+              NotificationService.syncUser(user, role.toString());
               if (isAdminRole(role.toString())) {
                 return const DashboardScreen();
               } else {

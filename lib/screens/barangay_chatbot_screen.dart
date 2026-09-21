@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 import '../theme/app_colors.dart';
+import '../services/civica_chat_service.dart';
 import '../widgets/resident_sidebar.dart';
 import '../widgets/top_navigation_bar.dart';
 
@@ -19,12 +20,13 @@ class _BarangayChatbotScreenState extends State<BarangayChatbotScreen> {
   final List<_ChatMessage> _messages = [
     const _ChatMessage(
       text:
-          'Good day! I’m the Barangay Digital Assistant. I can help with documents, requests, services, and common barangay questions.',
+          'Good day! I’m Civica, the official resident assistant for Barangay Apokon. I can help you navigate Civica and understand common barangay matters. For changing local details, I’ll guide you to the right official source.',
       isUser: false,
     ),
   ];
   bool _showPermitQuestions = false;
   bool _showRequestedDocuments = false;
+  bool _isResponding = false;
 
   @override
   void dispose() {
@@ -33,24 +35,55 @@ class _BarangayChatbotScreenState extends State<BarangayChatbotScreen> {
     super.dispose();
   }
 
-  void _sendMessage([String? value]) {
+  Future<void> _sendMessage([String? value]) async {
     final message = (value ?? _messageController.text).trim();
-    if (message.isEmpty) return;
+    if (message.isEmpty || _isResponding) return;
 
     setState(() {
       _messages.add(_ChatMessage(text: message, isUser: true));
-      _messages.add(_ChatMessage(text: _replyFor(message), isUser: false));
       _messageController.clear();
+      _isResponding = true;
     });
+    final history = _messages
+        .take(_messages.length - 1)
+        .map((item) => CivicaChatTurn(text: item.text, isUser: item.isUser))
+        .toList();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_scrollController.hasClients) {
-        _scrollController.animateTo(
-          _scrollController.position.maxScrollExtent,
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeOut,
-        );
-      }
+      _scrollToLatest();
     });
+    try {
+      final answer = await CivicaChatService.ask(
+        message: message,
+        history: history,
+      );
+      if (!mounted) return;
+      setState(() => _messages.add(_ChatMessage(text: answer, isUser: false)));
+    } catch (error) {
+      if (!mounted) return;
+      setState(
+        () => _messages.add(
+          _ChatMessage(
+            text: error is CivicaChatException
+                ? error.message
+                : 'I’m unable to connect right now. Please try again shortly, or contact Barangay Apokon directly for urgent assistance.',
+            isUser: false,
+          ),
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _isResponding = false);
+      WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToLatest());
+    }
+  }
+
+  void _scrollToLatest() {
+    if (_scrollController.hasClients) {
+      _scrollController.animateTo(
+        _scrollController.position.maxScrollExtent,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOut,
+      );
+    }
   }
 
   void _showPermitsAndDocuments() {
@@ -58,15 +91,7 @@ class _BarangayChatbotScreenState extends State<BarangayChatbotScreen> {
       _showPermitQuestions = true;
       _showRequestedDocuments = false;
     });
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_scrollController.hasClients) {
-        _scrollController.animateTo(
-          _scrollController.position.maxScrollExtent,
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeOut,
-        );
-      }
-    });
+    WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToLatest());
   }
 
   void _showRequestTracker() {
@@ -74,41 +99,6 @@ class _BarangayChatbotScreenState extends State<BarangayChatbotScreen> {
       _showRequestedDocuments = true;
       _showPermitQuestions = false;
     });
-  }
-
-  String _replyFor(String message) {
-    final query = message.toLowerCase();
-    if (query.contains('difference') &&
-        query.contains('residency') &&
-        query.contains('clearance')) {
-      return 'A Certificate of Residency confirms that you live in the barangay. A Barangay Clearance is commonly used for employment, business, permits, and other official transactions after barangay verification.';
-    }
-    if (query.contains('business clearance')) {
-      return 'To get a Barangay Business Clearance, visit Barangay Hall with your valid ID, business registration (DTI or SEC), proof of business location, and other documents requested for site verification.';
-    }
-    if (query.contains('certificate of indigency') ||
-        query.contains('indigency')) {
-      return 'To obtain a Certificate of Indigency, visit Barangay Hall with a valid ID or Purok Clearance and state the purpose of the certificate. The barangay may verify your details before issuance.';
-    }
-    if (query.contains('track') || query.contains('request status')) {
-      return 'You can check your document request status from Document Request. Keep your reference number ready.';
-    }
-    if (query.contains('clearance') || query.contains('document')) {
-      return 'For a Barangay Clearance, prepare a valid ID or Purok Clearance, cedula, and the required fee. Processing usually takes 1–2 business days.';
-    }
-    if (query.contains('residency') || query.contains('indigency')) {
-      return 'A Certificate of Residency needs a valid ID or Purok Clearance and proof of address. For an Indigency Certificate, please state its purpose; an officer may verify the details.';
-    }
-    if (query.contains('business') || query.contains('permit')) {
-      return 'For a business endorsement, visit Barangay Hall with your Barangay Clearance, DTI/SEC registration, proof of location, and valid ID for site verification.';
-    }
-    if (query.contains('hour') || query.contains('open')) {
-      return 'Barangay Hall is open Monday to Friday, 8:00 AM to 5:00 PM.';
-    }
-    if (query.contains('contact') || query.contains('hotline')) {
-      return 'You may reach the barangay through +63 917 123 4567 or help@barangay.gov.ph.';
-    }
-    return 'I can help with document requirements, request tracking, barangay services, office hours, and contact information. What would you like to know?';
   }
 
   @override
@@ -121,7 +111,7 @@ class _BarangayChatbotScreenState extends State<BarangayChatbotScreen> {
       drawer: desktop
           ? null
           : const Drawer(
-              child: ResidentSidebar(selectedItem: 'Barangay ChatBot'),
+              child: ResidentSidebar(selectedItem: 'Civica Chatbot'),
             ),
       bottomNavigationBar: desktop
           ? null
@@ -129,8 +119,7 @@ class _BarangayChatbotScreenState extends State<BarangayChatbotScreen> {
       body: SafeArea(
         child: Row(
           children: [
-            if (desktop)
-              const ResidentSidebar(selectedItem: 'Barangay ChatBot'),
+            if (desktop) const ResidentSidebar(selectedItem: 'Civica Chatbot'),
             Expanded(
               child: Column(
                 children: [
@@ -155,6 +144,7 @@ class _BarangayChatbotScreenState extends State<BarangayChatbotScreen> {
                               _showPermitQuestions = false;
                               _showRequestedDocuments = false;
                             }),
+                            isResponding: _isResponding,
                           ),
                         ),
                       ),
@@ -181,6 +171,7 @@ class _ChatPanel extends StatelessWidget {
   final bool showRequestedDocuments;
   final VoidCallback onShowRequestTracker;
   final VoidCallback onBackToOptions;
+  final bool isResponding;
 
   const _ChatPanel({
     required this.compact,
@@ -193,6 +184,7 @@ class _ChatPanel extends StatelessWidget {
     required this.showRequestedDocuments,
     required this.onShowRequestTracker,
     required this.onBackToOptions,
+    required this.isResponding,
   });
 
   @override
@@ -239,14 +231,14 @@ class _ChatPanel extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Barangay ChatBot',
+                        'Civica Chatbot',
                         style: AppTextStyles.headlineSm.copyWith(
                           color: AppColors.primary,
                         ),
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        'Official Resident Assistant',
+                        'Official Apokon Resident Assistant',
                         style: AppTextStyles.bodySm.copyWith(
                           color: AppColors.onSurfaceVariant,
                         ),
@@ -281,6 +273,7 @@ class _ChatPanel extends StatelessWidget {
               padding: EdgeInsets.all(compact ? 16 : 24),
               children: [
                 ...messages.map((message) => _MessageBubble(message: message)),
+                if (isResponding) const _TypingIndicator(),
                 const SizedBox(height: 8),
                 Text(
                   'Try a quick question',
@@ -394,7 +387,8 @@ class _ChatPanel extends StatelessWidget {
             ),
             child: TextField(
               controller: controller,
-              onSubmitted: onSend,
+              onSubmitted: isResponding ? null : onSend,
+              enabled: !isResponding,
               textInputAction: TextInputAction.send,
               decoration: InputDecoration(
                 hintText: 'Type your message...',
@@ -414,7 +408,9 @@ class _ChatPanel extends StatelessWidget {
                 ),
                 suffixIcon: IconButton(
                   tooltip: 'Send message',
-                  onPressed: () => onSend(controller.text),
+                  onPressed: isResponding
+                      ? null
+                      : () => onSend(controller.text),
                   icon: const Icon(Icons.send_rounded),
                   color: AppColors.primary,
                 ),
@@ -438,7 +434,6 @@ class _MessageBubble extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.only(bottom: 14),
         child: Row(
-          mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
             if (!message.isUser) ...[
@@ -453,20 +448,24 @@ class _MessageBubble extends StatelessWidget {
               ),
               const SizedBox(width: 8),
             ],
-            ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 560),
-              child: Container(
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: message.isUser
-                      ? AppColors.primary
-                      : AppColors.surfaceContainerHigh,
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Text(
-                  message.text,
-                  style: AppTextStyles.bodyMd.copyWith(
-                    color: message.isUser ? Colors.white : AppColors.onSurface,
+            Flexible(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 560),
+                child: Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: message.isUser
+                        ? AppColors.primary
+                        : AppColors.surfaceContainerHigh,
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Text(
+                    message.text,
+                    style: AppTextStyles.bodyMd.copyWith(
+                      color: message.isUser
+                          ? Colors.white
+                          : AppColors.onSurface,
+                    ),
                   ),
                 ),
               ),
@@ -476,6 +475,26 @@ class _MessageBubble extends StatelessWidget {
       ),
     );
   }
+}
+
+class _TypingIndicator extends StatelessWidget {
+  const _TypingIndicator();
+
+  @override
+  Widget build(BuildContext context) => const Padding(
+    padding: EdgeInsets.only(bottom: 14),
+    child: Row(
+      children: [
+        SizedBox(
+          width: 20,
+          height: 20,
+          child: CircularProgressIndicator(strokeWidth: 2),
+        ),
+        SizedBox(width: 10),
+        Text('Civica is preparing a response...'),
+      ],
+    ),
+  );
 }
 
 class _QuickPrompt extends StatelessWidget {

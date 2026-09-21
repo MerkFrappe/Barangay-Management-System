@@ -121,30 +121,90 @@ class _OfficialsBody extends StatelessWidget {
               );
             }
 
-            final width = MediaQuery.of(context).size.width;
-            final columns = width >= 1100
-                ? 4
-                : width >= 750
-                ? 3
-                : width >= 480
-                ? 2
-                : 1;
-
-            return GridView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: officials.length,
-              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: columns,
-                crossAxisSpacing: 16,
-                mainAxisSpacing: 16,
-                childAspectRatio: 0.82,
-              ),
-              itemBuilder: (context, index) =>
-                  _OfficialCard(official: officials[index]),
-            );
+            return _OfficialsHierarchy(officials: officials);
           },
         ),
+      ],
+    );
+  }
+}
+
+/// An organisation chart: senior officials are at the top and the officers
+/// reporting to them branch below, like an upside-down tree.
+class _OfficialsHierarchy extends StatelessWidget {
+  final List<BarangayOfficial> officials;
+  const _OfficialsHierarchy({required this.officials});
+
+  @override
+  Widget build(BuildContext context) {
+    final byId = {for (final official in officials) official.id: official};
+    final roots = officials
+        .where(
+          (official) =>
+              official.reportsTo == null ||
+              !byId.containsKey(official.reportsTo),
+        )
+        .toList();
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: SizedBox(
+        width: MediaQuery.of(context).size.width < 720
+            ? 680
+            : MediaQuery.of(context).size.width - 120,
+        child: Column(
+          children: roots
+              .map(
+                (official) =>
+                    _HierarchyNode(official: official, allOfficials: officials),
+              )
+              .toList(),
+        ),
+      ),
+    );
+  }
+}
+
+class _HierarchyNode extends StatelessWidget {
+  final BarangayOfficial official;
+  final List<BarangayOfficial> allOfficials;
+  const _HierarchyNode({required this.official, required this.allOfficials});
+
+  @override
+  Widget build(BuildContext context) {
+    final children = allOfficials
+        .where((candidate) => candidate.reportsTo == official.id)
+        .toList();
+    return Column(
+      children: [
+        SizedBox(
+          width: 250,
+          height: 260,
+          child: _OfficialCard(official: official),
+        ),
+        if (children.isNotEmpty) ...[
+          Container(width: 2, height: 24, color: AppColors.outlineVariant),
+          Container(
+            height: 2,
+            width: (children.length * 266).toDouble(),
+            color: AppColors.outlineVariant,
+          ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: children
+                .map(
+                  (child) => SizedBox(
+                    width: 266,
+                    child: _HierarchyNode(
+                      official: child,
+                      allOfficials: allOfficials,
+                    ),
+                  ),
+                )
+                .toList(),
+          ),
+        ],
+        const SizedBox(height: 24),
       ],
     );
   }

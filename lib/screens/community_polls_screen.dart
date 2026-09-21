@@ -61,6 +61,7 @@ class _CommunityPollsScreenState extends State<CommunityPollsScreen> {
         'updatedAt': FieldValue.serverTimestamp(),
       });
     });
+    if (!mounted) return;
     setState(() => _userVotes[pollId] = optionIndex);
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
@@ -139,12 +140,16 @@ class _CommunityPollsScreenState extends State<CommunityPollsScreen> {
                     lastDate: DateTime.now().add(const Duration(days: 365)),
                     initialDate: DateTime.now().add(const Duration(days: 7)),
                   );
-                  if (date == null) return;
+                  if (date == null) {
+                    return;
+                  }
+                  if (!ctx.mounted) return;
                   final time = await showTimePicker(
                     context: ctx,
                     initialTime: TimeOfDay.now(),
                   );
-                  if (time != null)
+                  if (!ctx.mounted) return;
+                  if (time != null) {
                     setDialogState(
                       () => deadline = DateTime(
                         date.year,
@@ -154,6 +159,7 @@ class _CommunityPollsScreenState extends State<CommunityPollsScreen> {
                         time.minute,
                       ),
                     );
+                  }
                 },
               ),
             ],
@@ -171,8 +177,9 @@ class _CommunityPollsScreenState extends State<CommunityPollsScreen> {
                     .toList();
                 if (titleCtrl.text.isEmpty ||
                     choices.length < 2 ||
-                    deadline == null)
+                    deadline == null) {
                   return;
+                }
                 final doc = FirebaseFirestore.instance
                     .collection('polls')
                     .doc();
@@ -185,7 +192,7 @@ class _CommunityPollsScreenState extends State<CommunityPollsScreen> {
                   'endAt': Timestamp.fromDate(deadline!),
                   'createdAt': FieldValue.serverTimestamp(),
                 });
-                if (!mounted) return;
+                if (!ctx.mounted) return;
                 Navigator.pop(ctx);
               },
               child: const Text('Publish Poll'),
@@ -209,35 +216,20 @@ class _CommunityPollsScreenState extends State<CommunityPollsScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Community Polls & Feedback',
-                          style: AppTextStyles.headlineLg.copyWith(
-                            color: AppColors.primary,
+                widget.isAdmin
+                    ? Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(child: _pollHeader()),
+                          const SizedBox(width: 12),
+                          ElevatedButton.icon(
+                            onPressed: _showCreatePollDialog,
+                            icon: const Icon(Icons.add),
+                            label: const Text('Create Poll'),
                           ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'Voice your opinion on upcoming barangay projects and public initiatives.',
-                          style: AppTextStyles.bodyMd.copyWith(
-                            color: AppColors.onSurfaceVariant,
-                          ),
-                        ),
-                      ],
-                    ),
-                    if (widget.isAdmin)
-                      ElevatedButton.icon(
-                        onPressed: _showCreatePollDialog,
-                        icon: const Icon(Icons.add),
-                        label: const Text('Create Poll'),
-                      ),
-                  ],
-                ),
+                        ],
+                      )
+                    : _pollHeader(),
                 const SizedBox(height: 24),
                 _buildPollList(),
               ],
@@ -276,6 +268,23 @@ class _CommunityPollsScreenState extends State<CommunityPollsScreen> {
     );
   }
 
+  Widget _pollHeader() => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Text(
+        'Community Polls & Feedback',
+        maxLines: 2,
+        overflow: TextOverflow.ellipsis,
+        style: AppTextStyles.headlineLg.copyWith(color: AppColors.primary),
+      ),
+      const SizedBox(height: 4),
+      Text(
+        'Voice your opinion on upcoming barangay projects and public initiatives.',
+        style: AppTextStyles.bodyMd.copyWith(color: AppColors.onSurfaceVariant),
+      ),
+    ],
+  );
+
   Widget _buildPollList() {
     return StreamBuilder<QuerySnapshot>(
       stream: FirebaseFirestore.instance.collection('polls').snapshots(),
@@ -289,44 +298,7 @@ class _CommunityPollsScreenState extends State<CommunityPollsScreen> {
         }).toList();
         final closed = docs.where((d) => !open.contains(d)).toList();
         if (open.isEmpty && !widget.isAdmin) {
-          // Render default sample poll
-          return Card(
-            elevation: 0,
-            color: AppColors.surfaceContainerLowest,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-              side: BorderSide(color: AppColors.outlineVariant),
-            ),
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Chip(
-                    label: const Text('Active Community Poll'),
-                    backgroundColor: AppColors.primaryContainer,
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    'Should the Barangay Covered Court schedule be extended until 10:00 PM on weekends?',
-                    style: AppTextStyles.titleLg.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  _buildOptionBar('Sample1', 0, 'Yes, extend hours', 68, 100),
-                  const SizedBox(height: 12),
-                  _buildOptionBar(
-                    'Sample1',
-                    1,
-                    'No, keep current 8:00 PM limit',
-                    32,
-                    100,
-                  ),
-                ],
-              ),
-            ),
-          );
+          return const SizedBox.shrink();
         }
         return ListView.separated(
           shrinkWrap: true,
@@ -334,7 +306,7 @@ class _CommunityPollsScreenState extends State<CommunityPollsScreen> {
           itemCount: open.length + (widget.isAdmin ? 1 : 0),
           separatorBuilder: (_, _) => const SizedBox(height: 16),
           itemBuilder: (context, index) {
-            if (widget.isAdmin && index == open.length)
+            if (widget.isAdmin && index == open.length) {
               return SizedBox(
                 height: 160,
                 child: Card(
@@ -355,6 +327,7 @@ class _CommunityPollsScreenState extends State<CommunityPollsScreen> {
                   ),
                 ),
               );
+            }
             final data = open[index].data() as Map<String, dynamic>;
             final pollId = open[index].id;
             final choices = List<String>.from(

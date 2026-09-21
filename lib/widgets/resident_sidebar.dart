@@ -7,7 +7,6 @@ import 'package:latlong2/latlong.dart';
 
 import '../models/resident_profile.dart';
 import '../theme/app_colors.dart';
-import '../screens/dashboard_screen.dart';
 import '../screens/resident_dashboard_screen.dart';
 import '../screens/resident_request_code.dart';
 import '../screens/residence_announcements.dart' as announcements;
@@ -198,7 +197,7 @@ class _ResidentSidebarState extends State<ResidentSidebar> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            "Barangay Digital",
+                            "Civica",
                             style: AppTextStyles.headlineSm.copyWith(
                               color: AppColors.primary,
                               fontWeight: FontWeight.bold,
@@ -280,19 +279,12 @@ class _ResidentSidebarState extends State<ResidentSidebar> {
 
                 _NavItem(
                   icon: Icons.smart_toy_outlined,
-                  title: "Barangay ChatBot",
-                  selected: _activeItem == 'Barangay ChatBot',
+                  title: "Civica Chatbot",
+                  selected: _activeItem == 'Civica Chatbot',
                   onTap: () => _navigateTo(
-                    'Barangay ChatBot',
+                    'Civica Chatbot',
                     const BarangayChatbotScreen(),
                   ),
-                ),
-
-                _NavItem(
-                  icon: Icons.admin_panel_settings_rounded,
-                  title: "Switch to Admin",
-                  onTap: () =>
-                      _navigateTo('Switch to Admin', const DashboardScreen()),
                 ),
 
                 const SizedBox(height: 24),

@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
 import 'notification_bell.dart';
@@ -99,45 +100,61 @@ class TopHeader extends StatelessWidget implements PreferredSizeWidget {
                   },
                 ),
               if (!compact) const SizedBox(width: 8),
-              Container(
-                padding: const EdgeInsets.only(left: 16),
-                decoration: BoxDecoration(
-                  border: Border(
-                    left: BorderSide(color: AppColors.outlineVariant),
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    if (!compact)
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            'Chairman Juan Dela Cruz',
-                            style: AppTextStyles.labelMd.copyWith(
-                              color: AppColors.primary,
-                            ),
-                          ),
-                          Text(
-                            'BARANGAY PRESIDING OFFICER',
-                            style: TextStyle(
-                              fontSize: 10,
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: 0.5,
-                              color: AppColors.onSurfaceVariant,
-                            ),
-                          ),
-                        ],
+              StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+                stream: FirebaseFirestore.instance
+                    .collection('system_settings')
+                    .doc('main')
+                    .snapshots(),
+                builder: (context, snapshot) {
+                  final chairman =
+                      snapshot.data
+                          ?.data()?['chairmanName']
+                          ?.toString()
+                          .trim() ??
+                      'Barangay Captain';
+                  return Container(
+                    padding: const EdgeInsets.only(left: 16),
+                    decoration: BoxDecoration(
+                      border: Border(
+                        left: BorderSide(color: AppColors.outlineVariant),
                       ),
-                    if (!compact) const SizedBox(width: 12),
-                    CircleAvatar(
-                      radius: 20,
-                      backgroundColor: AppColors.primaryContainer,
-                      child: const Icon(Icons.person, color: Colors.white),
                     ),
-                  ],
-                ),
+                    child: Row(
+                      children: [
+                        if (!compact)
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                chairman.isEmpty
+                                    ? 'Barangay Captain'
+                                    : chairman,
+                                style: AppTextStyles.labelMd.copyWith(
+                                  color: AppColors.primary,
+                                ),
+                              ),
+                              Text(
+                                'BARANGAY PRESIDING OFFICER',
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: 0.5,
+                                  color: AppColors.onSurfaceVariant,
+                                ),
+                              ),
+                            ],
+                          ),
+                        if (!compact) const SizedBox(width: 12),
+                        CircleAvatar(
+                          radius: 20,
+                          backgroundColor: AppColors.primaryContainer,
+                          child: const Icon(Icons.person, color: Colors.white),
+                        ),
+                      ],
+                    ),
+                  );
+                },
               ),
             ],
           ),

@@ -364,8 +364,10 @@ class _HealthCenterScreenState extends State<HealthCenterScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            Wrap(
+              spacing: 12,
+              runSpacing: 8,
+              crossAxisAlignment: WrapCrossAlignment.center,
               children: [
                 Text(
                   'Today\'s Consultation Queue',
@@ -373,8 +375,8 @@ class _HealthCenterScreenState extends State<HealthCenterScreen> {
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                Chip(
-                  label: const Text('Live Sync'),
+                const Chip(
+                  label: Text('Live Sync'),
                   backgroundColor: AppColors.primaryContainer,
                 ),
               ],

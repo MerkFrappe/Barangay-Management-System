@@ -27,6 +27,7 @@ class BarangayOfficial {
   final String? photoUrl; // for later, once Firebase Storage is added
   final String? photoBase64; // works today, no Storage required
   final String? officeContact;
+  final String? reportsTo;
 
   const BarangayOfficial({
     required this.id,
@@ -36,11 +37,12 @@ class BarangayOfficial {
     this.photoUrl,
     this.photoBase64,
     this.officeContact,
+    this.reportsTo,
   });
 
   factory BarangayOfficial.fromDoc(String id, Map<String, dynamic>? data) {
     final map = data ?? const <String, dynamic>{};
-    final name = (map['accountName'] ?? map['displayName'] ?? '')
+    final name = (map['name'] ?? map['accountName'] ?? map['displayName'] ?? '')
         .toString()
         .trim();
     final position = (map['position'] as String?)?.trim();
@@ -52,7 +54,9 @@ class BarangayOfficial {
       photoUrl: map['photoUrl'] as String?,
       photoBase64: map['photoBase64'] as String?,
       officeContact:
-          (map['officeContact'] as String?) ?? (map['contactNumber'] as String?),
+          (map['officeContact'] as String?) ??
+          (map['contactNumber'] as String?),
+      reportsTo: (map['reportsTo'] as String?)?.trim(),
     );
   }
 

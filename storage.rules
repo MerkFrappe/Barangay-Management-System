@@ -8,5 +8,6 @@ service firebase.storage {
                     && request.resource.contentType.matches('image/.*|application/pdf');
       allow delete: if request.auth != null;
     }
+
   }
 }

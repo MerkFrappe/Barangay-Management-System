@@ -1,6 +1,6 @@
 {
   "name": "bms-functions",
-  "description": "Cloud Functions for Barangay Digital Hub",
+  "description": "Cloud Functions for Civica",
   "scripts": {
     "lint": "eslint .",
     "serve": "firebase emulators:start --only functions",

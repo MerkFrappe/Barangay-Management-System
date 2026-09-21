@@ -1,6 +1,10 @@
+import 'dart:convert';
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:file_picker/file_picker.dart' as file_picker;
 import '../theme/app_colors.dart';
 import '../widgets/sidebar.dart';
 import '../widgets/top_header.dart';
@@ -22,6 +26,8 @@ class Announcement {
   final int reach;
   final int likes;
   final List<String> viewerIds;
+  final List<String> imageBase64List;
+  final bool isPinned;
 
   Announcement({
     required this.id,
@@ -33,6 +39,8 @@ class Announcement {
     this.reach = 0,
     this.likes = 0,
     this.viewerIds = const [],
+    this.imageBase64List = const [],
+    this.isPinned = false,
   });
 }
 
@@ -77,6 +85,8 @@ class AnnouncementService {
           reach: (data['viewerIds'] as List?)?.length ?? 0,
           likes: (data['likerIds'] as List?)?.length ?? 0,
           viewerIds: List<String>.from(data['viewerIds'] ?? const []),
+          imageBase64List: _imageListFrom(data),
+          isPinned: data['isPinned'] == true,
         );
       }).toList();
     });
@@ -99,6 +109,8 @@ class AnnouncementService {
           reach: (data['viewerIds'] as List?)?.length ?? 0,
           likes: (data['likerIds'] as List?)?.length ?? 0,
           viewerIds: List<String>.from(data['viewerIds'] ?? const []),
+          imageBase64List: _imageListFrom(data),
+          isPinned: data['isPinned'] == true,
         );
       }).toList();
     } catch (e) {
@@ -107,7 +119,10 @@ class AnnouncementService {
     }
   }
 
-  static Future<Announcement> saveAnnouncement(Announcement a) async {
+  static Future<Announcement> saveAnnouncement(
+    Announcement a, {
+    List<Uint8List> imageBytesList = const [],
+  }) async {
     try {
       final user = FirebaseAuth.instance.currentUser;
       final userData = user == null
@@ -126,7 +141,9 @@ class AnnouncementService {
             : 'normal',
       };
       if (a.id.isEmpty) {
-        final docRef = await _collection.add({
+        final docRef = _collection.doc();
+        final imageBase64List = _encodeImages(imageBytesList);
+        await docRef.set({
           'title': a.title,
           'description': a.description,
           'body': a.description,
@@ -137,6 +154,8 @@ class AnnouncementService {
           'createdAt': FieldValue.serverTimestamp(),
           'viewerIds': <String>[],
           'likerIds': <String>[],
+          if (imageBase64List.isNotEmpty) 'imageBase64List': imageBase64List,
+          'isPinned': false,
         });
         if (a.status == AnnouncementStatus.published) {
           await NotificationService.notifyResidents(
@@ -154,6 +173,8 @@ class AnnouncementService {
           date: a.date,
           category: a.category,
           status: a.status,
+          imageBase64List: imageBase64List,
+          isPinned: false,
         );
       } else {
         await _collection.doc(a.id).set({
@@ -167,6 +188,9 @@ class AnnouncementService {
           'createdAt': FieldValue.serverTimestamp(),
           'viewerIds': FieldValue.arrayUnion([]),
           'likerIds': FieldValue.arrayUnion([]),
+          if (a.imageBase64List.isNotEmpty)
+            'imageBase64List': a.imageBase64List,
+          'isPinned': a.isPinned,
         }, SetOptions(merge: true));
         return a;
       }
@@ -174,6 +198,26 @@ class AnnouncementService {
       debugPrint('Error saving announcement: $e');
       rethrow;
     }
+  }
+
+  static List<String> _imageListFrom(Map<String, dynamic> data) {
+    final values = data['imageBase64List'];
+    if (values is List) return values.map((value) => value.toString()).toList();
+    final legacy = data['coverImageBase64']?.toString();
+    return legacy == null || legacy.isEmpty ? const [] : [legacy];
+  }
+
+  static List<String> _encodeImages(List<Uint8List> images) {
+    final totalBytes = images.fold<int>(
+      0,
+      (total, image) => total + image.lengthInBytes,
+    );
+    if (totalBytes > 650 * 1024) {
+      throw Exception(
+        'All images together must be 650 KB or smaller for Firestore.',
+      );
+    }
+    return images.map(base64Encode).toList();
   }
 
   static Future<void> deleteAnnouncement(String id) async {
@@ -184,6 +228,27 @@ class AnnouncementService {
       rethrow;
     }
   }
+
+  /// Keeps exactly one published announcement at the top of the dashboard.
+  static Future<void> setPinnedAnnouncement(Announcement announcement) async {
+    final pinned = await _collection.where('isPinned', isEqualTo: true).get();
+    final batch = FirebaseFirestore.instance.batch();
+    for (final doc in pinned.docs) {
+      batch.update(doc.reference, {'isPinned': false});
+    }
+    if (announcement.id.isEmpty) {
+      throw ArgumentError.value(
+        announcement.id,
+        'announcement.id',
+        'A saved announcement is required to pin it.',
+      );
+    }
+    batch.update(_collection.doc(announcement.id), {'isPinned': true});
+    await batch.commit();
+  }
+
+  static Future<void> unpinAnnouncement(String id) =>
+      _collection.doc(id).update({'isPinned': false});
 }
 
 // ─── Main Page ───────────────────────────────────────────────────────────────
@@ -618,6 +683,21 @@ class _AnnouncementsTable extends StatelessWidget {
               color: Color(0xFF444653),
             ),
             onSelected: (value) async {
+              if (value == 'pin') {
+                await AnnouncementService.setPinnedAnnouncement(a);
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        '"${a.title}" is pinned to the resident dashboard.',
+                      ),
+                    ),
+                  );
+                }
+              }
+              if (value == 'unpin') {
+                await AnnouncementService.unpinAnnouncement(a.id);
+              }
               if (value == 'delete') {
                 await AnnouncementService.deleteAnnouncement(a.id);
                 onDeleted();
@@ -631,9 +711,16 @@ class _AnnouncementsTable extends StatelessWidget {
                 }
               }
             },
-            itemBuilder: (_) => const [
-              PopupMenuItem(value: 'edit', child: Text('Edit')),
-              PopupMenuItem(
+            itemBuilder: (_) => [
+              if (a.status == AnnouncementStatus.published)
+                PopupMenuItem(
+                  value: a.isPinned ? 'unpin' : 'pin',
+                  child: Text(
+                    a.isPinned ? 'Unpin from dashboard' : 'Pin to dashboard',
+                  ),
+                ),
+              const PopupMenuItem(value: 'edit', child: Text('Edit')),
+              const PopupMenuItem(
                 value: 'delete',
                 child: Text('Delete', style: TextStyle(color: Colors.red)),
               ),
@@ -816,6 +903,7 @@ class _AddEventFormState extends State<_AddEventForm> {
   TimeOfDay? _selectedTime;
   AnnouncementCategory _category = AnnouncementCategory.news;
   bool _isSaving = false;
+  final List<Uint8List> _imageBytesList = [];
 
   @override
   void dispose() {
@@ -848,6 +936,43 @@ class _AddEventFormState extends State<_AddEventForm> {
     if (picked != null) setState(() => _selectedTime = picked);
   }
 
+  Future<void> _pickCoverImages() async {
+    final result = await file_picker.FilePicker.pickFiles(
+      type: file_picker.FileType.custom,
+      allowedExtensions: const ['jpg', 'jpeg', 'png'],
+    );
+    if (result.isEmpty) return;
+    final pickedBytes = <Uint8List>[];
+    for (final file in result) {
+      final bytes = await file.readAsBytes();
+      if (bytes.isNotEmpty) pickedBytes.add(bytes);
+    }
+    if (pickedBytes.isEmpty) {
+      _showError('Unable to read the selected cover image.');
+      return;
+    }
+    final nextTotal =
+        _imageBytesList.fold<int>(
+          0,
+          (total, image) => total + image.lengthInBytes,
+        ) +
+        pickedBytes.fold<int>(0, (total, image) => total + image.lengthInBytes);
+    if (nextTotal > 650 * 1024) {
+      _showError(
+        'All selected images together must be 650 KB or smaller for Firestore.',
+      );
+      return;
+    }
+    setState(() => _imageBytesList.addAll(pickedBytes));
+  }
+
+  void _showError(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), backgroundColor: Colors.red),
+    );
+  }
+
   Future<void> _submit(AnnouncementStatus status) async {
     if (_titleController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -870,9 +995,17 @@ class _AddEventFormState extends State<_AddEventForm> {
       status: status,
     );
 
-    await AnnouncementService.saveAnnouncement(a);
-
-    setState(() => _isSaving = false);
+    try {
+      await AnnouncementService.saveAnnouncement(
+        a,
+        imageBytesList: _imageBytesList,
+      );
+    } catch (error) {
+      _showError('Unable to save announcement: $error');
+      return;
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
+    }
 
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -891,6 +1024,7 @@ class _AddEventFormState extends State<_AddEventForm> {
         _selectedDate = null;
         _selectedTime = null;
         _category = AnnouncementCategory.news;
+        _imageBytesList.clear();
       });
     }
   }
@@ -1047,43 +1181,106 @@ class _AddEventFormState extends State<_AddEventForm> {
                   ),
                   const SizedBox(height: 16),
 
-                  _FormLabel('Cover Image'),
+                  _FormLabel('Announcement Images'),
                   const SizedBox(height: 6),
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(vertical: 24),
-                    decoration: BoxDecoration(
-                      border: Border.all(
-                        color: const Color(0xFFC4C5D5),
-                        width: 2,
+                  InkWell(
+                    onTap: _isSaving ? null : _pickCoverImages,
+                    borderRadius: BorderRadius.circular(12),
+                    child: Container(
+                      width: double.infinity,
+                      height: _imageBytesList.isEmpty ? 150 : 180,
+                      decoration: BoxDecoration(
+                        border: Border.all(
+                          color: const Color(0xFFC4C5D5),
+                          width: 2,
+                        ),
+                        borderRadius: BorderRadius.circular(12),
+                        color: const Color(0xFFF8F9FF),
                       ),
-                      borderRadius: BorderRadius.circular(12),
-                      color: const Color(0xFFF8F9FF),
-                    ),
-                    child: const Column(
-                      children: [
-                        Icon(
-                          Icons.cloud_upload_outlined,
-                          size: 36,
-                          color: Color(0xFF747685),
-                        ),
-                        SizedBox(height: 6),
-                        Text(
-                          'Drop image here or click to upload',
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: Color(0xFF444653),
-                          ),
-                        ),
-                        SizedBox(height: 2),
-                        Text(
-                          'Recommended: 1200x630px',
-                          style: TextStyle(
-                            fontSize: 11,
-                            color: Color(0xFF747685),
-                          ),
-                        ),
-                      ],
+                      child: _imageBytesList.isEmpty
+                          ? const Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.cloud_upload_outlined,
+                                  size: 36,
+                                  color: Color(0xFF747685),
+                                ),
+                                SizedBox(height: 6),
+                                Text(
+                                  'Click to add JPG or PNG images',
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    color: Color(0xFF444653),
+                                  ),
+                                ),
+                                SizedBox(height: 2),
+                                Text(
+                                  'All images together: max 650 KB · Stored in Firestore',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    color: Color(0xFF747685),
+                                  ),
+                                ),
+                              ],
+                            )
+                          : Padding(
+                              padding: const EdgeInsets.all(8),
+                              child: Row(
+                                children: [
+                                  Expanded(
+                                    child: ListView.separated(
+                                      scrollDirection: Axis.horizontal,
+                                      itemCount: _imageBytesList.length,
+                                      separatorBuilder: (_, _) =>
+                                          const SizedBox(width: 8),
+                                      itemBuilder: (context, index) => Stack(
+                                        children: [
+                                          ClipRRect(
+                                            borderRadius: BorderRadius.circular(
+                                              8,
+                                            ),
+                                            child: Image.memory(
+                                              _imageBytesList[index],
+                                              width: 145,
+                                              height: 160,
+                                              fit: BoxFit.cover,
+                                            ),
+                                          ),
+                                          Positioned(
+                                            right: 3,
+                                            top: 3,
+                                            child: IconButton.filled(
+                                              tooltip: 'Remove image',
+                                              visualDensity:
+                                                  VisualDensity.compact,
+                                              onPressed: () => setState(
+                                                () => _imageBytesList.removeAt(
+                                                  index,
+                                                ),
+                                              ),
+                                              icon: const Icon(
+                                                Icons.close,
+                                                size: 16,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                  IconButton(
+                                    tooltip: 'Add more images',
+                                    onPressed: _isSaving
+                                        ? null
+                                        : _pickCoverImages,
+                                    icon: const Icon(
+                                      Icons.add_photo_alternate_outlined,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
                     ),
                   ),
                 ],

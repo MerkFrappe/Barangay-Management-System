@@ -1,3 +1,6 @@
+import 'dart:convert';
+
+import 'package:file_picker/file_picker.dart' as file_picker;
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../theme/app_colors.dart';
@@ -76,6 +79,247 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
+  Future<void> _showOfficerEditor({
+    DocumentSnapshot<Map<String, dynamic>>? existing,
+  }) async {
+    final data = existing?.data() ?? const <String, dynamic>{};
+    final nameController = TextEditingController(
+      text: (data['name'] ?? data['accountName'] ?? '').toString(),
+    );
+    final roleController = TextEditingController(
+      text: (data['role'] ?? 'Kagawad').toString(),
+    );
+    String? reportsTo = data['reportsTo']?.toString();
+    String? photoBase64 = data['photoBase64']?.toString();
+    final officials = await FirebaseFirestore.instance
+        .collection('users')
+        .where('role', isNotEqualTo: 'Resident')
+        .get();
+    if (!mounted) return;
+
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: Text(
+            existing == null ? 'Add barangay officer' : 'Edit barangay officer',
+          ),
+          content: SizedBox(
+            width: 420,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(
+                    controller: nameController,
+                    decoration: const InputDecoration(labelText: 'Full name'),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: roleController,
+                    decoration: const InputDecoration(
+                      labelText: 'Role / position',
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  DropdownButtonFormField<String?>(
+                    initialValue: reportsTo,
+                    decoration: const InputDecoration(
+                      labelText: 'Reports to (hierarchy)',
+                    ),
+                    items: [
+                      const DropdownMenuItem<String?>(
+                        value: null,
+                        child: Text('Top-level officer'),
+                      ),
+                      ...officials.docs
+                          .where((doc) => doc.id != existing?.id)
+                          .map((doc) {
+                            final officer = doc.data();
+                            final name =
+                                (officer['name'] ??
+                                        officer['accountName'] ??
+                                        'Unnamed officer')
+                                    .toString();
+                            return DropdownMenuItem<String?>(
+                              value: doc.id,
+                              child: Text(name),
+                            );
+                          }),
+                    ],
+                    onChanged: (value) =>
+                        setDialogState(() => reportsTo = value),
+                  ),
+                  const SizedBox(height: 16),
+                  OutlinedButton.icon(
+                    onPressed: () async {
+                      final file = await file_picker.FilePicker.pickFile(
+                        type: file_picker.FileType.custom,
+                        allowedExtensions: const ['jpg', 'jpeg', 'png'],
+                      );
+                      if (file == null) {
+                        return;
+                      }
+                      final bytes = await file.readAsBytes();
+                      if (bytes.lengthInBytes > 650 * 1024) {
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text(
+                                'Profile photo must be 650 KB or smaller.',
+                              ),
+                            ),
+                          );
+                        }
+                        return;
+                      }
+                      setDialogState(() => photoBase64 = base64Encode(bytes));
+                    },
+                    icon: const Icon(Icons.add_a_photo_outlined),
+                    label: Text(
+                      photoBase64 == null || photoBase64!.isEmpty
+                          ? 'Upload profile photo (max 650 KB)'
+                          : 'Replace profile photo',
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () async {
+                if (nameController.text.trim().isEmpty ||
+                    roleController.text.trim().isEmpty) {
+                  return;
+                }
+                final payload = <String, dynamic>{
+                  'name': nameController.text.trim(),
+                  'accountName': nameController.text.trim(),
+                  'role': roleController.text.trim(),
+                  'reportsTo': reportsTo,
+                  'photoBase64': photoBase64 ?? '',
+                  'directoryManaged': true,
+                  'updatedAt': FieldValue.serverTimestamp(),
+                };
+                if (existing == null) {
+                  payload['createdAt'] = FieldValue.serverTimestamp();
+                  await FirebaseFirestore.instance
+                      .collection('users')
+                      .add(payload);
+                } else {
+                  await existing.reference.set(
+                    payload,
+                    SetOptions(merge: true),
+                  );
+                }
+                if (dialogContext.mounted) {
+                  Navigator.pop(dialogContext);
+                }
+              },
+              child: const Text('Save officer'),
+            ),
+          ],
+        ),
+      ),
+    );
+    nameController.dispose();
+    roleController.dispose();
+  }
+
+  Widget _officersManager() => Card(
+    elevation: 0,
+    color: AppColors.surfaceContainerLowest,
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(16),
+      side: BorderSide(color: AppColors.outlineVariant),
+    ),
+    child: Padding(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'Barangay Officers',
+                  style: AppTextStyles.titleLg.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              FilledButton.icon(
+                onPressed: () => _showOfficerEditor(),
+                icon: const Icon(Icons.person_add_alt_1),
+                label: const Text('Add officer'),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'Set reporting relationships to build the resident-facing hierarchy. Photos are stored in Firestore and limited to 650 KB.',
+          ),
+          const SizedBox(height: 12),
+          StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+            stream: FirebaseFirestore.instance
+                .collection('users')
+                .where('role', isNotEqualTo: 'Resident')
+                .snapshots(),
+            builder: (context, snapshot) {
+              if (!snapshot.hasData) {
+                return const Center(child: CircularProgressIndicator());
+              }
+              final docs = snapshot.data!.docs;
+              if (docs.isEmpty) return const Text('No officers yet.');
+              return ListView.separated(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: docs.length,
+                separatorBuilder: (_, _) => const Divider(),
+                itemBuilder: (context, index) {
+                  final doc = docs[index];
+                  final data = doc.data();
+                  final name =
+                      (data['name'] ?? data['accountName'] ?? 'Unnamed officer')
+                          .toString();
+                  return ListTile(
+                    leading: const CircleAvatar(child: Icon(Icons.person)),
+                    title: Text(name),
+                    subtitle: Text(data['role']?.toString() ?? 'Official'),
+                    trailing: Wrap(
+                      spacing: 2,
+                      children: [
+                        IconButton(
+                          tooltip: 'Edit officer',
+                          onPressed: () => _showOfficerEditor(existing: doc),
+                          icon: const Icon(Icons.edit_outlined),
+                        ),
+                        IconButton(
+                          tooltip: data['directoryManaged'] == true
+                              ? 'Remove officer'
+                              : 'Account-managed officer cannot be removed here',
+                          onPressed: data['directoryManaged'] == true
+                              ? () => doc.reference.delete()
+                              : null,
+                          icon: const Icon(Icons.delete_outline),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              );
+            },
+          ),
+        ],
+      ),
+    ),
+  );
+
   @override
   void dispose() {
     _brgyNameCtrl.dispose();
@@ -110,6 +354,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     color: AppColors.onSurfaceVariant,
                   ),
                 ),
+                const SizedBox(height: 24),
+                _officersManager(),
                 const SizedBox(height: 24),
                 Card(
                   elevation: 0,

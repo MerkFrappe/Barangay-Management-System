@@ -151,39 +151,18 @@ class _SidebarNavState extends State<SidebarNav> {
           const SizedBox(height: 32),
           // Nav items
           Expanded(
-            child: Stack(
-              children: [
-                AnimatedPositioned(
-                  duration: const Duration(milliseconds: 280),
-                  curve: Curves.easeOutCubic,
-                  top: _selectedIndex * 50,
-                  left: 0,
-                  right: 0,
-                  height: 46,
-                  child: Hero(
-                    tag: 'admin-sidebar-highlight',
-                    child: DecoratedBox(
-                      decoration: BoxDecoration(
-                        color: AppColors.primaryFixed,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                  ),
-                ),
-                ListView.separated(
-                  itemCount: _items.length,
-                  separatorBuilder: (_, _) => const SizedBox(height: 4),
-                  itemBuilder: (context, index) {
-                    final item = _items[index];
-                    return _NavTile(
-                      icon: item.icon,
-                      label: item.label,
-                      selected: index == _selectedIndex,
-                      onTap: () => _onSelect(index),
-                    );
-                  },
-                ),
-              ],
+            child: ListView.separated(
+              itemCount: _items.length,
+              separatorBuilder: (_, _) => const SizedBox(height: 4),
+              itemBuilder: (context, index) {
+                final item = _items[index];
+                return _NavTile(
+                  icon: item.icon,
+                  label: item.label,
+                  selected: index == _selectedIndex,
+                  onTap: () => _onSelect(index),
+                );
+              },
             ),
           ),
 
@@ -255,7 +234,7 @@ class _NavTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: Colors.transparent,
+      color: selected ? AppColors.primaryFixed : Colors.transparent,
       borderRadius: BorderRadius.circular(8),
       child: InkWell(
         borderRadius: BorderRadius.circular(8),

@@ -19,7 +19,7 @@ class FooterSection extends StatelessWidget {
               Icon(Icons.shield, color: AppColors.primary, size: 20),
               const SizedBox(width: 8),
               Text(
-                'Barangay Digital Hub System',
+                'Civica',
                 style: AppTextStyles.labelMd.copyWith(
                   color: AppColors.primary,
                   fontWeight: FontWeight.bold,
@@ -31,9 +31,7 @@ class FooterSection extends StatelessWidget {
           Text(
             '© 2026 Republic of the Philippines — All Rights Reserved',
             textAlign: TextAlign.center,
-            style: AppTextStyles.bodySm.copyWith(
-              color: AppColors.outline,
-            ),
+            style: AppTextStyles.bodySm.copyWith(color: AppColors.outline),
           ),
         ],
       ),
