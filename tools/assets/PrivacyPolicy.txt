@@ -1,0 +1,88 @@
+PRIVACY POLICY FOR CIVICA
+Effective Date: September 23, 2026   
+
+1. Introduction
+This Privacy Policy describes how Civica ("we," "our," or "us"), operated as an individual entity in the Philippines, collects, uses, stores, and protects your personal information when you access our website at [https://bms-system-2499a.web.app](https://bms-system-2499a.web.app) or use the Civica mobile application. We are committed to processing personal data in compliance with applicable privacy laws, including the Philippine Data Privacy Act of 2012 (Republic Act No. 10173).   
+
+2. Information We Collect
+A. Information You Provide Directly
+We collect personal information that you directly provide when registering an account or updating your profile on Civica:   
+
+Name / Username  
+
+Email Address   
+
+Phone Number (when you choose to provide it)   
+
+Resident-profile information needed to use requested barangay services   
+
+We do not collect payment-card information or billing information through Civica. Passwords are handled by Firebase Authentication; Civica does not store readable passwords in Firestore.   
+
+B. Data Collected via Third-Party Authentication
+You can choose to register or log into Civica using Google Login. When you use Google Login, we receive basic profile information permitted by your Google account settings to authenticate your identity.   
+
+C. Technical Tracking and Operational Data
+We automatically collect certain technical information when you navigate the Platform:   
+
+Tracking Technologies: Cookies, web beacons, local storage, and session tokens.   
+
+Operational Data: We may process limited technical information needed to keep the Platform secure, diagnose errors, and improve service reliability. Civica does not currently use Google Maps API or third-party advertising trackers.   
+
+Map Feature: The emergency-report location feature uses OpenStreetMap-based map tiles through the Platform's mapping component. Location is requested only when you choose to use a location-aware feature, such as reporting an emergency.   
+
+3. Device Permissions and Features
+Depending on your platform interactions, Civica may request access to the following device permissions:   
+
+Geolocation: Used to provide location-aware features within the Platform.   
+
+Photo Gallery Access: Used to allow you to select and upload media content within the Platform.   
+
+4. How We Use Your Information
+We use the collected information for the following purposes:
+
+To create, maintain, and manage your account.
+
+To help verify account and service-request information where applicable.   
+
+To provide platform functionality, geolocation features, and media uploads.   
+
+To monitor system traffic, diagnose technical bugs, and improve overall service efficiency.   
+
+To communicate essential system announcements or support requests.   
+
+5. Newsletters and Email Marketing
+If you explicitly opt-in, we may send you newsletters, promotional emails, and service updates. You can opt-out of receiving promotional messages at any time by clicking the "Unsubscribe" link at the bottom of our emails.   
+
+6. Advertising and Tracking Disclosures
+To ensure complete transparency regarding third-party advertising:   
+
+We do not show third-party advertisements on the Platform.   
+
+We do not use retargeting advertising services.   
+
+We do not have Facebook pixels installed.   
+
+7. Children's Privacy (Users Under 13)
+Civica is not directed to or intended for children under the age of 13. We do not knowingly solicit or collect personal data from anyone under 13 years old. If we become aware that a child under 13 has provided us with personal information, we will immediately take steps to delete such data from our servers and terminate the corresponding account.
+
+8. Payments Information
+Civica does not collect debit/credit card numbers or handle financial payment processing through the website or application.   
+
+
+9. Your Data Privacy Rights
+Under the Philippine Data Privacy Act of 2012, you have the following rights regarding your personal data:
+
+Right to be Informed: The right to know how your data is collected and processed.
+
+Right to Access: The right to request copies of the personal data we hold about you.
+
+Right to Rectification: The right to request correction of inaccurate or incomplete data.
+
+Right to Erasure or Blocking: The right to suspend, withdraw, or order the removal of your personal data under permissible grounds.
+
+10. Contact Us
+For privacy inquiries, data protection concerns, or to exercise your privacy rights, contact us at:   
+
+Email: skilaw0715@gmail.com   
+
+Phone: 09764732218   

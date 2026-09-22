@@ -3,6 +3,7 @@ param(
 )
 
 $secureKey = Read-Host 'Paste the restricted ANDROID Gemini API key' -AsSecureString
+$oneSignalAppId = Read-Host 'Paste your OneSignal App ID (press Enter to build without phone push notifications)'
 # The current release build uses Android's debug signing configuration.
 # If you later create a separate release keystore, replace this SHA-1 with
 # that keystore's fingerprint and update the Android API-key restriction.
@@ -12,6 +13,9 @@ $keyPointer = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($secureKey)
 try {
     $env:GEMINI_API_KEY = [Runtime.InteropServices.Marshal]::PtrToStringBSTR($keyPointer)
     $buildArgs = @('build', 'apk', '--release', "--dart-define=GEMINI_API_KEY=$env:GEMINI_API_KEY", "--dart-define=GEMINI_ANDROID_CERT_SHA1=$certificateSha1")
+    if (-not [string]::IsNullOrWhiteSpace($oneSignalAppId)) {
+        $buildArgs += "--dart-define=ONESIGNAL_APP_ID=$oneSignalAppId"
+    }
     if ($EnableDemoAdminBypass) {
         $buildArgs += '--dart-define=ENABLE_DEMO_ADMIN_BYPASS=true'
     }

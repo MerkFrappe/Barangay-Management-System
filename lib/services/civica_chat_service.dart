@@ -31,10 +31,21 @@ Style: be warm, concise, respectful, and useful. Answer in the resident's langua
     required List<CivicaChatTurn> history,
   }) async {
     if (_apiKey.isEmpty) {
-      throw const CivicaChatException(
-        'Civica has not been configured with a demo Gemini key.',
-      );
+      return fallbackResponse(message);
     }
+    try {
+      return await _askGemini(message: message, history: history);
+    } catch (_) {
+      // The resident assistant must remain useful when the device is offline,
+      // Gemini is unavailable, or the API key has been rejected.
+      return fallbackResponse(message);
+    }
+  }
+
+  static Future<String> _askGemini({
+    required String message,
+    required List<CivicaChatTurn> history,
+  }) async {
     final contents =
         history
             .take(12)
@@ -53,24 +64,26 @@ Style: be warm, concise, respectful, and useful. Answer in the resident's langua
               {'text': message},
             ],
           });
-    final response = await http.post(
-      Uri.parse(_endpoint),
-      headers: {
-        'Content-Type': 'application/json',
-        'x-goog-api-key': _apiKey,
-        'x-goog-api-client': 'civica-school-demo/1.0',
-        ...geminiPlatformHeaders(),
-      },
-      body: jsonEncode({
-        'systemInstruction': {
-          'parts': [
-            {'text': _systemInstruction},
-          ],
-        },
-        'contents': contents,
-        'generationConfig': {'temperature': 0.25, 'maxOutputTokens': 700},
-      }),
-    );
+    final response = await http
+        .post(
+          Uri.parse(_endpoint),
+          headers: {
+            'Content-Type': 'application/json',
+            'x-goog-api-key': _apiKey,
+            'x-goog-api-client': 'civica-school-demo/1.0',
+            ...geminiPlatformHeaders(),
+          },
+          body: jsonEncode({
+            'systemInstruction': {
+              'parts': [
+                {'text': _systemInstruction},
+              ],
+            },
+            'contents': contents,
+            'generationConfig': {'temperature': 0.25, 'maxOutputTokens': 700},
+          }),
+        )
+        .timeout(const Duration(seconds: 12));
     if (response.statusCode < 200 || response.statusCode >= 300) {
       final responseBody = jsonDecode(response.body);
       String? apiMessage;
@@ -99,6 +112,93 @@ Style: be warm, concise, respectful, and useful. Answer in the resident's langua
     }
     return answer.trim();
   }
+
+  /// Provides safe, predetermined guidance when Gemini cannot be reached.
+  /// This deliberately avoids local facts such as current fees or office hours.
+  static String fallbackResponse(String message) {
+    final question = message.toLowerCase().trim();
+
+    if (_containsAny(question, [
+      'emergency',
+      'fire',
+      'crime',
+      'accident',
+      'medical',
+      'danger',
+      'disaster',
+    ])) {
+      return 'For an immediate threat to life, a crime in progress, fire, or a medical emergency, call 911 or local emergency services now. If it is safe to do so, you can also use Civica\'s Report Emergency feature to send a report to the barangay.';
+    }
+
+    if (_containsAny(question, [
+      'track my request',
+      'track request',
+      'request status',
+      'status of my',
+      'requested document',
+    ])) {
+      return 'To check a document request, open Civica\'s request-tracking section and look for your submitted request. Its status may show as pending, approved, rejected, finished, or released. For a status that has not changed, please confirm with Barangay Apokon.';
+    }
+
+    if (_containsAny(question, [
+      'business clearance',
+      'business permit',
+    ])) {
+      return 'For a Barangay Business Clearance, start by checking Civica\'s document-request options or visit Barangay Apokon. The barangay can confirm the current form, supporting documents, fee, and release process before you apply.';
+    }
+
+    if (_containsAny(question, [
+      'indigency',
+      'indigent',
+    ])) {
+      return 'For a Certificate of Indigency, ask Barangay Apokon about the current application process and supporting documents. The barangay must verify eligibility and can tell you the current fee, if any, and release schedule.';
+    }
+
+    if (_containsAny(question, [
+      'residency',
+      'residence certificate',
+      'certificate of residency',
+    ])) {
+      return 'A Certificate of Residency generally confirms that you live in the barangay. Submit a document request in Civica or contact Barangay Apokon to confirm the current requirements, fee, and processing time.';
+    }
+
+    if (_containsAny(question, [
+      'barangay clearance',
+      'barangay certificate',
+      'clearance',
+      'document issuance',
+      'permit',
+    ])) {
+      return 'You can begin by opening Civica\'s document-request feature and choosing the document you need. Provide complete, accurate details, then track the request in the portal. Barangay Apokon will confirm any current requirements, fee, and release schedule.';
+    }
+
+    if (_containsAny(question, [
+      'service',
+      'announcement',
+      'health',
+      'community',
+      'poll',
+      'official',
+    ])) {
+      return 'Civica can help you view announcements, request documents, track requests, report emergencies, find community and health updates, join polls, and view barangay information. Check the relevant portal section for current details, since schedules and availability can change.';
+    }
+
+    if (_containsAny(question, [
+      'office hour',
+      'open',
+      'schedule',
+      'fee',
+      'contact',
+      'phone',
+    ])) {
+      return 'I cannot confirm current office hours, fees, or contact details while the online assistant is unavailable. Please check the latest Civica announcement or contact Barangay Apokon directly for the official information.';
+    }
+
+    return 'I\'m currently using Civica\'s offline help. I can assist with document requests, request tracking, announcements, barangay services, and emergency reporting. For current local details, please check Civica announcements or confirm with Barangay Apokon.';
+  }
+
+  static bool _containsAny(String text, List<String> phrases) =>
+      phrases.any((phrase) => text.contains(phrase));
 }
 
 class CivicaChatTurn {

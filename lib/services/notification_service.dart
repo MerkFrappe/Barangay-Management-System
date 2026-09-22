@@ -20,13 +20,22 @@ class NotificationService {
   static String get _oneSignalAppId =>
       const String.fromEnvironment('ONESIGNAL_APP_ID');
 
+  static bool get isPushConfigured => !kIsWeb && _oneSignalAppId.isNotEmpty;
+
   static Future<void> initialize() async {
     if (kIsWeb || _oneSignalAppId.isEmpty || _oneSignalConfigured) return;
 
     OneSignal.initialize(_oneSignalAppId);
-    await OneSignal.Notifications.requestPermission(true);
     _registerOneSignalListeners();
     _oneSignalConfigured = true;
+  }
+
+  /// Invoked only after a resident chooses to receive phone notifications.
+  /// On Android 13+ this opens the system permission prompt.
+  static Future<bool> enableSystemNotifications() async {
+    if (!isPushConfigured) return false;
+    await initialize();
+    return OneSignal.Notifications.requestPermission(true);
   }
 
   static void _registerOneSignalListeners() {
@@ -181,7 +190,9 @@ class NotificationService {
     for (var offset = 0; offset < recipientDocs.length; offset += 500) {
       final batch = _firestore.batch();
       for (final user in recipientDocs.skip(offset).take(500)) {
-        final notificationRef = user.reference.collection('notifications').doc(notificationId);
+        final notificationRef = user.reference
+            .collection('notifications')
+            .doc(notificationId);
         final notification = {
           'type': type,
           'referenceId': referenceId,

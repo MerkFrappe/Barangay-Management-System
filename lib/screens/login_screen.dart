@@ -8,6 +8,8 @@ import 'email_verification_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/user_roles.dart';
+import '../widgets/legal_documents.dart';
+import '../widgets/google_logo.dart';
 
 class LoginScreen extends StatefulWidget {
   final bool initialAdmin;
@@ -223,10 +225,27 @@ class _LoginScreenState extends State<LoginScreen> {
       final userDoc = await userRef.get();
 
       if (!userDoc.exists) {
+        if (!mounted) return;
+        final accepted = await showLegalAgreementDialog(context);
+        if (!accepted) {
+          await FirebaseAuth.instance.signOut();
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text(
+                  'Google sign-up was cancelled because the policies were not accepted.',
+                ),
+              ),
+            );
+          }
+          return;
+        }
         await userRef.set({
           'accountName': user.displayName ?? user.email ?? 'Resident',
           'email': user.email,
           'role': 'Resident',
+          'termsAcceptedAt': FieldValue.serverTimestamp(),
+          'privacyAcceptedAt': FieldValue.serverTimestamp(),
           'lastLogin': FieldValue.serverTimestamp(),
         });
       } else {
@@ -627,35 +646,8 @@ class _LoginForm extends StatelessWidget {
             const SizedBox(height: 20),
           ],
 
-          // Small role-switch link, top-right of the form. Residents land
-          // here by default; admins tap through to the admin-flavored form.
-          Align(
-            alignment: Alignment.centerRight,
-            child: TextButton.icon(
-              onPressed: () => onSelectRole(!isAdmin),
-              style: TextButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                minimumSize: Size.zero,
-                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                foregroundColor: AppColors.primary,
-              ),
-              icon: Icon(
-                isAdmin ? Icons.person_outline : Icons.shield_outlined,
-                size: 15,
-              ),
-              label: Text(
-                isAdmin ? 'Login as Resident' : 'Login as Admin',
-                style: AppTextStyles.labelSm.copyWith(
-                  color: AppColors.primary,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(height: 8),
-
           Text(
-            isAdmin ? 'Welcome back, Chairman' : 'Welcome, Resident',
+            isAdmin ? 'Welcome' : 'Welcome, Resident',
             style: AppTextStyles.headlineLg.copyWith(
               color: AppColors.primary,
               fontSize: isWide ? 30 : 24,
@@ -673,7 +665,7 @@ class _LoginForm extends StatelessWidget {
           const SizedBox(height: 24),
 
           Text(
-            isAdmin ? 'Email or Admin Username' : 'Email or Resident ID',
+            isAdmin ? 'Email or Admin Username' : 'Email Address',
             style: AppTextStyles.labelMd.copyWith(color: AppColors.onSurface),
           ),
           const SizedBox(height: 8),
@@ -783,7 +775,7 @@ class _LoginForm extends StatelessWidget {
                       ),
                     )
                   : Text(
-                      isAdmin ? 'Sign In as Admin' : 'Sign In as Resident',
+                      isAdmin ? 'Sign In' : 'Sign In',
                       style: AppTextStyles.labelMd.copyWith(
                         color: AppColors.onPrimary,
                         fontSize: 16,
@@ -796,7 +788,8 @@ class _LoginForm extends StatelessWidget {
 
           OutlinedButton.icon(
             onPressed: isSubmitting ? null : onGoogleLogin,
-            icon: const Icon(Icons.account_circle_outlined),
+            icon: const GoogleLogo(),
+
             label: const Text('Continue with Google'),
             style: OutlinedButton.styleFrom(
               padding: const EdgeInsets.symmetric(vertical: 14),
@@ -806,6 +799,8 @@ class _LoginForm extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 20),
+          const Center(child: LegalLinks()),
+          const SizedBox(height: 16),
 
           Center(
             child: TextButton(

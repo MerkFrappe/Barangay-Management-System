@@ -8,6 +8,8 @@ import 'email_verification_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/user_roles.dart';
+import '../widgets/legal_documents.dart';
+import '../widgets/google_logo.dart';
 
 /// The set of official positions an admin account can be registered under.
 /// `firestoreValue` is what gets written to the `role` field in Firestore —
@@ -119,6 +121,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
         'createdAt': FieldValue.serverTimestamp(),
         'lastLogin': FieldValue.serverTimestamp(),
         'emailVerified': false,
+        'termsAcceptedAt': FieldValue.serverTimestamp(),
+        'privacyAcceptedAt': FieldValue.serverTimestamp(),
       });
 
       await userCredential.user!.sendEmailVerification();
@@ -178,12 +182,29 @@ class _SignUpScreenState extends State<SignUpScreen> {
       var role = 'Resident';
 
       if (!userDoc.exists) {
+        if (!mounted) return;
+        final accepted = await showLegalAgreementDialog(context);
+        if (!accepted) {
+          await FirebaseAuth.instance.signOut();
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text(
+                  'Google sign-up was cancelled because the policies were not accepted.',
+                ),
+              ),
+            );
+          }
+          return;
+        }
         await userRef.set({
           'accountName': user.displayName ?? user.email ?? 'Resident',
           'email': user.email,
           'role': role,
           'createdAt': FieldValue.serverTimestamp(),
           'lastLogin': FieldValue.serverTimestamp(),
+          'termsAcceptedAt': FieldValue.serverTimestamp(),
+          'privacyAcceptedAt': FieldValue.serverTimestamp(),
         });
       } else {
         final data = userDoc.data();
@@ -510,7 +531,7 @@ class _SignUpForm extends StatelessWidget {
           const SizedBox(height: 18),
 
           Text(
-            isAdmin ? 'Email or Admin Username' : 'Email or Resident ID',
+            isAdmin ? 'Email Address' : 'Email Address',
             style: AppTextStyles.labelMd.copyWith(color: AppColors.onSurface),
           ),
           const SizedBox(height: 8),
@@ -579,54 +600,7 @@ class _SignUpForm extends StatelessWidget {
           ),
           const SizedBox(height: 16),
 
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              SizedBox(
-                width: 20,
-                height: 20,
-                child: Checkbox(
-                  value: agreeToTerms,
-                  onChanged: onToggleAgree,
-                  activeColor: AppColors.primary,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.only(top: 2),
-                  child: Text.rich(
-                    TextSpan(
-                      text: 'I agree to the ',
-                      style: AppTextStyles.bodySm.copyWith(
-                        color: AppColors.onSurfaceVariant,
-                      ),
-                      children: [
-                        TextSpan(
-                          text: 'Terms of Service',
-                          style: AppTextStyles.bodySm.copyWith(
-                            color: AppColors.primary,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const TextSpan(text: ' and '),
-                        TextSpan(
-                          text: 'Privacy Policy',
-                          style: AppTextStyles.bodySm.copyWith(
-                            color: AppColors.primary,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
+          LegalAgreementRow(value: agreeToTerms, onChanged: onToggleAgree),
           const SizedBox(height: 24),
 
           SizedBox(
@@ -668,7 +642,7 @@ class _SignUpForm extends StatelessWidget {
           if (!isAdmin) ...[
             OutlinedButton.icon(
               onPressed: isSubmitting ? null : onGoogleSignUp,
-              icon: const Icon(Icons.account_circle_outlined),
+              icon: const GoogleLogo(),
               label: const Text('Sign up with Google'),
               style: OutlinedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 14),

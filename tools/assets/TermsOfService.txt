@@ -1,0 +1,67 @@
+TERMS OF SERVICE FOR CIVICA
+Effective Date: September 23, 2026   
+
+1. Acceptance of Terms
+These Terms of Service ("Terms") govern your access to and use of the Civica website located at [https://bms-system-2499a.web.app](https://bms-system-2499a.web.app) and the Civica mobile application (collectively, the "Platform"). The Platform is owned and operated as an individual entity in the Philippines.   
+
+By creating an account, downloading the application, or accessing the website, you agree to be bound by these Terms. If you do not agree to these Terms, you must not access or use the Platform.
+
+2. Age Eligibility
+The Platform is intended strictly for users who are at least 13 years of age or older. Users under the age of 13 are strictly prohibited from creating an account or accessing the Platform. By using Civica, you represent and warrant that you are at least 13 years old. If we discover or have reason to believe that a user is under 13 years of age, we reserve the right to immediately terminate their account and purge all associated personal data.
+
+3. Account Registration and Security
+Account Creation: You may be required to register an account or sign in using a supported third-party provider, specifically Google Login.   
+
+Accuracy of Information: You agree to provide accurate, current, and complete information requested during registration and use of Civica, such as your name, email address, contact number, and resident-profile details. Civica does not request billing information through the Platform.   
+
+Account Credentials: You are solely responsible for maintaining the confidentiality of your account credentials and password. You accept full responsibility for all activities that occur under your account.   
+
+4. Acceptable Use Policy
+When using Civica, you agree that you will not:
+
+Violate any applicable local, national, or international laws or regulations in the Philippines or your local jurisdiction.   
+
+Reverse engineer, decompile, disassemble, or attempt to extract the source code of the Platform.
+
+Impersonate any person or entity or misrepresent your affiliation with a person or entity.
+
+Use automated systems, bots, or scrapers to extract data from the Platform without permission.
+
+Interfere with or attempt to compromise the integrity or security of the Platform or its underlying servers.
+
+5. Intellectual Property Rights
+All content, branding, logos, graphics, interfaces, user interface elements, and code associated with Civica are the exclusive intellectual property of the platform operator. You are granted a limited, non-exclusive, non-transferable, and revocable license to access and use the Platform for its intended purpose.
+
+6. Payments and Financial Transactions
+Civica does not currently process online payments, debit/credit card transactions, or online purchases directly on the website or mobile application.   
+
+7. Disclaimer of Warranties
+The Platform is provided on an "AS IS" and "AS AVAILABLE" basis without warranties of any kind, whether express or implied. To the maximum extent permitted by applicable law, we make no guarantees that:
+
+The Platform will function uninterrupted, securely, or error-free.
+
+Defects or bugs will be immediately corrected.
+
+The content provided through the Platform is completely accurate or reliable.
+
+8. Limitation of Liability
+To the fullest extent permitted by law, the owner and operator of Civica shall not be liable for any indirect, incidental, special, consequential, or punitive damages, including loss of data, loss of business, or unauthorized access to your account resulting from:
+
+Your use of or inability to use the Platform.
+
+Any unauthorized access to or alteration of your transmissions or data.
+
+Technical outages, server failures, or third-party service disruptions.
+
+9. Account Termination
+We reserve the right to suspend, disable, or terminate your access to the Platform at our sole discretion, without prior notice, for conduct that we believe violates these Terms or is harmful to other users or the Platform's operational security.
+
+10. Governing Law
+These Terms shall be governed by and construed in accordance with the laws of the Republic of the Philippines, without giving effect to any principles of conflicts of law.   
+
+11. Contact Information
+For questions or concerns regarding these Terms, or to report a problem with the Platform, contact us at:   
+
+Email: skilaw0715@gmail.com   
+
+Phone: 09764732218   

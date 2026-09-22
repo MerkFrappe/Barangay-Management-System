@@ -66,3 +66,16 @@ Deploy the trigger after setting both secrets:
 ```powershell
 firebase deploy --only functions --project bms-system-2499a
 ```
+# Civica notification delivery
+
+The Flutter app always creates Firestore in-app notifications. To also send
+Android notification-bar alerts through OneSignal, configure both of these:
+
+1. Create a OneSignal mobile app for Android package `com.example.bms` and
+   copy its **App ID**. Enter that public App ID when running
+   `tools/build_civica_android.ps1`.
+2. For automatic notification delivery from Firestore events, deploy the
+   functions in this folder and configure `ONESIGNAL_APP_ID` and
+   `ONESIGNAL_REST_API_KEY` in the server environment. Firebase Functions
+   requires the Blaze plan. Without Functions, staff can still send manual
+   test notifications from the OneSignal dashboard to opted-in devices.

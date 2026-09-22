@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
 import '../screens/login_screen.dart';
 import '../screens/profile_completion_screen.dart';
+import '../services/notification_service.dart';
 
 /// Small popup used from the resident sidebar's "Settings" item.
 ///
@@ -52,6 +53,45 @@ Future<void> showResidentSettingsPopup(BuildContext context) {
                     ),
                   );
                 },
+              ),
+              const Divider(height: 1, color: AppColors.outlineVariant),
+              ListTile(
+                leading: const Icon(
+                  Icons.notifications_active_outlined,
+                  color: AppColors.primary,
+                ),
+                title: Text(
+                  'Enable phone notifications',
+                  style: AppTextStyles.bodyMd.copyWith(
+                    color: AppColors.onSurface,
+                  ),
+                ),
+                subtitle: Text(
+                  NotificationService.isPushConfigured
+                      ? 'Receive Civica alerts in your notification bar.'
+                      : 'Push notifications are not configured in this build.',
+                  style: AppTextStyles.bodySm.copyWith(
+                    color: AppColors.onSurfaceVariant,
+                  ),
+                ),
+                onTap: NotificationService.isPushConfigured
+                    ? () async {
+                        final enabled =
+                            await NotificationService.enableSystemNotifications();
+                        if (!ctx.mounted) return;
+                        Navigator.of(ctx).pop();
+                        if (!context.mounted) return;
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              enabled
+                                  ? 'Phone notifications are enabled.'
+                                  : 'Notifications were not enabled. You can allow them in Android Settings.',
+                            ),
+                          ),
+                        );
+                      }
+                    : null,
               ),
               const Divider(height: 1, color: AppColors.outlineVariant),
               ListTile(
