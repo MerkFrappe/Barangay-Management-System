@@ -3,7 +3,7 @@ param(
 )
 
 $secureKey = Read-Host 'Paste the restricted ANDROID Gemini API key' -AsSecureString
-$oneSignalAppId = Read-Host 'Paste your OneSignal App ID (press Enter to build without phone push notifications)'
+$oneSignalAppId = Read-Host 'Optional: paste a different OneSignal App ID (press Enter to use Civica production notifications)'
 # The current release build uses Android's debug signing configuration.
 # If you later create a separate release keystore, replace this SHA-1 with
 # that keystore's fingerprint and update the Android API-key restriction.

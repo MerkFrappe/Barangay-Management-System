@@ -195,25 +195,7 @@ class _HealthCenterScreenState extends State<HealthCenterScreen> {
                 const SizedBox(height: 24),
                 _buildServicesGrid(isWide),
                 const SizedBox(height: 24),
-                isWide
-                    ? Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Expanded(flex: 7, child: _buildQueueCard()),
-                          const SizedBox(width: 24),
-                          Expanded(
-                            flex: 5,
-                            child: _buildEmergencyHotlineCard(),
-                          ),
-                        ],
-                      )
-                    : Column(
-                        children: [
-                          _buildQueueCard(),
-                          const SizedBox(height: 24),
-                          _buildEmergencyHotlineCard(),
-                        ],
-                      ),
+                _buildEmergencyHotlineCard(),
               ],
             ),
           ),

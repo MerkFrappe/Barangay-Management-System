@@ -56,7 +56,7 @@ async function sendPush(notification, roles) {
   const oneSignalAppId = process.env.ONESIGNAL_APP_ID;
   const oneSignalRestApiKey = process.env.ONESIGNAL_REST_API_KEY;
   if (!oneSignalAppId || !oneSignalRestApiKey) {
-    logger.warn('OneSignal secrets are not configured; in-app notifications were created.', {
+    logger.warn('OneSignal secrets are not configured; in-app notification only.', {
       type: notification.type,
       referenceId: notification.referenceId,
     });
@@ -77,10 +77,7 @@ async function sendPush(notification, roles) {
       ]),
       headings: { en: notification.title },
       contents: { en: notification.body },
-      data: {
-        type: notification.type,
-        referenceId: notification.referenceId,
-      },
+      data: { type: notification.type, referenceId: notification.referenceId },
     }),
   });
   logger.info('OneSignal notification response', {

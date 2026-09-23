@@ -25,6 +25,7 @@ class Announcement {
   final AnnouncementStatus status;
   final int reach;
   final int likes;
+  final int dislikes;
   final List<String> viewerIds;
   final List<String> imageBase64List;
   final bool isPinned;
@@ -38,6 +39,7 @@ class Announcement {
     required this.status,
     this.reach = 0,
     this.likes = 0,
+    this.dislikes = 0,
     this.viewerIds = const [],
     this.imageBase64List = const [],
     this.isPinned = false,
@@ -84,6 +86,7 @@ class AnnouncementService {
           status: _parseStatus(data['status'] ?? 'published'),
           reach: (data['viewerIds'] as List?)?.length ?? 0,
           likes: (data['likerIds'] as List?)?.length ?? 0,
+          dislikes: (data['dislikerIds'] as List?)?.length ?? 0,
           viewerIds: List<String>.from(data['viewerIds'] ?? const []),
           imageBase64List: _imageListFrom(data),
           isPinned: data['isPinned'] == true,
@@ -108,6 +111,7 @@ class AnnouncementService {
           status: _parseStatus(data['status'] ?? 'published'),
           reach: (data['viewerIds'] as List?)?.length ?? 0,
           likes: (data['likerIds'] as List?)?.length ?? 0,
+          dislikes: (data['dislikerIds'] as List?)?.length ?? 0,
           viewerIds: List<String>.from(data['viewerIds'] ?? const []),
           imageBase64List: _imageListFrom(data),
           isPinned: data['isPinned'] == true,
@@ -154,6 +158,7 @@ class AnnouncementService {
           'createdAt': FieldValue.serverTimestamp(),
           'viewerIds': <String>[],
           'likerIds': <String>[],
+          'dislikerIds': <String>[],
           if (imageBase64List.isNotEmpty) 'imageBase64List': imageBase64List,
           'isPinned': false,
         });
@@ -177,6 +182,9 @@ class AnnouncementService {
           isPinned: false,
         );
       } else {
+        final replacementImages = imageBytesList.isEmpty
+            ? a.imageBase64List
+            : _encodeImages(imageBytesList);
         await _collection.doc(a.id).set({
           'title': a.title,
           'description': a.description,
@@ -188,8 +196,7 @@ class AnnouncementService {
           'createdAt': FieldValue.serverTimestamp(),
           'viewerIds': FieldValue.arrayUnion([]),
           'likerIds': FieldValue.arrayUnion([]),
-          if (a.imageBase64List.isNotEmpty)
-            'imageBase64List': a.imageBase64List,
+          if (replacementImages.isNotEmpty) 'imageBase64List': replacementImages,
           'isPinned': a.isPinned,
         }, SetOptions(merge: true));
         return a;
@@ -222,6 +229,7 @@ class AnnouncementService {
 
   static Future<void> deleteAnnouncement(String id) async {
     try {
+      await NotificationService.removeAnnouncementNotifications(id);
       await _collection.doc(id).delete();
     } catch (e) {
       debugPrint('Error deleting announcement: $e');
@@ -309,8 +317,15 @@ class _AnnouncementPageState extends State<AnnouncementPage> {
 
 // ─── Main Content ─────────────────────────────────────────────────────────────
 
-class _MainContent extends StatelessWidget {
+class _MainContent extends StatefulWidget {
   const _MainContent();
+
+  @override
+  State<_MainContent> createState() => _MainContentState();
+}
+
+class _MainContentState extends State<_MainContent> {
+  final _formKey = GlobalKey<_AddEventFormState>();
 
   @override
   Widget build(BuildContext context) {
@@ -365,10 +380,15 @@ class _MainContent extends StatelessWidget {
             padding: const EdgeInsets.all(24),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
-              children: const [
-                Expanded(flex: 7, child: _LeftColumn()),
+              children: [
+                Expanded(
+                  flex: 7,
+                  child: _LeftColumn(
+                    onEdit: (announcement) => _formKey.currentState?.loadForEdit(announcement),
+                  ),
+                ),
                 SizedBox(width: 20),
-                SizedBox(width: 360, child: _AddEventForm()),
+                SizedBox(width: 360, child: _AddEventForm(key: _formKey)),
               ],
             ),
           ),
@@ -381,7 +401,8 @@ class _MainContent extends StatelessWidget {
 // ─── Left Column ─────────────────────────────────────────────────────────────
 
 class _LeftColumn extends StatefulWidget {
-  const _LeftColumn();
+  final ValueChanged<Announcement> onEdit;
+  const _LeftColumn({required this.onEdit});
 
   @override
   State<_LeftColumn> createState() => _LeftColumnState();
@@ -483,7 +504,11 @@ class _LeftColumnState extends State<_LeftColumn> {
                         ),
                       );
                     }
-                    return _AnnouncementsTable(items: items, onDeleted: () {});
+                    return _AnnouncementsTable(
+                      items: items,
+                      onDeleted: () {},
+                      onEdit: widget.onEdit,
+                    );
                   },
                 ),
                 const SizedBox(height: 16),
@@ -515,6 +540,10 @@ class _LeftColumnState extends State<_LeftColumn> {
                 0,
                 (total, a) => total + a.likes,
               );
+              final dislikes = published.fold<int>(
+                0,
+                (total, a) => total + a.dislikes,
+              );
               final engagement = reach == 0
                   ? 0
                   : ((likes / reach) * 100).round();
@@ -538,6 +567,13 @@ class _LeftColumnState extends State<_LeftColumn> {
                     value: '$likes ($engagement%)',
                     icon: Icons.thumb_up_alt_outlined,
                     accentColor: Colors.green,
+                  ),
+                  const SizedBox(width: 12),
+                  _StatCard(
+                    label: 'Users Disliked',
+                    value: '$dislikes',
+                    icon: Icons.thumb_down_alt_outlined,
+                    accentColor: Colors.red,
                   ),
                 ],
               );
@@ -591,7 +627,12 @@ class _FilterChip extends StatelessWidget {
 class _AnnouncementsTable extends StatelessWidget {
   final List<Announcement> items;
   final VoidCallback onDeleted;
-  const _AnnouncementsTable({required this.items, required this.onDeleted});
+  final ValueChanged<Announcement> onEdit;
+  const _AnnouncementsTable({
+    required this.items,
+    required this.onDeleted,
+    required this.onEdit,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -683,6 +724,10 @@ class _AnnouncementsTable extends StatelessWidget {
               color: Color(0xFF444653),
             ),
             onSelected: (value) async {
+              if (value == 'edit') {
+                onEdit(a);
+                return;
+              }
               if (value == 'pin') {
                 await AnnouncementService.setPinnedAnnouncement(a);
                 if (context.mounted) {
@@ -890,7 +935,7 @@ class _StatCard extends StatelessWidget {
 // ─── Add Event Form ───────────────────────────────────────────────────────────
 
 class _AddEventForm extends StatefulWidget {
-  const _AddEventForm();
+  const _AddEventForm({super.key});
 
   @override
   State<_AddEventForm> createState() => _AddEventFormState();
@@ -904,6 +949,29 @@ class _AddEventFormState extends State<_AddEventForm> {
   AnnouncementCategory _category = AnnouncementCategory.news;
   bool _isSaving = false;
   final List<Uint8List> _imageBytesList = [];
+  String? _editingId;
+  bool _editingPinned = false;
+  List<String> _existingImages = const [];
+
+  void loadForEdit(Announcement announcement) {
+    final parts = announcement.date.split('/');
+    final month = parts.length == 3 ? int.tryParse(parts[0]) : null;
+    final day = parts.length == 3 ? int.tryParse(parts[1]) : null;
+    final year = parts.length == 3 ? int.tryParse(parts[2]) : null;
+    setState(() {
+      _editingId = announcement.id;
+      _editingPinned = announcement.isPinned;
+      _existingImages = announcement.imageBase64List;
+      _titleController.text = announcement.title;
+      _descController.text = announcement.description;
+      _category = announcement.category;
+      _selectedDate = month == null || day == null || year == null
+          ? null
+          : DateTime(year, month, day);
+      _selectedTime = null;
+      _imageBytesList.clear();
+    });
+  }
 
   @override
   void dispose() {
@@ -983,7 +1051,7 @@ class _AddEventFormState extends State<_AddEventForm> {
     setState(() => _isSaving = true);
 
     final a = Announcement(
-      id: '',
+      id: _editingId ?? '',
       title: _titleController.text.trim(),
       description: _descController.text.trim().isEmpty
           ? 'No description provided.'
@@ -993,6 +1061,8 @@ class _AddEventFormState extends State<_AddEventForm> {
           : 'No date set',
       category: _category,
       status: status,
+      imageBase64List: _existingImages,
+      isPinned: _editingPinned,
     );
 
     try {
@@ -1011,9 +1081,11 @@ class _AddEventFormState extends State<_AddEventForm> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            status == AnnouncementStatus.published
-                ? '"${a.title}" published!'
-                : '"${a.title}" saved as draft.',
+            _editingId == null
+                ? (status == AnnouncementStatus.published
+                    ? '"${a.title}" published!'
+                    : '"${a.title}" saved as draft.')
+                : '"${a.title}" updated.',
           ),
           backgroundColor: const Color(0xFF002576),
         ),
@@ -1025,6 +1097,9 @@ class _AddEventFormState extends State<_AddEventForm> {
         _selectedTime = null;
         _category = AnnouncementCategory.news;
         _imageBytesList.clear();
+        _existingImages = const [];
+        _editingId = null;
+        _editingPinned = false;
       });
     }
   }
@@ -1054,18 +1129,21 @@ class _AddEventFormState extends State<_AddEventForm> {
               color: Color(0xFF002576),
               borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
             ),
-            child: const Row(
+            child: Row(
               children: [
                 Text(
-                  'Add New Event',
+                  _editingId == null ? 'Add New Event' : 'Edit Announcement',
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: 18,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
-                Spacer(),
-                Icon(Icons.add_circle_outline, color: Colors.white),
+                const Spacer(),
+                Icon(
+                  _editingId == null ? Icons.add_circle_outline : Icons.edit_outlined,
+                  color: Colors.white,
+                ),
               ],
             ),
           ),
@@ -1311,9 +1389,9 @@ class _AddEventFormState extends State<_AddEventForm> {
                         borderRadius: BorderRadius.circular(8),
                       ),
                     ),
-                    child: const Text(
-                      'Save Draft',
-                      style: TextStyle(fontWeight: FontWeight.w600),
+                    child: Text(
+                      _editingId == null ? 'Save Draft' : 'Update Draft',
+                      style: const TextStyle(fontWeight: FontWeight.w600),
                     ),
                   ),
                 ),
@@ -1340,9 +1418,9 @@ class _AddEventFormState extends State<_AddEventForm> {
                               strokeWidth: 2,
                             ),
                           )
-                        : const Text(
-                            'Publish Now',
-                            style: TextStyle(fontWeight: FontWeight.w600),
+                        : Text(
+                            _editingId == null ? 'Publish Now' : 'Update & Publish',
+                            style: const TextStyle(fontWeight: FontWeight.w600),
                           ),
                   ),
                 ),

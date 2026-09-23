@@ -315,9 +315,29 @@ class _CommunityPollsScreenState extends State<CommunityPollsScreen> {
                       const ListTile(title: Text('Recent poll history')),
                       ...closed.take(5).map((d) {
                         final m = d.data() as Map<String, dynamic>;
+                        final choices = List<String>.from(m['choices'] ?? const []);
+                        final counts = List<int>.from(
+                          (m['voteCounts'] ?? const []).map((v) => (v as num).toInt()),
+                        );
+                        while (counts.length < choices.length) {
+                          counts.add(0);
+                        }
+                        final total = counts.fold<int>(0, (sum, value) => sum + value);
+                        final high = counts.isEmpty
+                            ? 0
+                            : counts.reduce((a, b) => a > b ? a : b);
+                        final winners = <String>[
+                          for (var i = 0; i < counts.length; i++)
+                            if (counts[i] == high && total > 0) choices[i],
+                        ];
                         return ListTile(
                           dense: true,
                           title: Text(m['title'] ?? 'Poll'),
+                          trailing: Text(
+                            winners.isEmpty
+                                ? 'No votes cast'
+                                : 'Winner: ${winners.join(' / ')}',
+                          ),
                           subtitle: Text(
                             'Closed • ${List<int>.from(m['voteCounts'] ?? []).fold(0, (a, b) => a + b)} votes',
                           ),

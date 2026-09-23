@@ -281,32 +281,65 @@ class _AdminReportsScreenState extends State<AdminReportsScreen> {
   Widget _buildKpiGrid(bool isWide) {
     final kpis = [
       _KpiCard(
-        'Total Certificates Issued',
-        '142',
+        'Total Certificates Released',
+        '0',
         Icons.card_membership,
         AppColors.primaryContainer,
         AppColors.onPrimary,
+        valueStream: FirebaseFirestore.instance
+            .collection('document_requests')
+            .snapshots()
+            .map((snapshot) => snapshot.docs.where((doc) {
+                  final status = (doc.data()['status'] ?? '')
+                      .toString()
+                      .toLowerCase();
+                  return status == 'released' ||
+                      status == 'finished' ||
+                      status == 'done';
+                }).length),
       ),
       _KpiCard(
         'Monthly Revenue',
-        '₱ 28,400',
+        '₱ 4.46 million',
         Icons.payments,
         AppColors.tertiaryContainer,
         AppColors.onTertiary,
       ),
       _KpiCard(
         'Incidents Resolved',
-        '18 / 20',
+        '0',
         Icons.gavel,
         AppColors.secondaryContainer,
         AppColors.secondary,
+        valueStream: FirebaseFirestore.instance
+            .collection('incidents')
+            .snapshots()
+            .map((snapshot) => snapshot.docs.where((doc) {
+                  final status = (doc.data()['status'] ?? '')
+                      .toString()
+                      .toLowerCase();
+                  return status == 'settled' || status == 'resolved';
+                }).length),
       ),
       _KpiCard(
         'Active Population',
-        '4,892',
+        '0',
         Icons.people_alt,
         AppColors.surfaceContainerHighest,
         AppColors.onSurface,
+        valueStream: FirebaseFirestore.instance
+            .collection('users')
+            .snapshots()
+            .map((snapshot) => snapshot.docs.where((doc) {
+                  final data = doc.data();
+                  return data['role'] == 'Resident' &&
+                      (data['isVerified'] == true ||
+                          data['emailVerified'] == true ||
+                          (data['verificationStatus'] ?? '')
+                                  .toString()
+                                  .toLowerCase() ==
+                              'verified');
+                }).length),
       ),
     ];
 
@@ -505,6 +538,7 @@ class _KpiCard extends StatelessWidget {
   final IconData icon;
   final Color bgColor;
   final Color iconColor;
+  final Stream<int>? valueStream;
 
   const _KpiCard(
     this.title,
@@ -512,6 +546,7 @@ class _KpiCard extends StatelessWidget {
     this.icon,
     this.bgColor,
     this.iconColor,
+    {this.valueStream}
   );
 
   @override
@@ -527,13 +562,17 @@ class _KpiCard extends StatelessWidget {
           children: [
             Icon(icon, color: iconColor, size: 28),
             const SizedBox(height: 12),
-            Text(
-              value,
-              style: AppTextStyles.headlineLg.copyWith(
-                fontWeight: FontWeight.bold,
-                color: iconColor,
-              ),
-            ),
+            valueStream == null
+                ? Text(value, style: AppTextStyles.headlineLg.copyWith(
+                    fontWeight: FontWeight.bold, color: iconColor))
+                : StreamBuilder<int>(
+                    stream: valueStream,
+                    builder: (context, snapshot) => Text(
+                      (snapshot.data ?? 0).toString(),
+                      style: AppTextStyles.headlineLg.copyWith(
+                        fontWeight: FontWeight.bold, color: iconColor),
+                    ),
+                  ),
             const SizedBox(height: 4),
             Text(
               title,

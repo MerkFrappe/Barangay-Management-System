@@ -1,13 +1,8 @@
 # Cloud Functions
 
-The announcement trigger creates an in-app notification for every `users` document whose `role` is `Resident`, then sends one OneSignal tag-targeted push.
-
-Before deploying Functions, configure the secrets directly in your terminal:
-
-```powershell
-firebase functions:secrets:set ONESIGNAL_APP_ID --project bms-system-2499a
-firebase functions:secrets:set ONESIGNAL_REST_API_KEY --project bms-system-2499a
-```
+The notification triggers write the in-app notification bell records and can
+send OneSignal push notifications to Android devices tagged by their Civica
+role. The Flutter app receives its OneSignal App ID only at build time.
 
 ## Civica Chatbot school-demo mode
 
@@ -54,28 +49,24 @@ Client-side keys can be
 extracted from a built application, so this mode is for a controlled school demo
 only. Rotate/delete the keys after presentation.
 
-The Flutter app must be built with the same OneSignal App ID so resident devices can be tagged:
+If you later enable Firebase Functions, configure the OneSignal server secrets:
 
 ```powershell
-flutter build web --dart-define=ONESIGNAL_APP_ID=your-onesignal-app-id
-flutter build apk --dart-define=ONESIGNAL_APP_ID=your-onesignal-app-id
-```
-
-Deploy the trigger after setting both secrets:
-
-```powershell
+firebase functions:secrets:set ONESIGNAL_APP_ID --project bms-system-2499a
+firebase functions:secrets:set ONESIGNAL_REST_API_KEY --project bms-system-2499a
 firebase deploy --only functions --project bms-system-2499a
 ```
 # Civica notification delivery
 
-The Flutter app always creates Firestore in-app notifications. To also send
-Android notification-bar alerts through OneSignal, configure both of these:
+1. In OneSignal, create an Android app using package name `com.example.bms`.
+2. Run `./tools/build_civica_android.ps1` and paste the OneSignal App ID when
+   prompted. This produces an APK with push configured, without storing the ID
+   in source code.
+3. Install the new APK, sign in once, and allow **Phone notifications**. Civica
+   identifies the device and tags it as `Resident` or the appropriate admin role.
+4. Use the OneSignal dashboard to send free manual pushes to those role tags.
 
-1. Create a OneSignal mobile app for Android package `com.example.bms` and
-   copy its **App ID**. Enter that public App ID when running
-   `tools/build_civica_android.ps1`.
-2. For automatic notification delivery from Firestore events, deploy the
-   functions in this folder and configure `ONESIGNAL_APP_ID` and
-   `ONESIGNAL_REST_API_KEY` in the server environment. Firebase Functions
-   requires the Blaze plan. Without Functions, staff can still send manual
-   test notifications from the OneSignal dashboard to opted-in devices.
+The in-app notification bell remains automatic on Firebase's free plan. Fully
+automatic pushes after Firestore events still require a trusted automation
+service—Firebase Functions (which requires Blaze) or an equivalent OneSignal
+automation/backend. Never put the OneSignal REST API key in Flutter code.

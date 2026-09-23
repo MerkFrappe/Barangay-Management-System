@@ -464,6 +464,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.2.5"
+  get:
+    dependency: "direct main"
+    description:
+      name: get
+      sha256: "5ed34a7925b85336e15d472cc4cfe7d9ebf4ab8e8b9f688585bf6b50f4c3d79a"
+      url: "https://pub.dev"
+    source: hosted
+    version: "4.7.3"
   gsettings:
     dependency: transitive
     description:
@@ -660,10 +668,10 @@ packages:
     dependency: "direct main"
     description:
       name: onesignal_flutter
-      sha256: "712e241ee08c6ef41ea8743e4983179b28c46f5f4010c047b360b3d3aa687e8b"
+      sha256: "43434e64c6450fa2c0eb4d492d5b250bca551db1da8aeaace304b44439feb232"
       url: "https://pub.dev"
     source: hosted
-    version: "5.6.8"
+    version: "5.6.12"
   package_info_plus:
     dependency: transitive
     description:

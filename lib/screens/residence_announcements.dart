@@ -140,12 +140,12 @@ class _CommunityEventsScreenState extends State<CommunityEventsScreen> {
   }
 
   List<_EventData> _pastItems(List<_EventData> events) {
-    final cutoff = DateTime.now().subtract(const Duration(days: 7));
+    final now = DateTime.now();
+    final cutoff = DateTime(now.year, now.month, now.day)
+        .subtract(const Duration(days: 7));
     return events.where((event) {
       final eventDate = _parseEventDate(event.date);
-      final relevantDate = event.category == 'Event' && eventDate != null
-          ? eventDate
-          : event.publishedAt;
+      final relevantDate = eventDate ?? event.publishedAt;
       return relevantDate != null && relevantDate.isBefore(cutoff);
     }).toList();
   }
@@ -231,6 +231,7 @@ class _CommunityEventsScreenState extends State<CommunityEventsScreen> {
       fullDescription: desc,
       viewerIds: List<String>.from(data['viewerIds'] ?? const []),
       likerIds: List<String>.from(data['likerIds'] ?? const []),
+      dislikerIds: List<String>.from(data['dislikerIds'] ?? const []),
       publishedAt: data['createdAt'] is Timestamp
           ? (data['createdAt'] as Timestamp).toDate()
           : null,
@@ -260,6 +261,7 @@ class _CommunityEventsScreenState extends State<CommunityEventsScreen> {
     }
     if (!context.mounted) return;
     var liked = uid != null && event.likerIds.contains(uid);
+    var disliked = uid != null && event.dislikerIds.contains(uid);
     showDialog<void>(
       context: context,
       builder: (ctx) {
@@ -387,8 +389,11 @@ class _CommunityEventsScreenState extends State<CommunityEventsScreen> {
                                             'likerIds': liked
                                                 ? FieldValue.arrayRemove([uid])
                                                 : FieldValue.arrayUnion([uid]),
+                                            if (!liked)
+                                              'dislikerIds': FieldValue.arrayRemove([uid]),
                                           });
                                           liked = !liked;
+                                          if (liked) disliked = false;
                                           setDialogState(() {});
                                         },
                                   icon: Icon(
@@ -398,6 +403,39 @@ class _CommunityEventsScreenState extends State<CommunityEventsScreen> {
                                   ),
                                   label: Text(
                                     liked ? 'Liked' : 'Like announcement',
+                                  ),
+                                ),
+                          ),
+                          const SizedBox(height: 8),
+                          StatefulBuilder(
+                            builder: (context, setDialogState) =>
+                                OutlinedButton.icon(
+                                  onPressed: uid == null
+                                      ? null
+                                      : () async {
+                                          final ref = FirebaseFirestore.instance
+                                              .collection('announcements')
+                                              .doc(event.id);
+                                          await ref.update({
+                                            'dislikerIds': disliked
+                                                ? FieldValue.arrayRemove([uid])
+                                                : FieldValue.arrayUnion([uid]),
+                                            if (!disliked)
+                                              'likerIds': FieldValue.arrayRemove([uid]),
+                                          });
+                                          disliked = !disliked;
+                                          if (disliked) liked = false;
+                                          setDialogState(() {});
+                                        },
+                                  icon: Icon(
+                                    disliked
+                                        ? Icons.thumb_down
+                                        : Icons.thumb_down_outlined,
+                                  ),
+                                  label: Text(
+                                    disliked
+                                        ? 'Disliked'
+                                        : 'Dislike announcement',
                                   ),
                                 ),
                           ),
@@ -1021,6 +1059,7 @@ class _EventData {
   final String fullDescription;
   final List<String> viewerIds;
   final List<String> likerIds;
+  final List<String> dislikerIds;
   final DateTime? publishedAt;
 
   const _EventData({
@@ -1037,6 +1076,7 @@ class _EventData {
     required this.fullDescription,
     required this.viewerIds,
     required this.likerIds,
+    required this.dislikerIds,
     required this.publishedAt,
   });
 }

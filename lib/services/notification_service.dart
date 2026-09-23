@@ -18,13 +18,17 @@ class NotificationService {
   static String? _lastSyncedUid;
 
   static String get _oneSignalAppId =>
-      const String.fromEnvironment('ONESIGNAL_APP_ID');
+      const String.fromEnvironment(
+        'ONESIGNAL_APP_ID',
+        // OneSignal App IDs identify the application, not a server credential.
+        // Keep a dart-define override for a future staging/production app.
+        defaultValue: 'a3f349c3-21f7-42f2-a384-d39b12189596',
+      );
 
   static bool get isPushConfigured => !kIsWeb && _oneSignalAppId.isNotEmpty;
 
   static Future<void> initialize() async {
     if (kIsWeb || _oneSignalAppId.isEmpty || _oneSignalConfigured) return;
-
     OneSignal.initialize(_oneSignalAppId);
     _registerOneSignalListeners();
     _oneSignalConfigured = true;
@@ -48,18 +52,21 @@ class NotificationService {
     OneSignal.Notifications.addClickListener((event) {
       final data =
           event.notification.additionalData ?? const <String, dynamic>{};
-      if (data['type'] == 'announcement' &&
-          appNavigatorKey.currentState != null) {
-        appNavigatorKey.currentState!.push(
-          MaterialPageRoute<void>(builder: (_) => const CivicHorizonApp()),
-        );
-      }
+      _openNotificationDestination(data);
     });
   }
 
+  static void _openNotificationDestination(Map<String, dynamic> data) {
+    if (data['type'] == 'announcement' &&
+        appNavigatorKey.currentState != null) {
+      appNavigatorKey.currentState!.push(
+        MaterialPageRoute<void>(builder: (_) => const CivicHorizonApp()),
+      );
+    }
+  }
+
   static Future<void> syncUser(User user, String role) async {
-    if (kIsWeb || _oneSignalAppId.isEmpty) return;
-    if (_lastSyncedUid == user.uid) return;
+    if (kIsWeb || _oneSignalAppId.isEmpty || _lastSyncedUid == user.uid) return;
     await initialize();
     await OneSignal.login(user.uid);
     await OneSignal.User.addTags({'role': role});
@@ -165,6 +172,26 @@ class NotificationService {
     title: title,
     body: body,
   );
+
+  /// Removes an announcement from every resident inbox when the source post
+  /// is deleted, preventing a bell item that opens a missing announcement.
+  static Future<void> removeAnnouncementNotifications(String announcementId) async {
+    final residents = await _firestore
+        .collection('users')
+        .where('role', isEqualTo: 'Resident')
+        .get();
+    for (var offset = 0; offset < residents.docs.length; offset += 500) {
+      final batch = _firestore.batch();
+      for (final resident in residents.docs.skip(offset).take(500)) {
+        batch.delete(
+          resident.reference.collection('notifications').doc(
+            'announcement_$announcementId',
+          ),
+        );
+      }
+      await batch.commit();
+    }
+  }
 
   static Future<void> _notifyUsers({
     required List<String> roles,

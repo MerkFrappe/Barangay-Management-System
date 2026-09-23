@@ -138,74 +138,81 @@ class _OfficialsHierarchy extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final byId = {for (final official in officials) official.id: official};
-    final roots = officials
-        .where(
-          (official) =>
-              official.reportsTo == null ||
-              !byId.containsKey(official.reportsTo),
-        )
-        .toList();
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: SizedBox(
-        width: MediaQuery.of(context).size.width < 720
-            ? 680
-            : MediaQuery.of(context).size.width - 120,
-        child: Column(
-          children: roots
-              .map(
-                (official) =>
-                    _HierarchyNode(official: official, allOfficials: officials),
-              )
-              .toList(),
-        ),
-      ),
-    );
-  }
-}
+    String? parentIdOf(BarangayOfficial official) {
+      final value = official.reportsTo?.trim();
+      if (value == null || value.isEmpty) {
+        // Preserve the intended relationship for the existing staff record
+        // until it is saved explicitly in Settings.
+        if (official.name.toLowerCase().contains('yuichi') &&
+            official.name.toLowerCase().contains('satoh')) {
+          for (final candidate in officials) {
+            if (candidate.name.toLowerCase().contains('lawrenz') &&
+                candidate.name.toLowerCase().contains('mesiona')) {
+              return candidate.id;
+            }
+          }
+        }
+        return null;
+      }
+      if (byId.containsKey(value)) return value;
+      final name = value.toLowerCase();
+      for (final candidate in officials) {
+        if (candidate.name.trim().toLowerCase() == name) return candidate.id;
+      }
+      return null;
+    }
+    final roots = officials.where((official) => parentIdOf(official) == null).toList();
+    final levels = <List<BarangayOfficial>>[];
+    final seen = <String>{};
+    var level = roots;
+    while (level.isNotEmpty) {
+      levels.add(level);
+      seen.addAll(level.map((official) => official.id));
+      level = officials
+          .where((official) =>
+              !seen.contains(official.id) &&
+              level.any((parent) => parentIdOf(official) == parent.id))
+          .toList();
+    }
+    // Keep malformed/cyclic records visible instead of making them disappear.
+    final remaining = officials.where((official) => !seen.contains(official.id)).toList();
+    if (remaining.isNotEmpty) levels.add(remaining);
 
-class _HierarchyNode extends StatelessWidget {
-  final BarangayOfficial official;
-  final List<BarangayOfficial> allOfficials;
-  const _HierarchyNode({required this.official, required this.allOfficials});
-
-  @override
-  Widget build(BuildContext context) {
-    final children = allOfficials
-        .where((candidate) => candidate.reportsTo == official.id)
-        .toList();
-    return Column(
-      children: [
-        SizedBox(
-          width: 250,
-          height: 260,
-          child: _OfficialCard(official: official),
-        ),
-        if (children.isNotEmpty) ...[
-          Container(width: 2, height: 24, color: AppColors.outlineVariant),
-          Container(
-            height: 2,
-            width: (children.length * 266).toDouble(),
-            color: AppColors.outlineVariant,
-          ),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: children
-                .map(
-                  (child) => SizedBox(
-                    width: 266,
-                    child: _HierarchyNode(
-                      official: child,
-                      allOfficials: allOfficials,
+    return LayoutBuilder(
+      builder: (context, constraints) => Column(
+        children: [
+          for (var index = 0; index < levels.length; index++) ...[
+            if (index > 0)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                child: Column(
+                  children: [
+                    Container(width: 2, height: 18, color: AppColors.outlineVariant),
+                    Container(
+                      height: 2,
+                      width: (levels[index].length * 120.0)
+                          .clamp(80.0, constraints.maxWidth)
+                          .toDouble(),
+                      color: AppColors.outlineVariant,
                     ),
-                  ),
-                )
-                .toList(),
-          ),
+                  ],
+                ),
+              ),
+            Wrap(
+              alignment: WrapAlignment.center,
+              spacing: 16,
+              runSpacing: 16,
+              children: levels[index]
+                  .map((official) => SizedBox(
+                        width: constraints.maxWidth < 600 ? 220 : 250,
+                        height: 260,
+                        child: _OfficialCard(official: official),
+                      ))
+                  .toList(),
+            ),
+          ],
         ],
-        const SizedBox(height: 24),
-      ],
+      ),
     );
   }
 }

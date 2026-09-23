@@ -34,7 +34,7 @@ class _admin_documentRequestState extends State<admin_documentRequest> {
       case 'finished':
       case 'done':
       case 'released':
-        return 'Finished';
+        return 'Released';
       default:
         return 'Pending';
     }
@@ -101,7 +101,7 @@ class _admin_documentRequestState extends State<admin_documentRequest> {
               const SizedBox(height: 8),
               Wrap(
                 spacing: 8,
-                children: ['Pending', 'In Review', 'Approved', 'Rejected', 'Finished'].map((
+                children: ['Pending', 'In Review', 'Approved', 'Rejected', 'Released'].map((
                   status,
                 ) {
                   return ChoiceChip(
@@ -220,7 +220,7 @@ class _admin_documentRequestState extends State<admin_documentRequest> {
                                         'In Review',
                                         'Approved',
                                         'Rejected',
-                                        'Finished',
+                                        'Released',
                                       ]
                                       .map(
                                         (s) => DropdownMenuItem(
@@ -339,7 +339,7 @@ class _admin_documentRequestState extends State<admin_documentRequest> {
                                       } else if (status == 'Pending') {
                                         statusBg = AppColors.secondaryContainer;
                                         statusText = AppColors.secondary;
-                                      } else if (status == 'Finished') {
+                                      } else if (status == 'Released') {
                                         statusBg = AppColors.successGreenBg;
                                         statusText = AppColors.successGreen;
                                       }

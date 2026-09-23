@@ -248,7 +248,7 @@ class _RequestTile extends StatelessWidget {
       case 'done':
       case 'released':
         return _StatusStyle(
-          label: 'Finished - Ready for Release',
+          label: 'Released',
           background: Colors.blue.withValues(alpha: 0.12),
           foreground: Colors.blue[800]!,
         );
