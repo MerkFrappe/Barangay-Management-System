@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -62,33 +64,22 @@ class _TopNavigationBarState extends State<TopNavigationBar> {
               ),
             ),
 
-          //---------------------------------------
-          // Search Bar
-          //---------------------------------------
-          Expanded(
-            child: Container(
-              height: 46,
-              decoration: BoxDecoration(
-                color: AppColors.surfaceContainerLow,
-                borderRadius: BorderRadius.circular(30),
-              ),
-              child: TextField(
-                decoration: InputDecoration(
-                  hintText: compact
-                      ? 'Search services or news'
-                      : 'Search services, news, or guidelines...',
-                  hintStyle: AppTextStyles.bodySm.copyWith(
-                    color: AppColors.outline,
-                  ),
-                  prefixIcon: Icon(Icons.search, color: AppColors.outline),
-                  border: InputBorder.none,
-                  contentPadding: const EdgeInsets.symmetric(vertical: 12),
-                ),
+          Image.asset(
+            'tools/assets/app_icon.png',
+            width: compact ? 36 : 42,
+            height: compact ? 36 : 42,
+          ),
+          if (!compact) ...[
+            const SizedBox(width: 10),
+            Text(
+              'Civica',
+              style: AppTextStyles.titleMd.copyWith(
+                color: AppColors.primary,
+                fontWeight: FontWeight.bold,
               ),
             ),
-          ),
-
-          SizedBox(width: compact ? 4 : 16),
+          ],
+          const Spacer(),
 
           //---------------------------------------
           // Notification Button
@@ -116,10 +107,14 @@ class _TopNavigationBarState extends State<TopNavigationBar> {
                     final profile = ResidentProfile.fromMap(
                       snapshot.data?.data(),
                     );
-                    final name = profile.fullName.isNotEmpty
-                        ? profile.fullName
-                        : (FirebaseAuth.instance.currentUser?.email ??
-                              'Resident');
+                    final name =
+                        (profile.dashboardDisplayName?.trim().isNotEmpty ??
+                            false)
+                        ? profile.dashboardDisplayName!.trim()
+                        : (profile.fullName.isNotEmpty
+                              ? profile.fullName
+                              : (FirebaseAuth.instance.currentUser?.email ??
+                                    'Resident'));
                     final initials = profile.initials.isNotEmpty
                         ? profile.initials
                         : 'R';
@@ -140,7 +135,10 @@ class _TopNavigationBarState extends State<TopNavigationBar> {
                               ),
                               const SizedBox(height: 2),
                               Text(
-                                "Resident",
+                                (profile.profileHeadline?.trim().isNotEmpty ??
+                                        false)
+                                    ? profile.profileHeadline!.trim()
+                                    : 'Resident',
                                 style: AppTextStyles.bodySm.copyWith(
                                   color: AppColors.outline,
                                 ),
@@ -151,13 +149,18 @@ class _TopNavigationBarState extends State<TopNavigationBar> {
                         CircleAvatar(
                           radius: compact ? 18 : 22,
                           backgroundColor: AppColors.primaryContainer,
-                          child: Text(
-                            initials,
-                            style: AppTextStyles.labelMd.copyWith(
-                              color: AppColors.onPrimary,
-                              fontWeight: FontWeight.bold,
-                            ),
+                          backgroundImage: _profileImage(
+                            profile.profilePhotoBase64,
                           ),
+                          child: profile.profilePhotoBase64?.isNotEmpty == true
+                              ? null
+                              : Text(
+                                  initials,
+                                  style: AppTextStyles.labelMd.copyWith(
+                                    color: AppColors.onPrimary,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
                         ),
                       ],
                     );
@@ -166,6 +169,15 @@ class _TopNavigationBarState extends State<TopNavigationBar> {
         ],
       ),
     );
+  }
+
+  ImageProvider? _profileImage(String? value) {
+    if (value == null || value.isEmpty) return null;
+    try {
+      return MemoryImage(base64Decode(value));
+    } catch (_) {
+      return null;
+    }
   }
 
   Widget _fallbackUserInfo(bool desktop, bool compact) {

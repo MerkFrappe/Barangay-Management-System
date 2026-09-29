@@ -41,6 +41,7 @@ dependencies:
   http: ^1.2.2
   file_picker: ^12.1.1
   image_picker: ^1.0.7
+  image: ^4.5.4
   geolocator: ^14.0.3
   flutter_map: ^8.3.2
   latlong2: ^0.10.1
@@ -73,12 +74,16 @@ flutter:
   # the material Icons class.
   uses-material-design: true
   assets:
+    - tools/assets/app_icon.png
     - tools/assets/TermsOfService.txt
     - tools/assets/PrivacyPolicy.txt
 
 flutter_launcher_icons:
   android: true
   ios: false
+  web:
+    generate: true
+    image_path: "tools/assets/app_icon.png"
   image_path: "tools/assets/app_icon.png"
   adaptive_icon_background: "#FFFFFF"
   adaptive_icon_foreground: "tools/assets/app_icon.png"

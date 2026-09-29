@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 import '../theme/app_colors.dart';
+import '../models/admin_permissions.dart';
 import '../widgets/sidebar.dart';
 import '../widgets/top_header.dart';
 import 'admin_emergency_reports_screen.dart';
@@ -289,22 +291,18 @@ class _AdminReportsScreenState extends State<AdminReportsScreen> {
         valueStream: FirebaseFirestore.instance
             .collection('document_requests')
             .snapshots()
-            .map((snapshot) => snapshot.docs.where((doc) {
-                  final status = (doc.data()['status'] ?? '')
-                      .toString()
-                      .toLowerCase();
-                  return status == 'released' ||
-                      status == 'finished' ||
-                      status == 'done';
-                }).length),
+            .map(
+              (snapshot) => snapshot.docs.where((doc) {
+                final status = (doc.data()['status'] ?? '')
+                    .toString()
+                    .toLowerCase();
+                return status == 'released' ||
+                    status == 'finished' ||
+                    status == 'done';
+              }).length,
+            ),
       ),
-      _KpiCard(
-        'Monthly Revenue',
-        '₱ 4.46 million',
-        Icons.payments,
-        AppColors.tertiaryContainer,
-        AppColors.onTertiary,
-      ),
+      _monthlyRevenueCard(),
       _KpiCard(
         'Incidents Resolved',
         '0',
@@ -314,12 +312,14 @@ class _AdminReportsScreenState extends State<AdminReportsScreen> {
         valueStream: FirebaseFirestore.instance
             .collection('incidents')
             .snapshots()
-            .map((snapshot) => snapshot.docs.where((doc) {
-                  final status = (doc.data()['status'] ?? '')
-                      .toString()
-                      .toLowerCase();
-                  return status == 'settled' || status == 'resolved';
-                }).length),
+            .map(
+              (snapshot) => snapshot.docs.where((doc) {
+                final status = (doc.data()['status'] ?? '')
+                    .toString()
+                    .toLowerCase();
+                return status == 'settled' || status == 'resolved';
+              }).length,
+            ),
       ),
       _KpiCard(
         'Active Population',
@@ -330,16 +330,18 @@ class _AdminReportsScreenState extends State<AdminReportsScreen> {
         valueStream: FirebaseFirestore.instance
             .collection('users')
             .snapshots()
-            .map((snapshot) => snapshot.docs.where((doc) {
-                  final data = doc.data();
-                  return data['role'] == 'Resident' &&
-                      (data['isVerified'] == true ||
-                          data['emailVerified'] == true ||
-                          (data['verificationStatus'] ?? '')
-                                  .toString()
-                                  .toLowerCase() ==
-                              'verified');
-                }).length),
+            .map(
+              (snapshot) => snapshot.docs.where((doc) {
+                final data = doc.data();
+                return data['role'] == 'Resident' &&
+                    (data['isVerified'] == true ||
+                        data['emailVerified'] == true ||
+                        (data['verificationStatus'] ?? '')
+                                .toString()
+                                .toLowerCase() ==
+                            'verified');
+              }).length,
+            ),
       ),
     ];
 
@@ -365,6 +367,87 @@ class _AdminReportsScreenState extends State<AdminReportsScreen> {
           )
           .toList(),
     );
+  }
+
+  Widget _monthlyRevenueCard() {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+      stream: FirebaseFirestore.instance
+          .collection('system_settings')
+          .doc('main')
+          .snapshots(),
+      builder: (context, revenueSnapshot) {
+        final revenue =
+            revenueSnapshot.data?.data()?['monthlyRevenue']?.toString() ??
+            '₱ 4.46 million';
+        return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+          stream: uid == null
+              ? const Stream.empty()
+              : FirebaseFirestore.instance
+                    .collection('users')
+                    .doc(uid)
+                    .snapshots(),
+          builder: (context, userSnapshot) {
+            final canEdit = AdminPermissions.canEditRevenue(
+              userSnapshot.data?.data(),
+            );
+            return _KpiCard(
+              'Monthly Revenue',
+              revenue,
+              Icons.payments,
+              AppColors.tertiaryContainer,
+              AppColors.onTertiary,
+              action: canEdit
+                  ? IconButton(
+                      tooltip: 'Edit monthly revenue',
+                      icon: const Icon(Icons.edit_outlined),
+                      onPressed: () => _editMonthlyRevenue(revenue),
+                    )
+                  : null,
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Future<void> _editMonthlyRevenue(String currentValue) async {
+    final controller = TextEditingController(text: currentValue);
+    final value = await showDialog<String>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Edit monthly revenue'),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          decoration: const InputDecoration(
+            labelText: 'Monthly revenue',
+            hintText: 'e.g. ₱ 4.46 million',
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () =>
+                Navigator.pop(dialogContext, controller.text.trim()),
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+    controller.dispose();
+    if (value == null || value.isEmpty) return;
+    await FirebaseFirestore.instance
+        .collection('system_settings')
+        .doc('main')
+        .set({
+          'monthlyRevenue': value,
+          'monthlyRevenueUpdatedAt': FieldValue.serverTimestamp(),
+          'monthlyRevenueUpdatedBy': FirebaseAuth.instance.currentUser?.uid,
+        }, SetOptions(merge: true));
   }
 
   Widget _buildFilterSection(bool isWide) {
@@ -539,15 +622,17 @@ class _KpiCard extends StatelessWidget {
   final Color bgColor;
   final Color iconColor;
   final Stream<int>? valueStream;
+  final Widget? action;
 
   const _KpiCard(
     this.title,
     this.value,
     this.icon,
     this.bgColor,
-    this.iconColor,
-    {this.valueStream}
-  );
+    this.iconColor, {
+    this.valueStream,
+    this.action,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -560,17 +645,30 @@ class _KpiCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(icon, color: iconColor, size: 28),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Icon(icon, color: iconColor, size: 28),
+                ?action,
+              ],
+            ),
             const SizedBox(height: 12),
             valueStream == null
-                ? Text(value, style: AppTextStyles.headlineLg.copyWith(
-                    fontWeight: FontWeight.bold, color: iconColor))
+                ? Text(
+                    value,
+                    style: AppTextStyles.headlineLg.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: iconColor,
+                    ),
+                  )
                 : StreamBuilder<int>(
                     stream: valueStream,
                     builder: (context, snapshot) => Text(
                       (snapshot.data ?? 0).toString(),
                       style: AppTextStyles.headlineLg.copyWith(
-                        fontWeight: FontWeight.bold, color: iconColor),
+                        fontWeight: FontWeight.bold,
+                        color: iconColor,
+                      ),
                     ),
                   ),
             const SizedBox(height: 4),

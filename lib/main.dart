@@ -9,6 +9,7 @@ import 'screens/dashboard_screen.dart';
 import 'screens/resident_dashboard_screen.dart';
 import 'screens/email_verification_screen.dart';
 import 'services/notification_service.dart';
+import 'services/presence_service.dart';
 import 'models/user_roles.dart';
 
 void main() async {
@@ -75,6 +76,7 @@ class AuthWrapper extends StatelessWidget {
 
         // Not logged in
         if (!snapshot.hasData || snapshot.data == null) {
+          PresenceService.stop();
           return const LoginScreen();
         }
 
@@ -102,6 +104,7 @@ class AuthWrapper extends StatelessWidget {
               final data = roleSnapshot.data!.data() as Map<String, dynamic>;
               final role = data['role'] ?? 'Resident';
               NotificationService.syncUser(user, role.toString());
+              PresenceService.start(user, role.toString());
               if (isAdminRole(role.toString())) {
                 return const DashboardScreen();
               } else {

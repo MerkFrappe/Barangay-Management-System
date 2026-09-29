@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
 import 'notification_bell.dart';
@@ -101,17 +102,25 @@ class TopHeader extends StatelessWidget implements PreferredSizeWidget {
                 ),
               if (!compact) const SizedBox(width: 8),
               StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-                stream: FirebaseFirestore.instance
-                    .collection('system_settings')
-                    .doc('main')
-                    .snapshots(),
+                stream: FirebaseAuth.instance.currentUser == null
+                    ? const Stream.empty()
+                    : FirebaseFirestore.instance
+                          .collection('users')
+                          .doc(FirebaseAuth.instance.currentUser!.uid)
+                          .snapshots(),
                 builder: (context, snapshot) {
-                  final chairman =
-                      snapshot.data
-                          ?.data()?['chairmanName']
-                          ?.toString()
-                          .trim() ??
-                      'Barangay Captain';
+                  final profile = snapshot.data?.data() ?? {};
+                  final name =
+                      (profile['dashboardDisplayName'] ??
+                              profile['displayName'] ??
+                              profile['accountName'] ??
+                              FirebaseAuth.instance.currentUser?.displayName ??
+                              FirebaseAuth.instance.currentUser?.email ??
+                              'Admin user')
+                          .toString()
+                          .trim();
+                  final role =
+                      profile['role']?.toString().trim() ?? 'Admin console';
                   return Container(
                     padding: const EdgeInsets.only(left: 16),
                     decoration: BoxDecoration(
@@ -127,15 +136,13 @@ class TopHeader extends StatelessWidget implements PreferredSizeWidget {
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               Text(
-                                chairman.isEmpty
-                                    ? 'Barangay Captain'
-                                    : chairman,
+                                name.isEmpty ? 'Admin user' : name,
                                 style: AppTextStyles.labelMd.copyWith(
                                   color: AppColors.primary,
                                 ),
                               ),
                               Text(
-                                'BARANGAY PRESIDING OFFICER',
+                                role.toUpperCase(),
                                 style: TextStyle(
                                   fontSize: 10,
                                   fontWeight: FontWeight.bold,

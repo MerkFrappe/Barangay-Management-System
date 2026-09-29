@@ -184,10 +184,8 @@ class _ResidentSidebarState extends State<ResidentSidebar> {
                         color: AppColors.primary,
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      child: const Icon(
-                        Icons.account_balance,
-                        color: Colors.white,
-                      ),
+                      padding: const EdgeInsets.all(5),
+                      child: Image.asset('tools/assets/app_icon.png'),
                     ),
 
                     const SizedBox(width: 12),

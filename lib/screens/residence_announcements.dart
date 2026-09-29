@@ -141,8 +141,11 @@ class _CommunityEventsScreenState extends State<CommunityEventsScreen> {
 
   List<_EventData> _pastItems(List<_EventData> events) {
     final now = DateTime.now();
-    final cutoff = DateTime(now.year, now.month, now.day)
-        .subtract(const Duration(days: 7));
+    final cutoff = DateTime(
+      now.year,
+      now.month,
+      now.day,
+    ).subtract(const Duration(days: 7));
     return events.where((event) {
       final eventDate = _parseEventDate(event.date);
       final relevantDate = eventDate ?? event.publishedAt;
@@ -390,7 +393,8 @@ class _CommunityEventsScreenState extends State<CommunityEventsScreen> {
                                                 ? FieldValue.arrayRemove([uid])
                                                 : FieldValue.arrayUnion([uid]),
                                             if (!liked)
-                                              'dislikerIds': FieldValue.arrayRemove([uid]),
+                                              'dislikerIds':
+                                                  FieldValue.arrayRemove([uid]),
                                           });
                                           liked = !liked;
                                           if (liked) disliked = false;
@@ -421,7 +425,8 @@ class _CommunityEventsScreenState extends State<CommunityEventsScreen> {
                                                 ? FieldValue.arrayRemove([uid])
                                                 : FieldValue.arrayUnion([uid]),
                                             if (!disliked)
-                                              'likerIds': FieldValue.arrayRemove([uid]),
+                                              'likerIds':
+                                                  FieldValue.arrayRemove([uid]),
                                           });
                                           disliked = !disliked;
                                           if (disliked) liked = false;
@@ -648,7 +653,6 @@ class _CommunityEventsScreenState extends State<CommunityEventsScreen> {
                 children: [
                   _buildCalendarCard(eventsList),
                   const SizedBox(height: 24),
-                  _buildAnnouncementsLink(),
                 ],
               ),
             ),
@@ -694,7 +698,6 @@ class _CommunityEventsScreenState extends State<CommunityEventsScreen> {
           _buildFeedSection('Past announcements & events', past),
         ],
         const SizedBox(height: 8),
-        _buildAnnouncementsLink(),
       ],
     );
   }
@@ -975,68 +978,6 @@ class _CommunityEventsScreenState extends State<CommunityEventsScreen> {
               ),
           ],
         ),
-      ),
-    );
-  }
-
-  // -------------------------------------------------------------------------
-  // Announcements quick link
-  // -------------------------------------------------------------------------
-  Widget _buildAnnouncementsLink() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.surfaceContainerLow,
-        border: Border.all(color: AppColors.outlineVariant),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Expanded(
-            child: Row(
-              children: [
-                Container(
-                  width: 40,
-                  height: 40,
-                  decoration: const BoxDecoration(
-                    color: AppColors.surfaceContainerHighest,
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.campaign_outlined,
-                    color: AppColors.primary,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: const [
-                      Text(
-                        'Official Announcements',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.onSurface,
-                        ),
-                      ),
-                      SizedBox(height: 2),
-                      Text(
-                        'View past bulletins',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: AppColors.onSurfaceVariant,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const Icon(Icons.chevron_right, color: AppColors.onSurfaceVariant),
-        ],
       ),
     );
   }

@@ -18,6 +18,9 @@ class ResidentProfile {
   final bool? is4PsBeneficiary;
   final bool? isSoloParent;
   final String? residencyStartDate;
+  final String? dashboardDisplayName;
+  final String? profileHeadline;
+  final String? profilePhotoBase64;
 
   const ResidentProfile({
     this.firstName,
@@ -39,6 +42,9 @@ class ResidentProfile {
     this.is4PsBeneficiary,
     this.isSoloParent,
     this.residencyStartDate,
+    this.dashboardDisplayName,
+    this.profileHeadline,
+    this.profilePhotoBase64,
   });
 
   factory ResidentProfile.fromMap(Map<String, dynamic>? map) {
@@ -66,6 +72,9 @@ class ResidentProfile {
       is4PsBeneficiary: data['is4PsBeneficiary'] as bool?,
       isSoloParent: data['isSoloParent'] as bool?,
       residencyStartDate: data['residencyStartDate'] as String?,
+      dashboardDisplayName: data['dashboardDisplayName'] as String?,
+      profileHeadline: data['profileHeadline'] as String?,
+      profilePhotoBase64: data['profilePhotoBase64'] as String?,
     );
   }
 
@@ -95,6 +104,9 @@ class ResidentProfile {
     'is4PsBeneficiary': is4PsBeneficiary,
     'isSoloParent': isSoloParent,
     'residencyStartDate': residencyStartDate,
+    'dashboardDisplayName': dashboardDisplayName,
+    'profileHeadline': profileHeadline,
+    'profilePhotoBase64': profilePhotoBase64,
   };
 
   String get fullName => [firstName, middleName, lastName, suffix]

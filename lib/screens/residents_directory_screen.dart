@@ -1,3 +1,6 @@
+import 'dart:convert';
+
+import 'package:file_picker/file_picker.dart' as file_picker;
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../theme/app_colors.dart';
@@ -17,6 +20,16 @@ class ResidentsDirectoryScreen extends StatefulWidget {
 class _ResidentsDirectoryScreenState extends State<ResidentsDirectoryScreen> {
   String _searchQuery = '';
   String _selectedZone = 'All Puroks';
+
+  ImageProvider? _profilePhoto(Map<String, dynamic> data) {
+    final encoded = data['profilePhotoBase64']?.toString();
+    if (encoded == null || encoded.isEmpty) return null;
+    try {
+      return MemoryImage(base64Decode(encoded));
+    } catch (_) {
+      return null;
+    }
+  }
 
   @override
   void initState() {
@@ -176,57 +189,197 @@ class _ResidentsDirectoryScreenState extends State<ResidentsDirectoryScreen> {
       text:
           data['phone']?.toString() ?? data['contactNumber']?.toString() ?? '',
     );
+    final roleCtrl = TextEditingController(
+      text: data['role']?.toString() ?? 'Resident',
+    );
+    final isEmailVerified = data['emailVerified'] == true;
+    final isCurrentlyResident =
+        roleCtrl.text.trim().toLowerCase() == 'resident';
+    String? reportsTo = data['reportsTo']?.toString();
+    String? photoBase64 = data['photoBase64']?.toString();
+    final officials = await FirebaseFirestore.instance
+        .collection('users')
+        .where('role', isNotEqualTo: 'Resident')
+        .get();
+    if (!mounted) return;
+    final reportTargets = officials.docs
+        .where((officer) => officer.id != doc.id)
+        .toList();
+    if (!reportTargets.any((officer) => officer.id == reportsTo)) {
+      reportsTo = null;
+    }
     final saved = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Edit Resident Profile'),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: nameCtrl,
-                decoration: const InputDecoration(labelText: 'Full Name'),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: addressCtrl,
-                decoration: const InputDecoration(
-                  labelText: 'Complete Address / Purok',
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: const Text('Edit Resident Profile'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: nameCtrl,
+                  decoration: const InputDecoration(labelText: 'Full Name'),
                 ),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: phoneCtrl,
-                decoration: const InputDecoration(labelText: 'Contact Number'),
-              ),
-            ],
+                const SizedBox(height: 12),
+                TextField(
+                  controller: addressCtrl,
+                  decoration: const InputDecoration(
+                    labelText: 'Complete Address / Purok',
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: phoneCtrl,
+                  decoration: const InputDecoration(
+                    labelText: 'Contact Number',
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: roleCtrl,
+                  readOnly: isCurrentlyResident && !isEmailVerified,
+                  onChanged: (_) => setDialogState(() {}),
+                  decoration: const InputDecoration(
+                    labelText: 'Role / position',
+                    helperText: 'Use Resident to remove officer status.',
+                  ),
+                ),
+                if (isCurrentlyResident && !isEmailVerified)
+                  const Align(
+                    alignment: Alignment.centerLeft,
+                    child: Padding(
+                      padding: EdgeInsets.only(top: 4),
+                      child: Text(
+                        'This resident must verify their email before they can be promoted.',
+                        style: TextStyle(color: Colors.orange),
+                      ),
+                    ),
+                  ),
+                if (roleCtrl.text.trim().toLowerCase() != 'resident') ...[
+                  const SizedBox(height: 12),
+                  DropdownButtonFormField<String?>(
+                    initialValue: reportsTo,
+                    decoration: const InputDecoration(
+                      labelText: 'Reports to (hierarchy)',
+                    ),
+                    items: [
+                      const DropdownMenuItem<String?>(
+                        value: null,
+                        child: Text('Top-level officer'),
+                      ),
+                      ...reportTargets.map((officer) {
+                        final officerData = officer.data();
+                        final officerName =
+                            (officerData['name'] ??
+                                    officerData['displayName'] ??
+                                    officerData['accountName'] ??
+                                    'Unnamed officer')
+                                .toString();
+                        return DropdownMenuItem<String?>(
+                          value: officer.id,
+                          child: Text(officerName),
+                        );
+                      }),
+                    ],
+                    onChanged: (value) =>
+                        setDialogState(() => reportsTo = value),
+                  ),
+                  const SizedBox(height: 12),
+                  OutlinedButton.icon(
+                    onPressed: () async {
+                      final file = await file_picker.FilePicker.pickFile(
+                        type: file_picker.FileType.custom,
+                        allowedExtensions: const ['jpg', 'jpeg', 'png'],
+                      );
+                      if (file == null) return;
+                      final bytes = await file.readAsBytes();
+                      if (bytes.lengthInBytes > 650 * 1024) {
+                        if (ctx.mounted) {
+                          ScaffoldMessenger.of(ctx).showSnackBar(
+                            const SnackBar(
+                              content: Text(
+                                'Profile photo must be 650 KB or smaller.',
+                              ),
+                            ),
+                          );
+                        }
+                        return;
+                      }
+                      setDialogState(() => photoBase64 = base64Encode(bytes));
+                    },
+                    icon: const Icon(Icons.add_a_photo_outlined),
+                    label: Text(
+                      photoBase64 == null || photoBase64!.isEmpty
+                          ? 'Upload officer photo (max 650 KB)'
+                          : 'Replace officer photo',
+                    ),
+                  ),
+                ],
+              ],
+            ),
           ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('Save Changes'),
+            ),
+          ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Save Changes'),
-          ),
-        ],
       ),
     );
     if (saved != true) return;
-    await doc.reference.update({
+    final role = roleCtrl.text.trim().isEmpty
+        ? 'Resident'
+        : roleCtrl.text.trim();
+    if (isCurrentlyResident &&
+        !isEmailVerified &&
+        role.toLowerCase() != 'resident') {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Only email-verified residents can be promoted.'),
+          ),
+        );
+      }
+      return;
+    }
+    final payload = <String, dynamic>{
       'displayName': nameCtrl.text.trim(),
       'accountName': nameCtrl.text.trim(),
       'address': addressCtrl.text.trim(),
       'phone': phoneCtrl.text.trim(),
       'contactNumber': phoneCtrl.text.trim(),
-    });
+      'role': role,
+      'updatedAt': FieldValue.serverTimestamp(),
+    };
+    if (role.toLowerCase() == 'resident') {
+      payload['reportsTo'] = FieldValue.delete();
+      payload['directoryManaged'] = FieldValue.delete();
+    } else {
+      payload['name'] = nameCtrl.text.trim();
+      payload['reportsTo'] = reportsTo;
+      payload['photoBase64'] = photoBase64 ?? '';
+    }
+    await doc.reference.update(payload);
+    nameCtrl.dispose();
+    addressCtrl.dispose();
+    phoneCtrl.dispose();
+    roleCtrl.dispose();
     if (!mounted) return;
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('Resident profile updated.')));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          role.toLowerCase() == 'resident'
+              ? 'Resident profile updated.'
+              : 'Resident promoted to $role.',
+        ),
+      ),
+    );
   }
 
   @override
@@ -452,15 +605,23 @@ class _ResidentsDirectoryScreenState extends State<ResidentsDirectoryScreen> {
                   DataColumn(label: Text('Resident Name')),
                   DataColumn(label: Text('Email')),
                   DataColumn(label: Text('Address')),
+                  DataColumn(label: Text('Verified')),
                   DataColumn(label: Text('Role')),
                   DataColumn(label: Text('Actions')),
                 ],
                 rows: filtered.map((doc) {
                   final data = doc.data() as Map<String, dynamic>;
-                  final name = data['displayName'] ?? 'Resident';
+                  final name =
+                      (data['dashboardDisplayName'] ??
+                              data['displayName'] ??
+                              data['accountName'] ??
+                              'Resident')
+                          .toString();
                   final email = data['email'] ?? 'N/A';
                   final address = data['address'] ?? 'Brgy. San Jose';
                   final role = data['role'] ?? 'Resident';
+                  final emailVerified = data['emailVerified'] == true;
+                  final photo = _profilePhoto(data);
 
                   return DataRow(
                     cells: [
@@ -469,10 +630,17 @@ class _ResidentsDirectoryScreenState extends State<ResidentsDirectoryScreen> {
                           children: [
                             CircleAvatar(
                               backgroundColor: AppColors.primaryContainer,
-                              child: Text(
-                                name.isNotEmpty ? name[0].toUpperCase() : 'R',
-                                style: TextStyle(color: AppColors.primary),
-                              ),
+                              backgroundImage: photo,
+                              child: photo == null
+                                  ? Text(
+                                      name.isNotEmpty
+                                          ? name[0].toUpperCase()
+                                          : 'R',
+                                      style: TextStyle(
+                                        color: AppColors.primary,
+                                      ),
+                                    )
+                                  : null,
                             ),
                             const SizedBox(width: 12),
                             Text(
@@ -486,6 +654,21 @@ class _ResidentsDirectoryScreenState extends State<ResidentsDirectoryScreen> {
                       ),
                       DataCell(Text(email)),
                       DataCell(Text(address)),
+                      DataCell(
+                        Tooltip(
+                          message: emailVerified
+                              ? 'Email verified and eligible for promotion'
+                              : 'Email verification is required before promotion',
+                          child: Icon(
+                            emailVerified
+                                ? Icons.verified_rounded
+                                : Icons.cancel_outlined,
+                            color: emailVerified
+                                ? Colors.green.shade700
+                                : AppColors.outline,
+                          ),
+                        ),
+                      ),
                       DataCell(
                         Chip(
                           label: Text(role),

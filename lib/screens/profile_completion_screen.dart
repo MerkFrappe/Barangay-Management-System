@@ -1,9 +1,12 @@
+import 'dart:convert';
+import 'dart:math' as math;
 import 'dart:typed_data';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:image/image.dart' as image;
 
 import '../models/resident_profile.dart';
 import '../theme/app_colors.dart';
@@ -142,6 +145,8 @@ class _ProfileCompletionScreenState extends State<ProfileCompletionScreen> {
   final _streetSubdivisionController = TextEditingController();
   final _occupationController = TextEditingController();
   final _employmentStatusController = TextEditingController();
+  final _dashboardNameController = TextEditingController();
+  final _profileHeadlineController = TextEditingController();
 
   String? _suffix;
   String? _sex;
@@ -153,6 +158,8 @@ class _ProfileCompletionScreenState extends State<ProfileCompletionScreen> {
 
   Uint8List? _validIdPhotoBytes;
   String? _validIdPhotoPath; // existing (saved) path/url, if any
+  Uint8List? _profilePhotoBytes;
+  String? _profilePhotoBase64;
 
   bool _isVoter = false;
   bool _isPWD = false;
@@ -199,6 +206,16 @@ class _ProfileCompletionScreenState extends State<ProfileCompletionScreen> {
 
       _occupationController.text = profile.occupation ?? '';
       _employmentStatusController.text = profile.employmentStatus ?? '';
+      _dashboardNameController.text = profile.dashboardDisplayName ?? '';
+      _profileHeadlineController.text = profile.profileHeadline ?? '';
+      _profilePhotoBase64 = profile.profilePhotoBase64;
+      if (_profilePhotoBase64?.isNotEmpty == true) {
+        try {
+          _profilePhotoBytes = base64Decode(_profilePhotoBase64!);
+        } catch (_) {
+          _profilePhotoBase64 = null;
+        }
+      }
 
       final validId = profile.validId ?? const <String, dynamic>{};
       final storedType = validId['type']?.toString();
@@ -278,6 +295,45 @@ class _ProfileCompletionScreenState extends State<ProfileCompletionScreen> {
     }
   }
 
+  Future<void> _pickProfilePhoto() async {
+    try {
+      final picked = await _imagePicker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 1024,
+        maxHeight: 1024,
+        imageQuality: 85,
+      );
+      if (picked == null) return;
+      final cropped = _cropAndCompressAvatar(await picked.readAsBytes());
+      if (cropped == null) throw Exception('Unsupported image format.');
+      setState(() {
+        _profilePhotoBytes = cropped;
+        _profilePhotoBase64 = base64Encode(cropped);
+      });
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Unable to prepare profile photo: $error')),
+        );
+      }
+    }
+  }
+
+  Uint8List? _cropAndCompressAvatar(Uint8List bytes) {
+    final source = image.decodeImage(bytes);
+    if (source == null) return null;
+    final side = math.min(source.width, source.height);
+    final cropped = image.copyCrop(
+      source,
+      x: (source.width - side) ~/ 2,
+      y: (source.height - side) ~/ 2,
+      width: side,
+      height: side,
+    );
+    final avatar = image.copyResize(cropped, width: 256, height: 256);
+    return Uint8List.fromList(image.encodeJpg(avatar, quality: 75));
+  }
+
   String? _required(String? value, String label) =>
       value == null || value.trim().isEmpty ? '$label is required.' : null;
 
@@ -309,6 +365,9 @@ class _ProfileCompletionScreenState extends State<ProfileCompletionScreen> {
       },
       occupation: _emptyToNull(_occupationController.text),
       employmentStatus: _emptyToNull(_employmentStatusController.text),
+      dashboardDisplayName: _emptyToNull(_dashboardNameController.text),
+      profileHeadline: _emptyToNull(_profileHeadlineController.text),
+      profilePhotoBase64: _profilePhotoBase64,
       validId: {'type': resolvedValidIdType, 'photoUrl': _validIdPhotoPath},
       isVoter: _isVoter,
       isPWD: _isPWD,
@@ -322,7 +381,7 @@ class _ProfileCompletionScreenState extends State<ProfileCompletionScreen> {
         ...profile.toMap(),
         // Compatibility fields used by the current resident directory.
         'accountName': profile.fullName,
-        'displayName': profile.fullName,
+        'displayName': profile.dashboardDisplayName ?? profile.fullName,
         'address': profile.formattedAddress,
         'phone': profile.contactNumber,
       }, SetOptions(merge: true));
@@ -375,6 +434,8 @@ class _ProfileCompletionScreenState extends State<ProfileCompletionScreen> {
       _streetSubdivisionController,
       _occupationController,
       _employmentStatusController,
+      _dashboardNameController,
+      _profileHeadlineController,
     ]) {
       controller.dispose();
     }
@@ -418,6 +479,61 @@ class _ProfileCompletionScreenState extends State<ProfileCompletionScreen> {
                             ),
                           ),
                           const SizedBox(height: 24),
+                          _section('Dashboard profile', [
+                            Center(
+                              child: Stack(
+                                children: [
+                                  CircleAvatar(
+                                    radius: 54,
+                                    backgroundColor: AppColors.primaryContainer,
+                                    backgroundImage: _profilePhotoBytes == null
+                                        ? null
+                                        : MemoryImage(_profilePhotoBytes!),
+                                    child: _profilePhotoBytes == null
+                                        ? const Icon(
+                                            Icons.person,
+                                            size: 54,
+                                            color: AppColors.primary,
+                                          )
+                                        : null,
+                                  ),
+                                  Positioned(
+                                    right: 0,
+                                    bottom: 0,
+                                    child: IconButton.filled(
+                                      tooltip: 'Choose and crop profile photo',
+                                      onPressed: _pickProfilePhoto,
+                                      icon: const Icon(
+                                        Icons.photo_camera_outlined,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 10),
+                            Text(
+                              'Choose a photo to center-crop it to a square avatar and compress it before saving.',
+                              textAlign: TextAlign.center,
+                              style: AppTextStyles.bodySm.copyWith(
+                                color: AppColors.onSurfaceVariant,
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            _field(
+                              _dashboardNameController,
+                              'Dashboard display name',
+                              icon: Icons.badge_outlined,
+                              hint: 'Name shown in the dashboard header',
+                            ),
+                            _field(
+                              _profileHeadlineController,
+                              'Dashboard profile note',
+                              icon: Icons.short_text_outlined,
+                              hint: 'Optional short description',
+                            ),
+                          ]),
+                          const SizedBox(height: 20),
                           _section('Personal information', [
                             _field(
                               _firstNameController,

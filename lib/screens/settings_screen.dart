@@ -1,9 +1,11 @@
 import 'dart:convert';
 
 import 'package:file_picker/file_picker.dart' as file_picker;
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../theme/app_colors.dart';
+import '../models/admin_permissions.dart';
 import '../widgets/sidebar.dart';
 import '../widgets/top_header.dart';
 
@@ -20,7 +22,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _autoApproveClearance = false;
 
   final _brgyNameCtrl = TextEditingController(text: 'Barangay San Jose');
-  final _chairmanCtrl = TextEditingController(text: 'Hon. Barangay Chairman');
   final _hotlineCtrl = TextEditingController(text: '+63 917 123 4567');
 
   @override
@@ -39,8 +40,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     setState(() {
       _brgyNameCtrl.text =
           data['barangayName']?.toString() ?? _brgyNameCtrl.text;
-      _chairmanCtrl.text =
-          data['chairmanName']?.toString() ?? _chairmanCtrl.text;
       _hotlineCtrl.text =
           data['emergencyHotline']?.toString() ?? _hotlineCtrl.text;
       _emailNotifications =
@@ -58,7 +57,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
           .doc('main')
           .set({
             'barangayName': _brgyNameCtrl.text.trim(),
-            'chairmanName': _chairmanCtrl.text.trim(),
             'emergencyHotline': _hotlineCtrl.text.trim(),
             'emailNotifications': _emailNotifications,
             'smsAlerts': _smsAlerts,
@@ -83,18 +81,29 @@ class _SettingsScreenState extends State<SettingsScreen> {
     DocumentSnapshot<Map<String, dynamic>>? existing,
   }) async {
     final data = existing?.data() ?? const <String, dynamic>{};
+    DocumentSnapshot<Map<String, dynamic>>? selectedResident;
     final nameController = TextEditingController(
-      text: (data['name'] ?? data['accountName'] ?? '').toString(),
+      text: (data['name'] ?? data['displayName'] ?? data['accountName'] ?? '')
+          .toString(),
     );
     final roleController = TextEditingController(
       text: (data['role'] ?? 'Kagawad').toString(),
     );
     String? reportsTo = data['reportsTo']?.toString();
     String? photoBase64 = data['photoBase64']?.toString();
+    final permissions = existing == null
+        ? <String>{AdminPermissions.dashboard}
+        : AdminPermissions.fromUser(data);
     final officials = await FirebaseFirestore.instance
         .collection('users')
         .where('role', isNotEqualTo: 'Resident')
         .get();
+    final residents = existing == null
+        ? await FirebaseFirestore.instance
+              .collection('users')
+              .where('role', isEqualTo: 'Resident')
+              .get()
+        : null;
     if (!mounted) return;
 
     await showDialog<void>(
@@ -110,17 +119,153 @@ class _SettingsScreenState extends State<SettingsScreen> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
+                  if (existing == null) ...[
+                    const Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        'Choose a registered resident to promote',
+                        style: TextStyle(fontWeight: FontWeight.w600),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    SizedBox(
+                      height: 116,
+                      child: residents == null || residents.docs.isEmpty
+                          ? const Center(
+                              child: Text(
+                                'No residents are available to promote.',
+                              ),
+                            )
+                          : ListView.separated(
+                              scrollDirection: Axis.horizontal,
+                              itemCount: residents.docs.length,
+                              separatorBuilder: (_, _) =>
+                                  const SizedBox(width: 8),
+                              itemBuilder: (context, index) {
+                                final resident = residents.docs[index];
+                                final residentData = resident.data();
+                                final residentName =
+                                    (residentData['displayName'] ??
+                                            residentData['accountName'] ??
+                                            residentData['name'] ??
+                                            'Unnamed resident')
+                                        .toString();
+                                final emailVerified =
+                                    residentData['emailVerified'] == true;
+                                final isSelected =
+                                    selectedResident?.id == resident.id;
+                                return SizedBox(
+                                  width: 170,
+                                  child: ChoiceChip(
+                                    selected: isSelected,
+                                    avatar: CircleAvatar(
+                                      child: Text(
+                                        residentName.isNotEmpty
+                                            ? residentName[0].toUpperCase()
+                                            : 'R',
+                                      ),
+                                    ),
+                                    label: Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          residentName,
+                                          maxLines: 2,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                        Text(
+                                          emailVerified
+                                              ? 'Email verified'
+                                              : 'Email verification required',
+                                          style: TextStyle(
+                                            fontSize: 11,
+                                            color: emailVerified
+                                                ? Colors.green.shade700
+                                                : AppColors.onSurfaceVariant,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    onSelected: emailVerified
+                                        ? (_) => setDialogState(() {
+                                            selectedResident = resident;
+                                            nameController.text = residentName;
+                                          })
+                                        : null,
+                                  ),
+                                );
+                              },
+                            ),
+                    ),
+                    const SizedBox(height: 16),
+                  ],
                   TextField(
                     controller: nameController,
-                    decoration: const InputDecoration(labelText: 'Full name'),
+                    readOnly: existing == null,
+                    decoration: InputDecoration(
+                      labelText: 'Full name',
+                      helperText: existing == null
+                          ? 'Taken from the selected resident account'
+                          : null,
+                    ),
                   ),
                   const SizedBox(height: 12),
                   TextField(
                     controller: roleController,
+                    onChanged: (_) => setDialogState(() {}),
                     decoration: const InputDecoration(
                       labelText: 'Role / position',
                     ),
                   ),
+                  const SizedBox(height: 16),
+                  const Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      'Admin console access',
+                      style: TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  ...AdminPermissions.labels.entries
+                      .where(
+                        (entry) =>
+                            entry.key != AdminPermissions.manageOfficerAccess ||
+                            roleController.text.trim() == 'Chairman',
+                      )
+                      .map(
+                        (entry) => SwitchListTile(
+                          dense: true,
+                          contentPadding: EdgeInsets.zero,
+                          title: Text(entry.value),
+                          subtitle:
+                              entry.key == AdminPermissions.editMonthlyRevenue
+                              ? const Text(
+                                  'Requires Analytics. Best assigned to the Treasurer.',
+                                )
+                              : entry.key ==
+                                    AdminPermissions.manageOfficerAccess
+                              ? const Text(
+                                  'Caution: this lets the current Chairman change other officers’ access.',
+                                )
+                              : null,
+                          value: permissions.contains(entry.key),
+                          onChanged: (enabled) => setDialogState(() {
+                            if (enabled) {
+                              permissions.add(entry.key);
+                            } else {
+                              permissions.remove(entry.key);
+                            }
+                            if (entry.key == AdminPermissions.analytics &&
+                                !enabled) {
+                              permissions.remove(
+                                AdminPermissions.editMonthlyRevenue,
+                              );
+                            }
+                          }),
+                        ),
+                      ),
                   const SizedBox(height: 12),
                   DropdownButtonFormField<String?>(
                     initialValue: reportsTo,
@@ -194,7 +339,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
             FilledButton(
               onPressed: () async {
                 if (nameController.text.trim().isEmpty ||
-                    roleController.text.trim().isEmpty) {
+                    roleController.text.trim().isEmpty ||
+                    (existing == null && selectedResident == null)) {
                   return;
                 }
                 final payload = <String, dynamic>{
@@ -203,14 +349,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   'role': roleController.text.trim(),
                   'reportsTo': reportsTo,
                   'photoBase64': photoBase64 ?? '',
-                  'directoryManaged': true,
+                  'adminPermissions': permissions.toList(),
                   'updatedAt': FieldValue.serverTimestamp(),
                 };
                 if (existing == null) {
-                  payload['createdAt'] = FieldValue.serverTimestamp();
-                  await FirebaseFirestore.instance
-                      .collection('users')
-                      .add(payload);
+                  // Promote the resident's real account. Never create a
+                  // stand-alone officer record without an account behind it.
+                  payload['displayName'] = nameController.text.trim();
+                  await selectedResident!.reference.set(
+                    payload,
+                    SetOptions(merge: true),
+                  );
                 } else {
                   await existing.reference.set(
                     payload,
@@ -231,7 +380,30 @@ class _SettingsScreenState extends State<SettingsScreen> {
     roleController.dispose();
   }
 
-  Widget _officersManager() => Card(
+  Widget _officersManager() {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+      stream: uid == null
+          ? const Stream.empty()
+          : FirebaseFirestore.instance.collection('users').doc(uid).snapshots(),
+      builder: (context, snapshot) {
+        final permissions = AdminPermissions.fromUser(snapshot.data?.data());
+        if (!permissions.contains(AdminPermissions.manageOfficerAccess)) {
+          return Card(
+            child: const Padding(
+              padding: EdgeInsets.all(24),
+              child: Text(
+                'Officer access is managed by the Admin Console. A Chairman can manage it only when the Admin Console explicitly grants that permission.',
+              ),
+            ),
+          );
+        }
+        return _officersManagerCard();
+      },
+    );
+  }
+
+  Widget _officersManagerCard() => Card(
     elevation: 0,
     color: AppColors.surfaceContainerLowest,
     shape: RoundedRectangleBorder(
@@ -262,7 +434,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           const SizedBox(height: 8),
           const Text(
-            'Set reporting relationships to build the resident-facing hierarchy. Photos are stored in Firestore and limited to 650 KB.',
+            'Promote an existing resident account, then set its position and reporting relationship. Photos are stored in Firestore and limited to 650 KB.',
           ),
           const SizedBox(height: 12),
           StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
@@ -300,12 +472,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           icon: const Icon(Icons.edit_outlined),
                         ),
                         IconButton(
-                          tooltip: data['directoryManaged'] == true
-                              ? 'Remove officer'
-                              : 'Account-managed officer cannot be removed here',
-                          onPressed: data['directoryManaged'] == true
-                              ? () => doc.reference.delete()
-                              : null,
+                          tooltip: 'Return to resident',
+                          onPressed: () async {
+                            await doc.reference.update({
+                              'role': 'Resident',
+                              'reportsTo': FieldValue.delete(),
+                              'directoryManaged': FieldValue.delete(),
+                              'updatedAt': FieldValue.serverTimestamp(),
+                            });
+                            if (!context.mounted) return;
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('$name returned to Resident.'),
+                              ),
+                            );
+                          },
                           icon: const Icon(Icons.delete_outline),
                         ),
                       ],
@@ -323,7 +504,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   void dispose() {
     _brgyNameCtrl.dispose();
-    _chairmanCtrl.dispose();
     _hotlineCtrl.dispose();
     super.dispose();
   }
@@ -381,14 +561,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           decoration: const InputDecoration(
                             labelText: 'Barangay Name',
                             prefixIcon: Icon(Icons.location_city),
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        TextField(
-                          controller: _chairmanCtrl,
-                          decoration: const InputDecoration(
-                            labelText: 'Barangay Captain / Chairman',
-                            prefixIcon: Icon(Icons.person),
                           ),
                         ),
                         const SizedBox(height: 12),

@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import '../models/admin_permissions.dart';
 import '../theme/app_colors.dart';
 import '../widgets/sidebar.dart';
 import '../widgets/top_header.dart';
@@ -40,62 +43,86 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final isWide = constraints.maxWidth >= _wideBreakpoint;
-
-        final body = SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 1440),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                _WelcomeHeader(isWide: isWide),
-                const SizedBox(height: 32),
-                const OverviewCards(),
-                const SizedBox(height: 32),
-                isWide ? const _MiddleGridWide() : const _MiddleGridNarrow(),
-                const SizedBox(height: 32),
-                isWide ? const _FooterGridWide() : const _FooterGridNarrow(),
-              ],
-            ),
-          ),
-        );
-
-        if (isWide) {
-          return Scaffold(
-            body: Row(
-              children: [
-                const SidebarNav(selectedIndex: 0),
-                Expanded(
-                  child: Column(
-                    children: [
-                      TopHeader(onSearchSubmitted: _searchResidents),
-                      Expanded(child: body),
-                    ],
-                  ),
-                ),
-              ],
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+      stream: uid == null
+          ? const Stream.empty()
+          : FirebaseFirestore.instance.collection('users').doc(uid).snapshots(),
+      builder: (context, accessSnapshot) {
+        final canViewDashboard = AdminPermissions.fromUser(
+          accessSnapshot.data?.data(),
+        ).contains(AdminPermissions.dashboard);
+        if (accessSnapshot.hasData && !canViewDashboard) {
+          return const Scaffold(
+            body: Center(
+              child: Text(
+                'Your officer role does not include dashboard access.',
+              ),
             ),
           );
         }
+        return LayoutBuilder(
+          builder: (context, constraints) {
+            final isWide = constraints.maxWidth >= _wideBreakpoint;
 
-        return Scaffold(
-          backgroundColor: AppColors.background,
-          appBar: AppBar(
-            backgroundColor: AppColors.surface,
-            foregroundColor: AppColors.onSurface,
-            elevation: 0,
-            title: Text(
-              'Barangay Admin',
-              style: AppTextStyles.headlineSm.copyWith(
-                color: AppColors.primary,
+            final body = SingleChildScrollView(
+              padding: const EdgeInsets.all(24),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 1440),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    _WelcomeHeader(isWide: isWide),
+                    const SizedBox(height: 32),
+                    const OverviewCards(),
+                    const SizedBox(height: 32),
+                    isWide
+                        ? const _MiddleGridWide()
+                        : const _MiddleGridNarrow(),
+                    const SizedBox(height: 32),
+                    isWide
+                        ? const _FooterGridWide()
+                        : const _FooterGridNarrow(),
+                  ],
+                ),
               ),
-            ),
-          ),
-          drawer: const Drawer(child: SidebarNav(selectedIndex: 0)),
-          body: body,
+            );
+
+            if (isWide) {
+              return Scaffold(
+                body: Row(
+                  children: [
+                    const SidebarNav(selectedIndex: 0),
+                    Expanded(
+                      child: Column(
+                        children: [
+                          TopHeader(onSearchSubmitted: _searchResidents),
+                          Expanded(child: body),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }
+
+            return Scaffold(
+              backgroundColor: AppColors.background,
+              appBar: AppBar(
+                backgroundColor: AppColors.surface,
+                foregroundColor: AppColors.onSurface,
+                elevation: 0,
+                title: Text(
+                  'Barangay Admin',
+                  style: AppTextStyles.headlineSm.copyWith(
+                    color: AppColors.primary,
+                  ),
+                ),
+              ),
+              drawer: const Drawer(child: SidebarNav(selectedIndex: 0)),
+              body: body,
+            );
+          },
         );
       },
     );

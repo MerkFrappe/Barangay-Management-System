@@ -1,6 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:latlong2/latlong.dart';
 
 import '../models/resident_profile.dart';
 import '../theme/app_colors.dart';
@@ -28,7 +31,6 @@ class ReportIncidentScreen extends StatefulWidget {
 
 class _ReportIncidentScreenState extends State<ReportIncidentScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _locationController = TextEditingController();
   final _detailsController = TextEditingController();
   final _contactController = TextEditingController();
 
@@ -36,11 +38,40 @@ class _ReportIncidentScreenState extends State<ReportIncidentScreen> {
   bool _isLoadingProfile = true;
   bool _isSubmitting = false;
   String _reporterName = '';
+  LatLng? _selectedLocation;
+  bool _isLocating = true;
 
   @override
   void initState() {
     super.initState();
     _prefillFromProfile();
+    _getCurrentLocation();
+  }
+
+  Future<void> _getCurrentLocation() async {
+    const fallback = LatLng(7.423816, 125.826013);
+    LatLng location = fallback;
+    try {
+      if (await Geolocator.isLocationServiceEnabled()) {
+        var permission = await Geolocator.checkPermission();
+        if (permission == LocationPermission.denied) {
+          permission = await Geolocator.requestPermission();
+        }
+        if (permission != LocationPermission.denied &&
+            permission != LocationPermission.deniedForever) {
+          final position = await Geolocator.getCurrentPosition();
+          location = LatLng(position.latitude, position.longitude);
+        }
+      }
+    } catch (_) {
+      // The map stays usable with the barangay-center fallback.
+    }
+    if (mounted) {
+      setState(() {
+        _selectedLocation = location;
+        _isLocating = false;
+      });
+    }
   }
 
   Future<void> _prefillFromProfile() async {
@@ -66,6 +97,14 @@ class _ReportIncidentScreenState extends State<ReportIncidentScreen> {
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
+    if (_selectedLocation == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please wait while your location is prepared.'),
+        ),
+      );
+      return;
+    }
     final uid = FirebaseAuth.instance.currentUser?.uid;
     setState(() => _isSubmitting = true);
 
@@ -74,7 +113,10 @@ class _ReportIncidentScreenState extends State<ReportIncidentScreen> {
         'residentId': uid,
         'residentName': _reporterName.isEmpty ? 'Resident' : _reporterName,
         'type': _incidentType,
-        'location': _locationController.text.trim(),
+        'location':
+            '${_selectedLocation!.latitude.toStringAsFixed(6)}, ${_selectedLocation!.longitude.toStringAsFixed(6)}',
+        'latitude': _selectedLocation!.latitude,
+        'longitude': _selectedLocation!.longitude,
         'details': _detailsController.text.trim(),
         'contactNumber': _contactController.text.trim(),
         'status': 'submitted',
@@ -106,7 +148,6 @@ class _ReportIncidentScreenState extends State<ReportIncidentScreen> {
 
   @override
   void dispose() {
-    _locationController.dispose();
     _detailsController.dispose();
     _contactController.dispose();
     super.dispose();
@@ -138,7 +179,9 @@ class _ReportIncidentScreenState extends State<ReportIncidentScreen> {
                           Container(
                             padding: const EdgeInsets.all(16),
                             decoration: BoxDecoration(
-                              color: AppColors.errorContainer.withValues(alpha: 0.3),
+                              color: AppColors.errorContainer.withValues(
+                                alpha: 0.3,
+                              ),
                               borderRadius: BorderRadius.circular(12),
                               border: Border.all(
                                 color: AppColors.errorContainer,
@@ -183,21 +226,77 @@ class _ReportIncidentScreenState extends State<ReportIncidentScreen> {
                                   ),
                                 )
                                 .toList(),
-                            onChanged: (v) =>
-                                setState(() => _incidentType = v),
+                            onChanged: (v) => setState(() => _incidentType = v),
                             validator: (v) =>
                                 v == null ? 'Please select a type.' : null,
                           ),
                           const SizedBox(height: 14),
-                          TextFormField(
-                            controller: _locationController,
+                          Text(
+                            'Incident location',
+                            style: AppTextStyles.bodyMd.copyWith(
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            'Tap the map to move the incident pin, just like Report Emergency.',
+                            style: AppTextStyles.bodySm.copyWith(
+                              color: AppColors.onSurfaceVariant,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          SizedBox(
+                            height: 240,
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(12),
+                              child: _isLocating || _selectedLocation == null
+                                  ? const Center(
+                                      child: CircularProgressIndicator(),
+                                    )
+                                  : FlutterMap(
+                                      options: MapOptions(
+                                        initialCenter: _selectedLocation!,
+                                        initialZoom: 16,
+                                        onTap: (_, point) => setState(
+                                          () => _selectedLocation = point,
+                                        ),
+                                      ),
+                                      children: [
+                                        TileLayer(
+                                          urlTemplate:
+                                              'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                                          userAgentPackageName:
+                                              'com.barangay.bms',
+                                        ),
+                                        MarkerLayer(
+                                          markers: [
+                                            Marker(
+                                              point: _selectedLocation!,
+                                              width: 48,
+                                              height: 48,
+                                              child: const Icon(
+                                                Icons.location_pin,
+                                                color: Colors.red,
+                                                size: 48,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ],
+                                    ),
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          InputDecorator(
                             decoration: _decoration(
-                              'Location',
+                              'Exact incident location',
                               Icons.location_on_outlined,
                             ),
-                            validator: (v) => (v == null || v.trim().isEmpty)
-                                ? 'Location is required.'
-                                : null,
+                            child: Text(
+                              _selectedLocation == null
+                                  ? 'Locating…'
+                                  : '${_selectedLocation!.latitude.toStringAsFixed(6)}, ${_selectedLocation!.longitude.toStringAsFixed(6)}',
+                            ),
                           ),
                           const SizedBox(height: 14),
                           TextFormField(

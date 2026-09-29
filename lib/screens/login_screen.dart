@@ -223,6 +223,7 @@ class _LoginScreenState extends State<LoginScreen> {
           .collection('users')
           .doc(user.uid);
       final userDoc = await userRef.get();
+      var role = 'Resident';
 
       if (!userDoc.exists) {
         if (!mounted) return;
@@ -247,14 +248,25 @@ class _LoginScreenState extends State<LoginScreen> {
           'termsAcceptedAt': FieldValue.serverTimestamp(),
           'privacyAcceptedAt': FieldValue.serverTimestamp(),
           'lastLogin': FieldValue.serverTimestamp(),
+          'emailVerified': user.emailVerified,
         });
       } else {
-        await userRef.update({'lastLogin': FieldValue.serverTimestamp()});
+        role = userDoc.data()?['role']?.toString() ?? role;
+        await userRef.update({
+          'lastLogin': FieldValue.serverTimestamp(),
+          'emailVerified': user.emailVerified,
+          'googleVerified': FieldValue.delete(),
+          'authProvider': FieldValue.delete(),
+        });
       }
 
       if (!mounted) return;
       Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => const ResidentDashboardScreen()),
+        MaterialPageRoute(
+          builder: (_) => isAdminRole(role)
+              ? const DashboardScreen()
+              : const ResidentDashboardScreen(),
+        ),
       );
     } on FirebaseAuthException catch (e) {
       if (mounted) {

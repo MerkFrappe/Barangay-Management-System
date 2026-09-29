@@ -196,7 +196,8 @@ class AnnouncementService {
           'createdAt': FieldValue.serverTimestamp(),
           'viewerIds': FieldValue.arrayUnion([]),
           'likerIds': FieldValue.arrayUnion([]),
-          if (replacementImages.isNotEmpty) 'imageBase64List': replacementImages,
+          if (replacementImages.isNotEmpty)
+            'imageBase64List': replacementImages,
           'isPinned': a.isPinned,
         }, SetOptions(merge: true));
         return a;
@@ -384,7 +385,8 @@ class _MainContentState extends State<_MainContent> {
                 Expanded(
                   flex: 7,
                   child: _LeftColumn(
-                    onEdit: (announcement) => _formKey.currentState?.loadForEdit(announcement),
+                    onEdit: (announcement) =>
+                        _formKey.currentState?.loadForEdit(announcement),
                   ),
                 ),
                 SizedBox(width: 20),
@@ -642,29 +644,31 @@ class _AnnouncementsTable extends StatelessWidget {
         1: FlexColumnWidth(2),
         2: FlexColumnWidth(2),
         3: FlexColumnWidth(2),
-        4: FlexColumnWidth(1),
+        4: FlexColumnWidth(2),
+        5: FlexColumnWidth(1),
       },
       children: [
         TableRow(
           decoration: const BoxDecoration(
             border: Border(bottom: BorderSide(color: Color(0xFFC4C5D5))),
           ),
-          children: ['Title', 'Date', 'Category', 'Status', 'Actions']
-              .map(
-                (h) => Padding(
-                  padding: const EdgeInsets.only(bottom: 10),
-                  child: Text(
-                    h,
-                    style: const TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF444653),
-                      letterSpacing: 0.5,
+          children:
+              ['Title', 'Date', 'Category', 'Status', 'Reactions', 'Actions']
+                  .map(
+                    (h) => Padding(
+                      padding: const EdgeInsets.only(bottom: 10),
+                      child: Text(
+                        h,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF444653),
+                          letterSpacing: 0.5,
+                        ),
+                      ),
                     ),
-                  ),
-                ),
-              )
-              .toList(),
+                  )
+                  .toList(),
         ),
         ...items.map((a) => _buildRow(context, a)),
       ],
@@ -714,6 +718,28 @@ class _AnnouncementsTable extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.symmetric(vertical: 14),
           child: _StatusBadge(status: a.status),
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 14),
+          child: Row(
+            children: [
+              const Icon(
+                Icons.thumb_up_alt_outlined,
+                size: 16,
+                color: Color(0xFF237A3B),
+              ),
+              const SizedBox(width: 4),
+              Text('${a.likes}', style: const TextStyle(fontSize: 12)),
+              const SizedBox(width: 10),
+              const Icon(
+                Icons.thumb_down_alt_outlined,
+                size: 16,
+                color: Color(0xFFC62828),
+              ),
+              const SizedBox(width: 4),
+              Text('${a.dislikes}', style: const TextStyle(fontSize: 12)),
+            ],
+          ),
         ),
         Padding(
           padding: const EdgeInsets.symmetric(vertical: 10),
@@ -1083,8 +1109,8 @@ class _AddEventFormState extends State<_AddEventForm> {
           content: Text(
             _editingId == null
                 ? (status == AnnouncementStatus.published
-                    ? '"${a.title}" published!'
-                    : '"${a.title}" saved as draft.')
+                      ? '"${a.title}" published!'
+                      : '"${a.title}" saved as draft.')
                 : '"${a.title}" updated.',
           ),
           backgroundColor: const Color(0xFF002576),
@@ -1141,7 +1167,9 @@ class _AddEventFormState extends State<_AddEventForm> {
                 ),
                 const Spacer(),
                 Icon(
-                  _editingId == null ? Icons.add_circle_outline : Icons.edit_outlined,
+                  _editingId == null
+                      ? Icons.add_circle_outline
+                      : Icons.edit_outlined,
                   color: Colors.white,
                 ),
               ],
@@ -1419,7 +1447,9 @@ class _AddEventFormState extends State<_AddEventForm> {
                             ),
                           )
                         : Text(
-                            _editingId == null ? 'Publish Now' : 'Update & Publish',
+                            _editingId == null
+                                ? 'Publish Now'
+                                : 'Update & Publish',
                             style: const TextStyle(fontWeight: FontWeight.w600),
                           ),
                   ),

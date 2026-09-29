@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import '../models/admin_permissions.dart';
 import '../theme/app_colors.dart';
 import '../screens/login_screen.dart';
 import '../screens/dashboard_screen.dart';
@@ -37,11 +40,16 @@ class _NavItem {
 
 class _SidebarNavState extends State<SidebarNav> {
   late int _selectedIndex;
+  Stream<DocumentSnapshot<Map<String, dynamic>>>? _userStream;
 
   @override
   void initState() {
     super.initState();
     _selectedIndex = widget.selectedIndex;
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    _userStream = uid == null
+        ? null
+        : FirebaseFirestore.instance.collection('users').doc(uid).snapshots();
   }
 
   static const _items = [
@@ -92,128 +100,161 @@ class _SidebarNavState extends State<SidebarNav> {
     });
   }
 
+  String _permissionForIndex(int index) => switch (index) {
+    0 => AdminPermissions.dashboard,
+    1 => AdminPermissions.residents,
+    2 => AdminPermissions.requests,
+    3 => AdminPermissions.peaceOrder,
+    4 => AdminPermissions.analytics,
+    5 => AdminPermissions.emergencyReports,
+    6 => AdminPermissions.announcements,
+    7 => AdminPermissions.communityPolls,
+    _ => AdminPermissions.dashboard,
+  };
+
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 256,
-      height: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.surfaceContainerLowest,
-        border: Border(right: BorderSide(color: AppColors.outlineVariant)),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x11000000),
-            blurRadius: 4,
-            offset: Offset(1, 0),
+    return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+      stream: _userStream,
+      builder: (context, snapshot) {
+        final permissions = AdminPermissions.fromUser(snapshot.data?.data());
+        final visibleItems = _items
+            .asMap()
+            .entries
+            .where(
+              (entry) => permissions.contains(_permissionForIndex(entry.key)),
+            )
+            .toList();
+        return Container(
+          width: 256,
+          height: double.infinity,
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: AppColors.surfaceContainerLowest,
+            border: Border(right: BorderSide(color: AppColors.outlineVariant)),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x11000000),
+                blurRadius: 4,
+                offset: Offset(1, 0),
+              ),
+            ],
           ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // Logo + title
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-            child: Row(
-              children: [
-                Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: AppColors.primaryFixed,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Icon(Icons.shield, color: AppColors.primary, size: 22),
-                ),
-                const SizedBox(width: 12),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Logo + title
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                child: Row(
                   children: [
-                    Text(
-                      'Barangay Admin',
-                      style: AppTextStyles.headlineSm.copyWith(
+                    Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: AppColors.primaryFixed,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Icon(
+                        Icons.shield,
                         color: AppColors.primary,
-                        fontWeight: FontWeight.bold,
+                        size: 22,
                       ),
                     ),
-                    Text(
-                      'Official Portal',
-                      style: AppTextStyles.labelSm.copyWith(
-                        color: AppColors.onSurfaceVariant,
-                      ),
+                    const SizedBox(width: 12),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Barangay Admin',
+                          style: AppTextStyles.headlineSm.copyWith(
+                            color: AppColors.primary,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        Text(
+                          'Official Portal',
+                          style: AppTextStyles.labelSm.copyWith(
+                            color: AppColors.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 32),
-          // Nav items
-          Expanded(
-            child: ListView.separated(
-              itemCount: _items.length,
-              separatorBuilder: (_, _) => const SizedBox(height: 4),
-              itemBuilder: (context, index) {
-                final item = _items[index];
-                return _NavTile(
-                  icon: item.icon,
-                  label: item.label,
-                  selected: index == _selectedIndex,
-                  onTap: () => _onSelect(index),
-                );
-              },
-            ),
-          ),
+              ),
+              const SizedBox(height: 32),
+              // Nav items
+              Expanded(
+                child: ListView.separated(
+                  itemCount: visibleItems.length,
+                  separatorBuilder: (_, _) => const SizedBox(height: 4),
+                  itemBuilder: (context, index) {
+                    final itemEntry = visibleItems[index];
+                    final item = itemEntry.value;
+                    return _NavTile(
+                      icon: item.icon,
+                      label: item.label,
+                      selected: itemEntry.key == _selectedIndex,
+                      onTap: () => _onSelect(itemEntry.key),
+                    );
+                  },
+                ),
+              ),
 
-          // Emergency broadcast button
-          ElevatedButton.icon(
-            onPressed: () {
-              Navigator.of(
-                context,
-              ).push(smoothPageRoute(const EmergencyBroadcastScreen()));
-            },
-            icon: const Icon(Icons.campaign, size: 20),
-            label: const Text('Emergency Broadcast'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: widget.emergencySelected
-                  ? AppColors.primary
-                  : AppColors.tertiary,
-              foregroundColor: AppColors.onTertiary,
-              padding: const EdgeInsets.symmetric(vertical: 14),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+              // Emergency broadcast button
+              if (permissions.contains(AdminPermissions.emergencyBroadcast))
+                ElevatedButton.icon(
+                  onPressed: () {
+                    Navigator.of(
+                      context,
+                    ).push(smoothPageRoute(const EmergencyBroadcastScreen()));
+                  },
+                  icon: const Icon(Icons.campaign, size: 20),
+                  label: const Text('Emergency Broadcast'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: widget.emergencySelected
+                        ? AppColors.primary
+                        : AppColors.tertiary,
+                    foregroundColor: AppColors.onTertiary,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    elevation: 3,
+                    textStyle: AppTextStyles.labelMd.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              if (permissions.contains(AdminPermissions.emergencyBroadcast))
+                const SizedBox(height: 8),
+              Divider(color: AppColors.outlineVariant, height: 1),
+              const SizedBox(height: 8),
+              if (permissions.contains(AdminPermissions.settings))
+                _NavTile(
+                  icon: Icons.settings,
+                  label: 'Settings',
+                  selected: widget.settingsSelected,
+                  onTap: () {
+                    Navigator.of(
+                      context,
+                    ).push(smoothPageRoute(const SettingsScreen()));
+                  },
+                ),
+              _NavTile(
+                icon: Icons.logout,
+                label: 'Logout',
+                onTap: () {
+                  Navigator.of(
+                    context,
+                  ).pushReplacement(smoothPageRoute(const LoginScreen()));
+                },
               ),
-              elevation: 3,
-              textStyle: AppTextStyles.labelMd.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
-            ),
+            ],
           ),
-          const SizedBox(height: 8),
-          Divider(color: AppColors.outlineVariant, height: 1),
-          const SizedBox(height: 8),
-          _NavTile(
-            icon: Icons.settings,
-            label: 'Settings',
-            selected: widget.settingsSelected,
-            onTap: () {
-              Navigator.of(
-                context,
-              ).push(smoothPageRoute(const SettingsScreen()));
-            },
-          ),
-          _NavTile(
-            icon: Icons.logout,
-            label: 'Logout',
-            onTap: () {
-              Navigator.of(
-                context,
-              ).pushReplacement(smoothPageRoute(const LoginScreen()));
-            },
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 }

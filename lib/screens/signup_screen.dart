@@ -205,11 +205,17 @@ class _SignUpScreenState extends State<SignUpScreen> {
           'lastLogin': FieldValue.serverTimestamp(),
           'termsAcceptedAt': FieldValue.serverTimestamp(),
           'privacyAcceptedAt': FieldValue.serverTimestamp(),
+          'emailVerified': user.emailVerified,
         });
       } else {
         final data = userDoc.data();
         role = data?['role'] as String? ?? role;
-        await userRef.update({'lastLogin': FieldValue.serverTimestamp()});
+        await userRef.update({
+          'lastLogin': FieldValue.serverTimestamp(),
+          'emailVerified': user.emailVerified,
+          'googleVerified': FieldValue.delete(),
+          'authProvider': FieldValue.delete(),
+        });
       }
 
       if (!mounted) return;
