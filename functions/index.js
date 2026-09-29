@@ -1,5 +1,4 @@
 const { onDocumentCreated, onDocumentUpdated } = require('firebase-functions/v2/firestore');
-const logger = require('firebase-functions/logger');
 const admin = require('firebase-admin');
 
 admin.initializeApp();
@@ -52,46 +51,9 @@ async function usersWithRoles(roles) {
   return [...users.values()];
 }
 
-async function sendPush(notification, roles) {
-  const oneSignalAppId = process.env.ONESIGNAL_APP_ID;
-  const oneSignalRestApiKey = process.env.ONESIGNAL_REST_API_KEY;
-  if (!oneSignalAppId || !oneSignalRestApiKey) {
-    logger.warn('OneSignal secrets are not configured; in-app notification only.', {
-      type: notification.type,
-      referenceId: notification.referenceId,
-    });
-    return;
-  }
-
-  const response = await fetch('https://onesignal.com/api/v1/notifications', {
-    method: 'POST',
-    headers: {
-      Authorization: `Basic ${oneSignalRestApiKey}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      app_id: oneSignalAppId,
-      filters: roles.flatMap((role, index) => [
-        ...(index === 0 ? [] : [{ operator: 'OR' }]),
-        { field: 'tag', key: 'role', relation: '=', value: role },
-      ]),
-      headings: { en: notification.title },
-      contents: { en: notification.body },
-      data: { type: notification.type, referenceId: notification.referenceId },
-    }),
-  });
-  logger.info('OneSignal notification response', {
-    type: notification.type,
-    referenceId: notification.referenceId,
-    status: response.status,
-    response: await response.text(),
-  });
-}
-
-async function notifyUsers(users, notification, roles) {
+async function notifyUsers(users, notification) {
   if (users.length === 0) return;
   await writeNotifications(users, notification);
-  await sendPush(notification, roles);
 }
 
 exports.notifyResidentsOfAnnouncement = onDocumentCreated(
@@ -110,7 +72,7 @@ exports.notifyResidentsOfAnnouncement = onDocumentCreated(
       title: text(announcement.title, 'New barangay announcement'),
       body: text(announcement.body || announcement.description),
     };
-    await notifyUsers(users, notification, ['Resident']);
+    await notifyUsers(users, notification);
   },
 );
 
@@ -131,7 +93,7 @@ exports.notifyResidentsWhenAnnouncementPublished = onDocumentUpdated(
       title: text(after.title, 'New barangay announcement'),
       body: text(after.body || after.description),
     };
-    await notifyUsers(users, notification, ['Resident']);
+    await notifyUsers(users, notification);
   },
 );
 
@@ -150,7 +112,7 @@ exports.notifyAdminsOfDocumentRequest = onDocumentCreated(
       title: 'New document request',
       body: `${residentName} submitted a ${documentType} request.`,
     };
-    await notifyUsers(users, notification, ADMIN_ROLES);
+    await notifyUsers(users, notification);
   },
 );
 
@@ -176,7 +138,7 @@ exports.notifyResidentOfDocumentStatus = onDocumentUpdated(
       title: 'Document request updated',
       body: `${text(after.documentType, 'Your document request')} is now ${newStatus}.`,
     };
-    await notifyUsers([resident], notification, ['Resident']);
+    await notifyUsers([resident], notification);
   },
 );
 
@@ -195,6 +157,6 @@ exports.notifyAdminsOfEmergencyReport = onDocumentCreated(
       title: 'Emergency report received',
       body: `${reporterName} submitted a ${reportType}.`,
     };
-    await notifyUsers(users, notification, ADMIN_ROLES);
+    await notifyUsers(users, notification);
   },
 );

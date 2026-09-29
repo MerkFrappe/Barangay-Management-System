@@ -4,6 +4,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 
 import '../theme/app_colors.dart';
+import 'emergency_broadcast_screen.dart';
 import '../widgets/sidebar.dart';
 import '../widgets/top_header.dart';
 
@@ -268,6 +269,11 @@ class _EmergencyReportDetail extends StatelessWidget {
                         reportId: reportId,
                         status: status,
                         createdAt: _createdAt(data),
+                        latitude: latitude,
+                        longitude: longitude,
+                        location: (data['location'] ?? '').toString(),
+                        reportType: (data['type'] ?? 'Emergency').toString(),
+                        details: (data['details'] ?? '').toString(),
                       );
                       if (constraints.maxWidth >= 850) {
                         return Row(
@@ -438,10 +444,20 @@ class _ReportControls extends StatelessWidget {
   final String reportId;
   final String status;
   final DateTime createdAt;
+  final double? latitude;
+  final double? longitude;
+  final String location;
+  final String reportType;
+  final String details;
   const _ReportControls({
     required this.reportId,
     required this.status,
     required this.createdAt,
+    required this.latitude,
+    required this.longitude,
+    required this.location,
+    required this.reportType,
+    required this.details,
   });
 
   Future<void> _updateStatus(String value) => FirebaseFirestore.instance
@@ -485,6 +501,23 @@ class _ReportControls extends StatelessWidget {
             children: [
               Text('Actions', style: AppTextStyles.titleMd),
               const SizedBox(height: 12),
+              FilledButton.icon(
+                style: FilledButton.styleFrom(backgroundColor: AppColors.error),
+                onPressed: () => Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => EmergencyBroadcastScreen(
+                      latitude: latitude,
+                      longitude: longitude,
+                      location: location,
+                      reportType: reportType,
+                      reportDetails: details,
+                    ),
+                  ),
+                ),
+                icon: const Icon(Icons.campaign_rounded),
+                label: const Text('Create Emergency Broadcast'),
+              ),
+              const SizedBox(height: 10),
               if (status != 'in_progress' && status != 'resolved')
                 FilledButton.icon(
                   onPressed: () => _updateStatus('in_progress'),

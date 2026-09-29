@@ -385,19 +385,13 @@ class _CommunityEventsScreenState extends State<CommunityEventsScreen> {
                                   onPressed: uid == null
                                       ? null
                                       : () async {
-                                          final ref = FirebaseFirestore.instance
-                                              .collection('announcements')
-                                              .doc(event.id);
-                                          await ref.update({
-                                            'likerIds': liked
-                                                ? FieldValue.arrayRemove([uid])
-                                                : FieldValue.arrayUnion([uid]),
-                                            if (!liked)
-                                              'dislikerIds':
-                                                  FieldValue.arrayRemove([uid]),
-                                          });
+                                          await _setReaction(
+                                            announcementId: event.id,
+                                            uid: uid,
+                                            like: true,
+                                          );
                                           liked = !liked;
-                                          if (liked) disliked = false;
+                                          disliked = false;
                                           setDialogState(() {});
                                         },
                                   icon: Icon(
@@ -417,19 +411,13 @@ class _CommunityEventsScreenState extends State<CommunityEventsScreen> {
                                   onPressed: uid == null
                                       ? null
                                       : () async {
-                                          final ref = FirebaseFirestore.instance
-                                              .collection('announcements')
-                                              .doc(event.id);
-                                          await ref.update({
-                                            'dislikerIds': disliked
-                                                ? FieldValue.arrayRemove([uid])
-                                                : FieldValue.arrayUnion([uid]),
-                                            if (!disliked)
-                                              'likerIds':
-                                                  FieldValue.arrayRemove([uid]),
-                                          });
+                                          await _setReaction(
+                                            announcementId: event.id,
+                                            uid: uid,
+                                            like: false,
+                                          );
                                           disliked = !disliked;
-                                          if (disliked) liked = false;
+                                          liked = false;
                                           setDialogState(() {});
                                         },
                                   icon: Icon(
@@ -462,6 +450,36 @@ class _CommunityEventsScreenState extends State<CommunityEventsScreen> {
         );
       },
     );
+  }
+
+  Future<void> _setReaction({
+    required String announcementId,
+    required String uid,
+    required bool like,
+  }) {
+    final reference = FirebaseFirestore.instance
+        .collection('announcements')
+        .doc(announcementId);
+    return FirebaseFirestore.instance.runTransaction((transaction) async {
+      final snapshot = await transaction.get(reference);
+      final data = snapshot.data() ?? const <String, dynamic>{};
+      final likerIds = List<String>.from(data['likerIds'] ?? const []);
+      final dislikerIds = List<String>.from(data['dislikerIds'] ?? const []);
+      final selectedList = like ? likerIds : dislikerIds;
+      final alreadySelected = selectedList.contains(uid);
+
+      // Remove both previous reactions first. A second tap removes the current
+      // reaction; switching buttons moves the resident to the new reaction.
+      likerIds.remove(uid);
+      dislikerIds.remove(uid);
+      if (!alreadySelected) {
+        selectedList.add(uid);
+      }
+      transaction.update(reference, {
+        'likerIds': likerIds,
+        'dislikerIds': dislikerIds,
+      });
+    });
   }
 
   void _showImageViewer(

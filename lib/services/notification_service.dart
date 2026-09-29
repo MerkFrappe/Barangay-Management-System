@@ -1,78 +1,11 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
-import 'package:onesignal_flutter/onesignal_flutter.dart';
 
 import '../models/app_notification.dart';
-import '../screens/residence_announcements.dart';
-
-final GlobalKey<NavigatorState> appNavigatorKey = GlobalKey<NavigatorState>();
 
 class NotificationService {
   NotificationService._();
 
   static final _firestore = FirebaseFirestore.instance;
-  static bool _oneSignalConfigured = false;
-  static bool _listenersRegistered = false;
-  static String? _lastSyncedUid;
-
-  static String get _oneSignalAppId =>
-      const String.fromEnvironment(
-        'ONESIGNAL_APP_ID',
-        // OneSignal App IDs identify the application, not a server credential.
-        // Keep a dart-define override for a future staging/production app.
-        defaultValue: 'a3f349c3-21f7-42f2-a384-d39b12189596',
-      );
-
-  static bool get isPushConfigured => !kIsWeb && _oneSignalAppId.isNotEmpty;
-
-  static Future<void> initialize() async {
-    if (kIsWeb || _oneSignalAppId.isEmpty || _oneSignalConfigured) return;
-    OneSignal.initialize(_oneSignalAppId);
-    _registerOneSignalListeners();
-    _oneSignalConfigured = true;
-  }
-
-  /// Invoked only after a resident chooses to receive phone notifications.
-  /// On Android 13+ this opens the system permission prompt.
-  static Future<bool> enableSystemNotifications() async {
-    if (!isPushConfigured) return false;
-    await initialize();
-    return OneSignal.Notifications.requestPermission(true);
-  }
-
-  static void _registerOneSignalListeners() {
-    if (_listenersRegistered) return;
-    _listenersRegistered = true;
-
-    OneSignal.Notifications.addForegroundWillDisplayListener((event) {
-      event.notification.display();
-    });
-    OneSignal.Notifications.addClickListener((event) {
-      final data =
-          event.notification.additionalData ?? const <String, dynamic>{};
-      _openNotificationDestination(data);
-    });
-  }
-
-  static void _openNotificationDestination(Map<String, dynamic> data) {
-    if (data['type'] == 'announcement' &&
-        appNavigatorKey.currentState != null) {
-      appNavigatorKey.currentState!.push(
-        MaterialPageRoute<void>(builder: (_) => const CivicHorizonApp()),
-      );
-    }
-  }
-
-  static Future<void> syncUser(User user, String role) async {
-    if (kIsWeb || _oneSignalAppId.isEmpty || _lastSyncedUid == user.uid) return;
-    await initialize();
-    await OneSignal.login(user.uid);
-    await OneSignal.User.addTags({'role': role});
-    _lastSyncedUid = user.uid;
-  }
-
   static Stream<List<AppNotification>> streamForUser(String uid) {
     return _firestore
         .collection('users')
@@ -175,7 +108,9 @@ class NotificationService {
 
   /// Removes an announcement from every resident inbox when the source post
   /// is deleted, preventing a bell item that opens a missing announcement.
-  static Future<void> removeAnnouncementNotifications(String announcementId) async {
+  static Future<void> removeAnnouncementNotifications(
+    String announcementId,
+  ) async {
     final residents = await _firestore
         .collection('users')
         .where('role', isEqualTo: 'Resident')
@@ -184,9 +119,9 @@ class NotificationService {
       final batch = _firestore.batch();
       for (final resident in residents.docs.skip(offset).take(500)) {
         batch.delete(
-          resident.reference.collection('notifications').doc(
-            'announcement_$announcementId',
-          ),
+          resident.reference
+              .collection('notifications')
+              .doc('announcement_$announcementId'),
         );
       }
       await batch.commit();

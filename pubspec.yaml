@@ -47,7 +47,6 @@ dependencies:
   latlong2: ^0.10.1
   pdf: ^3.13.0
   printing: ^5.15.0
-  onesignal_flutter: ^5.6.8
   get: ^4.7.3
   url_launcher: ^6.3.2
 

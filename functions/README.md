@@ -1,8 +1,6 @@
 # Cloud Functions
 
-The notification triggers write the in-app notification bell records and can
-send OneSignal push notifications to Android devices tagged by their Civica
-role. The Flutter app receives its OneSignal App ID only at build time.
+The notification triggers write notification-bell records for the Civica app.
 
 ## Civica Chatbot school-demo mode
 
@@ -49,24 +47,7 @@ Client-side keys can be
 extracted from a built application, so this mode is for a controlled school demo
 only. Rotate/delete the keys after presentation.
 
-If you later enable Firebase Functions, configure the OneSignal server secrets:
-
-```powershell
-firebase functions:secrets:set ONESIGNAL_APP_ID --project bms-system-2499a
-firebase functions:secrets:set ONESIGNAL_REST_API_KEY --project bms-system-2499a
-firebase deploy --only functions --project bms-system-2499a
-```
 # Civica notification delivery
 
-1. In OneSignal, create an Android app using package name `com.example.bms`.
-2. Run `./tools/build_civica_android.ps1` and paste the OneSignal App ID when
-   prompted. This produces an APK with push configured, without storing the ID
-   in source code.
-3. Install the new APK, sign in once, and allow **Phone notifications**. Civica
-   identifies the device and tags it as `Resident` or the appropriate admin role.
-4. Use the OneSignal dashboard to send free manual pushes to those role tags.
-
-The in-app notification bell remains automatic on Firebase's free plan. Fully
-automatic pushes after Firestore events still require a trusted automation
-service—Firebase Functions (which requires Blaze) or an equivalent OneSignal
-automation/backend. Never put the OneSignal REST API key in Flutter code.
+The in-app notification bell is driven by Firestore. Push-notification services
+are not configured in this project.

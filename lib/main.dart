@@ -8,9 +8,9 @@ import 'screens/login_screen.dart';
 import 'screens/dashboard_screen.dart';
 import 'screens/resident_dashboard_screen.dart';
 import 'screens/email_verification_screen.dart';
-import 'services/notification_service.dart';
 import 'services/presence_service.dart';
 import 'models/user_roles.dart';
+import 'widgets/emergency_broadcast_gate.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -21,7 +21,6 @@ void main() async {
   } catch (e) {
     debugPrint('Firebase init optional / bypassed: $e');
   }
-  await NotificationService.initialize();
   runApp(const BarangayAdminApp());
 }
 
@@ -31,7 +30,6 @@ class BarangayAdminApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      navigatorKey: appNavigatorKey,
       title: 'Civica',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
@@ -103,12 +101,14 @@ class AuthWrapper extends StatelessWidget {
             if (roleSnapshot.hasData && roleSnapshot.data!.exists) {
               final data = roleSnapshot.data!.data() as Map<String, dynamic>;
               final role = data['role'] ?? 'Resident';
-              NotificationService.syncUser(user, role.toString());
               PresenceService.start(user, role.toString());
               if (isAdminRole(role.toString())) {
                 return const DashboardScreen();
               } else {
-                return const ResidentDashboardScreen();
+                return EmergencyBroadcastGate(
+                  key: ValueKey(user.uid),
+                  child: const ResidentDashboardScreen(),
+                );
               }
             }
             // Fallback
