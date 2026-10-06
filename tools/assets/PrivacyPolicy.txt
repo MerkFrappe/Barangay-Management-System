@@ -1,5 +1,5 @@
 PRIVACY POLICY FOR CIVICA
-Effective Date: September 23, 2026   
+Effective Date: September 29, 2026   
 
 1. Introduction
 This Privacy Policy describes how Civica ("we," "our," or "us"), operated as an individual entity in the Philippines, collects, uses, stores, and protects your personal information when you access our website at [https://bms-system-2499a.web.app](https://bms-system-2499a.web.app) or use the Civica mobile application. We are committed to processing personal data in compliance with applicable privacy laws, including the Philippine Data Privacy Act of 2012 (Republic Act No. 10173).   
@@ -83,6 +83,6 @@ Right to Erasure or Blocking: The right to suspend, withdraw, or order the remov
 10. Contact Us
 For privacy inquiries, data protection concerns, or to exercise your privacy rights, contact us at:   
 
-Email: civicaapp.official@gmail.com   
+Email: civicapp.official@gmail.com   
 
 Phone: 09764732218   

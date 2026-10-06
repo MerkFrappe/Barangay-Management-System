@@ -10,6 +10,12 @@ class HeroBanner extends StatelessWidget {
   Widget build(BuildContext context) {
     final width = MediaQuery.of(context).size.width;
     final desktop = width >= 900;
+    final now = DateTime.now();
+    final greeting = now.hour < 12
+        ? 'Good Morning, Neighbor!'
+        : now.hour < 18
+        ? 'Good Afternoon, Neighbor!'
+        : 'Good Evening, Neighbor!';
 
     return Container(
       width: double.infinity,
@@ -56,7 +62,7 @@ class HeroBanner extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                "Wednesday, May 22, 2024",
+                MaterialLocalizations.of(context).formatFullDate(now),
                 style: AppTextStyles.labelMd.copyWith(
                   color: Colors.white70,
                   letterSpacing: 1.2,
@@ -66,7 +72,7 @@ class HeroBanner extends StatelessWidget {
               const SizedBox(height: 14),
 
               Text(
-                "Good Evening, Neighbor!",
+                greeting,
                 style: AppTextStyles.headlineLg.copyWith(color: Colors.white),
               ),
 

@@ -42,7 +42,7 @@ class _LoginScreenState extends State<LoginScreen>
     _isAdmin = widget.initialAdmin;
     _entranceController = AnimationController(
       vsync: this,
-      duration: const Duration(seconds: 60),
+      duration: const Duration(seconds: 5),
     )..forward();
   }
 
@@ -459,10 +459,10 @@ class _LoginScreenState extends State<LoginScreen>
             animation: _entranceController,
             builder: (context, child) {
               final blueReveal = Curves.easeOut.transform(
-                (_entranceController.value / (24 / 60)).clamp(0.0, 1.0),
+                (_entranceController.value / (2 / 5)).clamp(0.0, 1.0),
               );
               final formProgress = Curves.easeOut.transform(
-                ((_entranceController.value - (42 / 60)) / (18 / 60)).clamp(
+                ((_entranceController.value - (3.5 / 5)) / (1.5 / 5)).clamp(
                   0.0,
                   1.0,
                 ),

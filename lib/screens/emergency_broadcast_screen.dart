@@ -80,6 +80,11 @@ class _EmergencyBroadcastScreenState extends State<EmergencyBroadcastScreen> {
         if (_hasLocation) 'longitude': widget.longitude,
         if (widget.location != null) 'location': widget.location,
         'createdAt': FieldValue.serverTimestamp(),
+        // The resident gate uses this to avoid showing an expired alert while
+        // still catching residents who open the app after it was sent.
+        'expiresAt': Timestamp.fromDate(
+          DateTime.now().add(const Duration(hours: 24)),
+        ),
         'date': DateTime.now().toString().substring(0, 16),
       });
 

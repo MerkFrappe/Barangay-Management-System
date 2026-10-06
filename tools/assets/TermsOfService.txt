@@ -1,5 +1,5 @@
 TERMS OF SERVICE FOR CIVICA
-Effective Date: September 23, 2026   
+Effective Date: September 29, 2026   
 
 1. Acceptance of Terms
 These Terms of Service ("Terms") govern your access to and use of the Civica website located at [https://bms-system-2499a.web.app](https://bms-system-2499a.web.app) and the Civica mobile application (collectively, the "Platform"). The Platform is owned and operated as an individual entity in the Philippines.   
@@ -62,6 +62,6 @@ These Terms shall be governed by and construed in accordance with the laws of th
 11. Contact Information
 For questions or concerns regarding these Terms, or to report a problem with the Platform, contact us at:   
 
-Email: civicaapp.official@gmail.com   
+Email: civicapp.official@gmail.com   
 
 Phone: 09764732218   
