@@ -20,7 +20,9 @@ class LoginScreen extends StatefulWidget {
   State<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
+class _LoginScreenState extends State<LoginScreen>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _entranceController;
   static const _demoAdminBypassEnabled = bool.fromEnvironment(
     'ENABLE_DEMO_ADMIN_BYPASS',
   );
@@ -38,10 +40,15 @@ class _LoginScreenState extends State<LoginScreen> {
   void initState() {
     super.initState();
     _isAdmin = widget.initialAdmin;
+    _entranceController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 60),
+    )..forward();
   }
 
   @override
   void dispose() {
+    _entranceController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
@@ -448,53 +455,93 @@ class _LoginScreenState extends State<LoginScreen> {
       body: LayoutBuilder(
         builder: (context, constraints) {
           final isWide = constraints.maxWidth >= 900;
-          return Row(
-            children: [
-              if (isWide)
-                Expanded(
-                  flex: 6,
-                  child: _BrandPanel(
-                    isAdmin: _isAdmin,
-                    onDemoAdminAccess: _demoAdminBypassEnabled
-                        ? _openDemoAdminDashboard
-                        : null,
-                  ),
+          return AnimatedBuilder(
+            animation: _entranceController,
+            builder: (context, child) {
+              final blueReveal = Curves.easeOut.transform(
+                (_entranceController.value / (24 / 60)).clamp(0.0, 1.0),
+              );
+              final formProgress = Curves.easeOut.transform(
+                ((_entranceController.value - (42 / 60)) / (18 / 60)).clamp(
+                  0.0,
+                  1.0,
                 ),
-              Expanded(
-                flex: isWide ? 5 : 10,
-                child: Center(
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 32,
-                      vertical: 48,
-                    ),
-                    child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 420),
-                      child: _LoginForm(
-                        formKey: _formKey,
-                        emailController: _emailController,
-                        passwordController: _passwordController,
-                        obscurePassword: _obscurePassword,
-                        rememberMe: _rememberMe,
-                        isSubmitting: _isSubmitting,
-                        isAdmin: _isAdmin,
-                        isWide: isWide,
-                        onToggleObscure: () => setState(
-                          () => _obscurePassword = !_obscurePassword,
+              );
+              final targetBlueWidth = isWide
+                  ? constraints.maxWidth * 6 / 11
+                  : 0.0;
+              final formWidth = isWide
+                  ? constraints.maxWidth * 5 / 11
+                  : constraints.maxWidth;
+              final blueWidth =
+                  constraints.maxWidth +
+                  (targetBlueWidth - constraints.maxWidth) * formProgress;
+              final formLeft =
+                  constraints.maxWidth +
+                  (constraints.maxWidth - formWidth - constraints.maxWidth) *
+                      formProgress;
+
+              return Stack(
+                children: [
+                  Align(
+                    alignment: Alignment.bottomLeft,
+                    child: Opacity(
+                      opacity: blueReveal,
+                      child: SizedBox(
+                        width: blueWidth,
+                        height: constraints.maxHeight * blueReveal,
+                        child: _BrandPanel(
+                          isAdmin: _isAdmin,
+                          onDemoAdminAccess: _demoAdminBypassEnabled
+                              ? _openDemoAdminDashboard
+                              : null,
                         ),
-                        onToggleRemember: (v) =>
-                            setState(() => _rememberMe = v ?? false),
-                        onSelectRole: (admin) =>
-                            setState(() => _isAdmin = admin),
-                        onSubmit: _handleLogin,
-                        onGoogleLogin: _handleGoogleLogin,
-                        onForgotPassword: _showForgotPasswordDialog,
                       ),
                     ),
                   ),
-                ),
-              ),
-            ],
+                  Positioned(
+                    left: formLeft,
+                    top: 0,
+                    bottom: 0,
+                    width: formWidth,
+                    child: ColoredBox(
+                      color: AppColors.background,
+                      child: Center(
+                        child: SingleChildScrollView(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 32,
+                            vertical: 48,
+                          ),
+                          child: ConstrainedBox(
+                            constraints: const BoxConstraints(maxWidth: 420),
+                            child: _LoginForm(
+                              formKey: _formKey,
+                              emailController: _emailController,
+                              passwordController: _passwordController,
+                              obscurePassword: _obscurePassword,
+                              rememberMe: _rememberMe,
+                              isSubmitting: _isSubmitting,
+                              isAdmin: _isAdmin,
+                              isWide: isWide,
+                              onToggleObscure: () => setState(
+                                () => _obscurePassword = !_obscurePassword,
+                              ),
+                              onToggleRemember: (v) =>
+                                  setState(() => _rememberMe = v ?? false),
+                              onSelectRole: (admin) =>
+                                  setState(() => _isAdmin = admin),
+                              onSubmit: _handleLogin,
+                              onGoogleLogin: _handleGoogleLogin,
+                              onForgotPassword: _showForgotPasswordDialog,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              );
+            },
           );
         },
       ),
