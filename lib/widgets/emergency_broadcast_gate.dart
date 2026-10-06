@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
@@ -15,35 +17,63 @@ class EmergencyBroadcastGate extends StatefulWidget {
 }
 
 class _EmergencyBroadcastGateState extends State<EmergencyBroadcastGate> {
-  bool _checked = false;
+  StreamSubscription<QuerySnapshot<Map<String, dynamic>>>? _alertSubscription;
+  final Set<String> _shownAlertIds = <String>{};
+  bool _dialogShowing = false;
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _checkForAlert());
+    WidgetsBinding.instance.addPostFrameCallback((_) => _listenForAlerts());
   }
 
-  Future<void> _checkForAlert() async {
-    if (_checked) return;
-    _checked = true;
+  @override
+  void dispose() {
+    _alertSubscription?.cancel();
+    super.dispose();
+  }
+
+  void _listenForAlerts() {
+    if (!mounted) return;
     final cutoff = Timestamp.fromDate(
       DateTime.now().subtract(const Duration(minutes: 10)),
     );
-    try {
-      final alerts = await FirebaseFirestore.instance
-          .collection('emergency_alerts')
-          .where('createdAt', isGreaterThanOrEqualTo: cutoff)
-          .get();
-      if (!mounted || alerts.docs.isEmpty) return;
 
-      final latest = alerts.docs.reduce((current, candidate) {
-        final currentAt = current.data()['createdAt'] as Timestamp?;
-        final candidateAt = candidate.data()['createdAt'] as Timestamp?;
-        return (candidateAt?.millisecondsSinceEpoch ?? 0) >
-                (currentAt?.millisecondsSinceEpoch ?? 0)
-            ? candidate
-            : current;
-      }).data();
+    _alertSubscription = FirebaseFirestore.instance
+        .collection('emergency_alerts')
+        .where('createdAt', isGreaterThanOrEqualTo: cutoff)
+        .snapshots()
+        .listen(_handleAlertSnapshot, onError: (_) {});
+  }
+
+  Future<void> _handleAlertSnapshot(
+    QuerySnapshot<Map<String, dynamic>> snapshot,
+  ) async {
+    if (!mounted || _dialogShowing || snapshot.docs.isEmpty) return;
+
+    final unseen = snapshot.docs
+        .where((doc) => !_shownAlertIds.contains(doc.id))
+        .toList();
+    if (unseen.isEmpty) return;
+
+    // On first load, show only the newest alert and mark older alerts seen.
+    // Later snapshots contain only newly dispatched alerts.
+    unseen.sort((a, b) {
+      final aTime = a.data()['createdAt'] as Timestamp?;
+      final bTime = b.data()['createdAt'] as Timestamp?;
+      return (bTime?.millisecondsSinceEpoch ?? 0).compareTo(
+        aTime?.millisecondsSinceEpoch ?? 0,
+      );
+    });
+    final latestDoc = unseen.first;
+    _shownAlertIds.addAll(unseen.map((doc) => doc.id));
+    await _showAlert(latestDoc.data());
+  }
+
+  Future<void> _showAlert(Map<String, dynamic> latest) async {
+    if (!mounted) return;
+    _dialogShowing = true;
+    try {
       await showDialog<void>(
         context: context,
         barrierDismissible: false,
@@ -86,8 +116,8 @@ class _EmergencyBroadcastGateState extends State<EmergencyBroadcastGate> {
           ],
         ),
       );
-    } catch (_) {
-      // A broadcast check must not prevent residents from using the app.
+    } finally {
+      _dialogShowing = false;
     }
   }
 
